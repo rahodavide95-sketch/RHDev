@@ -381,25 +381,49 @@ var revealIO = ('IntersectionObserver' in window) && !reduce ? new IntersectionO
 
 /* ------------------------------------------------------------ vibrazione: un tocco leggerissimo a ogni capitolo della Home */
 var touchy = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-var hapAct = null, hapT = 0, hapSw = null;
+var hapAct = null, hapT = 0;
 function buzz() {
   var t = Date.now();
   if (!touchy || t - hapT < 120) return;
   hapT = t;
   if (navigator.vibrate) { try { navigator.vibrate(20); } catch (e) {} return; }
-  /* iPhone: Safari non lascia vibrare il telefono, ma un interruttore nativo (iOS 17.4+) dà un piccolo tocco quando cambia */
-  if (!hapSw) {
-    hapSw = document.createElement('label');
-    hapSw.className = 'haptic'; hapSw.setAttribute('aria-hidden', 'true');
-    hapSw.innerHTML = '<input type="checkbox" switch tabindex="-1">';
-    document.body.appendChild(hapSw);
-  }
-  hapSw.click();
-  hapSw.firstChild.blur();
+  /* iPhone: Safari non ha la vibrazione per i siti; un interruttore nativo (iOS 18)
+     che cambia stato durante un gesto del dito dà un piccolo tocco */
+  var l = document.createElement('label');
+  l.setAttribute('aria-hidden', 'true'); l.style.display = 'none';
+  l.innerHTML = '<input type="checkbox" switch>';
+  document.head.appendChild(l); l.click(); document.head.removeChild(l);
 }
+/* I browser dei telefoni lasciano vibrare un sito solo durante un gesto del dito:
+   il tocco parte quando il dito si stacca dopo lo scorrimento (il capitolo sta per cambiare),
+   non dopo, quando il capitolo arriva e il gesto è già finito. */
+var touchY = null, touchBuzzT = 0, tLastY = 0, tLastT = 0, tVel = 0, tFrom = null;
+window.addEventListener('touchstart', function (e) {
+  if (st.page !== 'home' || !e.touches[0]) { touchY = null; return; }
+  touchY = tLastY = e.touches[0].clientY; tLastT = e.timeStamp; tVel = 0;
+  /* da dove parte il gesto: su un'uscita, in cima alla Home, o in fondo alla pagina */
+  tFrom = { rel: site.classList.contains('in-rel'), top: window.scrollY < 4,
+            end: window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 };
+}, { passive: true });
+window.addEventListener('touchmove', function (e) {
+  if (touchY === null || !e.touches[0]) return;
+  var y = e.touches[0].clientY, dt = e.timeStamp - tLastT;
+  if (dt > 0) tVel = (tLastY - y) / dt;
+  tLastY = y; tLastT = e.timeStamp;
+}, { passive: true });
+window.addEventListener('touchend', function (e) {
+  if (touchY === null || st.page !== 'home') return;
+  var end = e.changedTouches[0] ? e.changedTouches[0].clientY : tLastY, dy = touchY - end; touchY = null;
+  if (e.timeStamp - tLastT > 90) tVel = 0;                       /* dito fermo prima di staccarsi: nessuno slancio */
+  /* il capitolo cambia se il dito ha fatto metà strada o se è partito con slancio */
+  var moves = Math.abs(dy) > window.innerHeight * 0.4 || (Math.abs(dy) > 20 && Math.abs(tVel) > 0.3 && (tVel > 0) === (dy > 0));
+  if (!moves) return;
+  var down = dy > 0;
+  if ((down && (tFrom.rel || tFrom.top) && !tFrom.end) || (!down && tFrom.rel)) { buzz(); touchBuzzT = Date.now(); }
+}, { passive: true });
 function chapter(act) {
   if (st.page !== 'home' || hapAct === null) { hapAct = act; return; }
-  if (act !== hapAct) { hapAct = act; buzz(); }
+  if (act !== hapAct) { hapAct = act; if (Date.now() - touchBuzzT > 900) buzz(); }
 }
 var TITLES = { home: '', releases: 'Releases', artists: 'Artists', podcast: 'Podcast', events: 'Events', store: 'Store', contact: 'Contact', search: 'Search', about: 'About', faq: 'FAQ', credits: 'Credits' };
 function navLinks(L) { return L.map(function (p) { return '<a href="#/' + p[0] + '" data-p="' + p[0] + '">' + p[1] + '</a>'; }).join(''); }

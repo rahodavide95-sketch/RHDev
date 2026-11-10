@@ -645,6 +645,93 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
   .in, .sel, .search { font-size: 16px; }
 }
 
+/* ============================================================
+   COMPUTER — solo schermi larghi con il mouse.
+   Telefono e tablet non leggono nulla di questo blocco.
+   ============================================================ */
+@media (min-width: 981px) and (hover: hover) and (pointer: fine) {
+  :root {
+    --gl: 40px; --gr: 40px;
+    --disp: clamp(64px, 6.2vw, 96px);                                  /* titoli grandi: tutti uguali */
+    --cov: min(540px, 32vw, calc(100vh - var(--head-h) - 220px));     /* copertina accanto al testo */
+  }
+
+  /* testata: margini comodi, logo in proporzione */
+  .brand img { width: 40px; height: 40px; }
+
+  /* colonna centrata sullo schermo (prima era spostata a destra per il misuratore) */
+  .wrap { padding-left: 0; padding-right: 0; }
+  .col { --pl: 0px; max-width: none; padding-left: 0; width: min(1040px, calc(100% - 192px)); margin-inline: auto; }
+  .hero { margin-left: 0; }
+
+  /* misuratore: più vicino al bordo; i nomi compaiono solo dove c'è spazio accanto alla colonna */
+  .gauge { left: 24px; }
+  .gauge button span { max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
+
+  /* titoli grandi: una sola misura in tutto il sito */
+  .layer h2, .deeper h2, .bed-title, .head h1, .rel h1 { font-size: var(--disp); }
+  .head { padding-block: 64px 40px; gap: 18px; }
+
+  /* Home: ogni uscita occupa una schermata; testo a sinistra, copertina a destra con il tasto sotto */
+  .layer {
+    display: grid; grid-template-columns: minmax(0, 1fr) var(--cov); column-gap: 72px; row-gap: 0;
+    grid-template-rows: 1fr auto auto auto 1fr;
+    min-height: calc(100vh - var(--head-h)); padding-block: 40px;
+  }
+  .layer > .meta { grid-column: 1; grid-row: 2; }
+  .layer > h2 { grid-column: 1; grid-row: 3; margin: 22px 0 20px; }
+  .layer > .by { grid-column: 1; grid-row: 4; }
+  .layer > .row { grid-column: 2; grid-row: 1 / -1; align-self: center; flex-direction: column; align-items: flex-start; gap: 18px; margin: 0; }
+  .layer .cvbig { width: var(--cov); }
+
+  /* Discography e Artists in Home: una schermata ciascuno, centrati */
+  .deeper, .bed { min-height: calc(100vh - var(--head-h)); padding-block: 40px; justify-content: center; }
+  .deeper { gap: 26px; }
+  .bed .sub { margin-top: 26px; }
+  .bed .faces { width: min(480px, calc(100vh - var(--head-h) - 330px)); }
+
+  /* pagina dell'uscita: stesso schema della Home */
+  .rel {
+    display: grid; grid-template-columns: minmax(0, 1fr) var(--cov); column-gap: 72px; row-gap: 0;
+    grid-template-rows: 1fr auto auto auto auto 1fr;
+    min-height: calc(100vh - var(--head-h)); padding-block: 40px;
+  }
+  .rel > .meta { grid-column: 1; grid-row: 2; }
+  .rel > h1 { grid-column: 1; grid-row: 3; margin: 22px 0 20px; }
+  .rel > .by { grid-column: 1; grid-row: 4; }
+  .rel > .vaa { grid-column: 1; grid-row: 5; margin-top: 26px; }
+  .rel > .art { grid-column: 2; grid-row: 1 / -1; align-self: center; width: var(--cov); margin: 0; }
+  .pn { margin-top: 40px; }
+  .pn b { font-size: 44px; }
+
+  /* Discography e pagine degli artisti: copertine in 4 colonne, testi su una riga */
+  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 44px 28px; }
+  .yh { font-size: 60px; margin: 56px 0 24px; }
+
+  /* Artists: lettere e nomi in proporzione; vista "All" a 5 per riga */
+  .lh { font-size: 48px; margin: 44px 0 14px; }
+  .faces.all { gap: 34px 24px; }
+  .faces.all .face { width: calc((100% - 96px) / 5); }
+
+  /* About: frase d'apertura un po' più contenuta */
+  .info .lead { font-size: 36px; }
+  /* Contact: la riga dell'email lunga quanto i testi delle altre pagine */
+  .contact { max-width: 620px; }
+
+  /* barra in fondo: tutta centrata, come sul telefono (logo, voci su una riga, social, ©) */
+  .foot-bar { flex-direction: column; align-items: center; text-align: center; gap: 30px; padding: 44px 48px 34px; }
+  .foot-links, .foot-copy { flex-basis: auto; width: 100%; }
+  .foot-nav { justify-content: center; gap: 12px 34px; }
+}
+/* computer con schermo largo: colonna più ampia, con posto accanto per i nomi del misuratore */
+@media (min-width: 1360px) and (hover: hover) and (pointer: fine) {
+  .col { width: min(1200px, calc(100% - 360px)); }
+}
+/* computer con schermo non molto largo: accanto alla colonna non c'è posto per i nomi del misuratore */
+@media (min-width: 981px) and (max-width: 1359px) and (hover: hover) and (pointer: fine) {
+  .gauge button span { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .hint i { animation: none; }

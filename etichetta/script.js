@@ -108,7 +108,6 @@ var st = { page: 'home', arg: null, q: '', type: 'all', year: 'all', sort: 'new'
 var site = $('site'), pageEl = $('page'), gauge = $('gauge'), canvas = $('gl'), menu = $('menu'), menuBtn = $('menuBtn');
 
 function cover(r) { return img(r.cover, '', r.i); }
-function depthText(r) { var d = dz(r); return d < 0 ? 'Above the surface · surfaces in ' + plural(-d, 'day') : d === 0 ? 'At the surface · out today' : 'Depth · ' + plural(d, 'day'); }
 function listen(r, pri) { return r.l ? '<a class="btn' + (pri ? ' pri' : '') + '" href="' + esc(r.l) + '" target="_blank" rel="noopener">' + (dz(r) < 0 ? 'Pre-save' : 'Listen') + '</a>' : ''; }
 function card(r) {
   var d = dz(r);
@@ -207,11 +206,11 @@ P.releases = function () {
 P.release = function () {
   var r = relById(st.arg), d = dz(r), L = REL.slice().sort(desc), i = L.indexOf(r), above = L[i - 1], below = L[i + 1];
   var tracks = r.tracks.filter(function (t) { return t && t.title; });
-  return '<a class="back" href="#/releases">All releases</a><section class="rel">' +
+  return '<section class="rel">' +
     '<div class="meta"><span>' + esc(r.c) + '</span><span>' + esc(r.d) + '</span><span>' + r.kind + (r.fmt ? ' · ' + esc(r.fmt) : '') + '</span>' + (d < 0 ? '<i class="br"></i><span class="up">Upcoming</span>' : '') + '</div>' +
     '<h1 class="big">' + esc(r.t) + '</h1><div class="by">' + (r.names.length || r.k === 'va' ? esc(r.a) : artLink(r.a)) + '</div>' +
     (r.names.length ? '<div class="vaa">' + r.names.map(function (n) { return artLink(String(n)); }).join('') + '</div>' : '') +
-    '<div class="row"><span class="cvbig">' + cover(r) + '</span><div class="side"><span class="depth">' + depthText(r) + '</span><div class="cta">' + listen(r, true) + '</div></div></div></section>' +
+    '<div class="art"><span class="cvbig">' + cover(r) + '</span>' + listen(r, true) + '</div></section>' +
     (tracks.length ? sec('Tracks') + tracks.map(function (t, n) {
       return '<div class="trk"><i>' + (n + 1) + '</i><div><b>' + esc(t.title) + '</b>' + (t.artist ? '<small>' + artLink(t.artist) + '</small>' : '') + '</div>' + (ok(t.link) ? extLink(t.link, 'Listen') : '<span></span>') + '</div>';
     }).join('') : '') +

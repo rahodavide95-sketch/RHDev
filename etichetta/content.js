@@ -25,7 +25,7 @@ const SITE = {
     description: "Subconscious Culture è un'etichetta discografica indipendente dedicata alla musica elettronica d'avanguardia. Nata dall'esigenza di dare voce a suoni che vivono ai margini del mainstream, l'etichetta raccoglie artisti provenienti da tutta Europa accomunati da una visione sonora profonda e senza compromessi.",
 
     // Il testo About in inglese, mostrato in fondo al sito (traduzione di "description")
-    about: "SUBCONSCIOUS Culture is an independent record label devoted to avant-garde electronic music. Born from the need to give a voice to sounds living on the edges of the mainstream, the label brings together artists from all over Europe who share a deep, uncompromising sonic vision.",
+    about: "SUBCONSCIOUS Culture is an independent record label devoted to avant-garde electronic music.\nThe connection between music and the subconscious is profound and endlessly fascinating. Music has the power to evoke emotions and memories we’re often not fully aware of, shaping our mood and our behaviour on an unconscious, visceral level.\nFrom this idea, SUBCONSCIOUS Culture was born: a project that reflects Raho's artistic vision, his approach to music, and strongest personal values. \nWith SUBCONSCIOUS Culture, Raho want to create a space where music, art, and human sensitivity merge, giving voice to a powerful and meaningful context.\nIt is an independent project, built step by step, with the aim of shaping a vision that evolves every single day. \nDavide Raho",
 
     // Email principale
     email:     "subconscious.infoart@gmail.com",

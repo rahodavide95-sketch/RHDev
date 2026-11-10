@@ -296,11 +296,17 @@ P.about = function () {
   return '<div class="head"><h1 class="big">About</h1></div><div class="info">' +
     (LABEL.tagline ? '<p class="lead">' + esc(LABEL.tagline).replace(/\n/g, '<br>') + '</p>' : '') +
     /* ogni "a capo" del testo (\n in content.js) diventa un paragrafo, con una riga vuota tra uno e l'altro */
-    /* l'ultima riga è la firma: a destra, in corsivo, preceduta da un trattino */
+    /* l'ultima riga è la firma: a destra, in corsivo, preceduta da un trattino;
+       il testo sopra la firma sta tra virgolette, come una dichiarazione firmata */
     (LABEL.about ? '<div class="about-txt">' + (function (L) {
+      var n = L.length > 1 ? L.length - 1 : L.length;                       /* righe di testo, firma esclusa */
       return L.map(function (l, i) {
-        var sign = L.length > 1 && i === L.length - 1;
-        return sign ? '<p class="sign">— ' + mailify(l.replace(/^[-–—]\s*/, '')) + '</p>' : '<p>' + mailify(l) + '</p>';
+        if (i === n) return '<p class="sign">— ' + mailify(l.replace(/^[-–—]\s*/, '')) + '</p>';
+        if (n > 0 && L.length > 1) {
+          if (i === 0) l = '“' + l.replace(/^["“”]\s*/, '');
+          if (i === n - 1) l = l.replace(/\s*["“”]$/, '') + '”';
+        }
+        return '<p>' + mailify(l) + '</p>';
       }).join('');
     })(String(LABEL.about).split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean)) + '</div>' : '') + '</div>';
 };

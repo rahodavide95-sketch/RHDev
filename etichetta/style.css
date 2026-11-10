@@ -515,7 +515,7 @@ img { display: block; max-width: 100%; }
 .about-txt p { text-align: justify; text-wrap: pretty; -webkit-hyphens: auto; hyphens: auto; hyphenate-limit-chars: 8 4 3; }
 .about-txt p + p { margin-top: 1.8em; }
 /* la firma in fondo: a destra, in corsivo */
-.about-txt p.sign { text-align: right; font-family: var(--f-serif); font-style: italic; font-size: 22px; letter-spacing: 0; color: var(--fg); -webkit-hyphens: manual; hyphens: manual; }
+.about-txt p.sign { text-align: right; font-family: var(--f-serif); font-style: italic; font-size: 18px; letter-spacing: 0; color: var(--fg); -webkit-hyphens: manual; hyphens: manual; }
 /* telefono: un filo più piccolo, più parole per riga e spazi più regolari */
 @media (max-width: 720px) { .about-txt p { font-size: 15.5px; letter-spacing: -.005em; } }
 .faq { display: grid; margin: 0; max-width: 72ch; }

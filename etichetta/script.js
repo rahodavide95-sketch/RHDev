@@ -33,7 +33,15 @@ document.addEventListener('error', function (e) {
   var t = e.target;
   if (t && t.tagName === 'IMG') {
     var f = t.getAttribute('data-full');
-    if (f) { t.removeAttribute('data-full'); t.src = f; } else { t.style.visibility = 'hidden'; }
+    if (f) { t.removeAttribute('data-full'); t.src = f; return; }
+    /* foto non ancora caricata sul sito: al suo posto l'iniziale del nome */
+    var box = t.closest('.face, .person, .arthead'), name = box ? (box.querySelector('.fname, span:not(.av), .aname') || box).textContent.trim() : '';
+    if (name) {
+      var ph = document.createElement('span');
+      ph.className = t.classList.contains('av') ? 'av' : 'ph';
+      ph.textContent = name.charAt(0);
+      t.replaceWith(ph);
+    } else t.style.visibility = 'hidden';
   }
 }, true);
 
@@ -86,7 +94,7 @@ function relsOf(a) {
       r.tracks.some(function (t) { return String(t.artist || '').toLowerCase() === n; });
   }).sort(desc);
 }
-var PAGES = [['releases', 'Releases'], ['artists', 'Artists']];
+var PAGES = [['releases', 'Discography'], ['artists', 'Artists']];
 if (VIS.podcast) PAGES.push(['podcast', 'Podcast']);
 if (VIS.events)  PAGES.push(['events', 'Events']);
 if (VIS.merch)   PAGES.push(['store', 'Store']);
@@ -121,8 +129,8 @@ function extLink(u, label) { return '<a class="btn" href="' + esc(u) + '" target
 var P = {};
 P.home = function () {
   var L = REL.slice().sort(desc), up = L.filter(function (r) { return dz(r) < 0; }), out = L.filter(function (r) { return dz(r) >= 0; });
-  var show = up.concat(out.slice(0, 6)), rest = out.length - Math.min(6, out.length);
-  var faces = ART.filter(function (a) { return a.photo; }).slice(0, 12);
+  var show = L.slice(0, 5);                                     /* al massimo 5 uscite, poi il link alla discografia */
+  var faces = ART.filter(function (a) { return a.photo; }).slice(0, 9);   /* 3 righe da 3 */
   var extras = '';
   if (VIS.podcast && (S.podcast || []).length) extras += '<div>' + sec('Podcast', 'All episodes', 'podcast') + S.podcast.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.title) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
   if (VIS.events && (S.events || []).length)   extras += '<div>' + sec('Events', 'All dates', 'events') + S.events.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
@@ -138,10 +146,11 @@ P.home = function () {
         '<div class="row"><a class="cvbig" href="#/release/' + r.id + '" aria-label="Open ' + esc(r.t) + '">' + cover(r) + '</a><div class="side"><span class="depth">' + depthText(r) +
         '</span><div class="cta">' + listen(r, true) + '<a class="btn" href="#/release/' + r.id + '">Open release</a></div></div></div></section>';
     }).join('') +
-    (rest > 0 ? '<section class="deeper stop" data-pal="' + out[6].i + '" data-g="Deeper · ' + plural(rest, 'release') + '"><div class="meta"><b>Deeper</b><span>down to −' + dz(out[out.length - 1]) +
-      ' days</span></div><h2 class="big">' + plural(rest, 'more release') + ' below</h2><a class="btn pri" href="#/releases">Descend into the catalogue</a></section>' : '') +
+    (L.length ? '<section class="deeper stop" data-pal="' + (L[5] || L[L.length - 1]).i + '" data-g="Discography"><h2 class="big">Discography</h2>' +
+      '<p class="sub">' + plural(L.length, 'release') + '</p><a class="btn pri" href="#/releases">All Discography</a></section>' : '') +
     '<section class="bed stop" data-pal="bed" data-g="Artists">' +
-      (ART.length ? sec('Artists', 'All ' + plural(ART.length, 'artist'), 'artists') + '<div class="faces">' + faces.map(face).join('') + '</div>' : '') +
+      (ART.length ? '<h2 class="big bed-title">Artists</h2><div class="faces">' + faces.map(face).join('') + '</div>' +
+        '<div class="bed-more"><a class="btn" href="#/artists">All the artists</a></div>' : '') +
       (extras ? '<div class="three">' + extras + '</div>' : '') +
     '</section>';
 };
@@ -472,7 +481,7 @@ function navHtml(withHome) {
   if (!withHome) return navLinks(PAGES);
   /* menu del telefono: tutte le voci nello stesso formato, About · FAQ · Credits comprese */
   var main = PAGES.filter(function (p) { return p[0] !== 'contact'; }), contact = PAGES.filter(function (p) { return p[0] === 'contact'; });
-  return navLinks(main) +
+  return '<a href="#/" data-p="home">Home</a>' + navLinks(main) +
     SOON.map(function (s) { return '<a class="soon" aria-disabled="true">' + s[0] + '<small>soon</small></a>'; }).join('') +
     navLinks(contact.concat(INFO));
 }
@@ -532,6 +541,10 @@ function route() {
   });
 }
 window.addEventListener('hashchange', route);
+document.addEventListener('click', function (e) {
+  var a = e.target.closest && e.target.closest('a[href="#/"]');
+  if (a && st.page === 'home') window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+});
 menuBtn.addEventListener('click', function () { setSearch(false); setMenu(!menu.classList.contains('open')); });
 /* Su telefono la ricerca si apre dalla lente e si richiude da sola quando non serve più */
 var topEl = document.querySelector('.top'), searchBtn = $('searchBtn');
@@ -661,6 +674,10 @@ var ICON = {
 };
 $('footSocial').innerHTML = [['Instagram', LABEL.instagram, 'instagram'], ['SoundCloud', LABEL.soundcloud, 'soundcloud'], ['Bandcamp', LABEL.bandcamp, 'bandcamp'], ['Resident Advisor', LABEL.ra, 'ra']]
   .filter(function (s) { return ok(s[1]); }).map(function (s) { return '<a href="' + esc(s[1]) + '" target="_blank" rel="noopener" aria-label="' + s[0] + '" title="' + s[0] + '">' + ICON[s[2]] + '</a>'; }).join('');
-if (ok(LABEL.platforms)) $('footSocial').insertAdjacentHTML('beforeend', '<a class="plat" href="' + esc(LABEL.platforms) + '" target="_blank" rel="noopener">All our platforms</a>');
+if (ok(LABEL.platforms)) {
+  var plat = $('footPlat');
+  plat.href = LABEL.platforms; plat.hidden = false;
+  plat.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><path d="M2.75 12h18.5M12 2.75c2.6 2.6 3.9 5.7 3.9 9.25s-1.3 6.65-3.9 9.25M12 2.75C9.4 5.35 8.1 8.45 8.1 12s1.3 6.65 3.9 9.25"/></svg><span>All our platforms</span>';
+}
 route();
 })();

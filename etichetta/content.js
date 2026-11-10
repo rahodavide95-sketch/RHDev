@@ -24,6 +24,9 @@ const SITE = {
     // Il testo della sezione About (puoi usare \n per andare a capo)
     description: "Subconscious Culture è un'etichetta discografica indipendente dedicata alla musica elettronica d'avanguardia. Nata dall'esigenza di dare voce a suoni che vivono ai margini del mainstream, l'etichetta raccoglie artisti provenienti da tutta Europa accomunati da una visione sonora profonda e senza compromessi.",
 
+    // Il testo About in inglese, mostrato in fondo al sito (traduzione di "description")
+    about: "SUBCONSCIOUS Culture is an independent record label devoted to avant-garde electronic music. Born from the need to give a voice to sounds living on the edges of the mainstream, the label brings together artists from all over Europe who share a deep, uncompromising sonic vision.",
+
     // Email principale
     email:     "subconscious.infoart@gmail.com",
 
@@ -33,6 +36,24 @@ const SITE = {
     bandcamp:   "https://subconsciousculture26.bandcamp.com",
     ra:         "",   // Resident Advisor URL
   },
+
+  // ---- FAQ (in fondo al sito) --------------------------------
+  // q = domanda, a = risposta. Gli indirizzi email diventano link da soli.
+  // Per toglierne una cancella il suo blocco {…}; per aggiungerne una copiane uno.
+  faq: [
+    { q: "Where can I listen to the releases?", a: "Every release has a Listen button: it opens the release on all the main streaming and download platforms." },
+    { q: "How can I send a demo?",             a: "Write to subconscious.infoart@gmail.com with a link to your music." },
+    { q: "Booking and press?",                 a: "Same address: subconscious.infoart@gmail.com." },
+    { q: "Are the releases on vinyl?",         a: "For now every release is digital." },
+  ],
+
+  // ---- CREDITS (in fondo al sito) ----------------------------
+  // Una riga per voce. Il numero di uscite e di artisti si aggiunge da solo.
+  credits: [
+    "Founded and curated by Raho",
+    "Established 2026",
+    "Type: Bodoni Moda and Montserrat",
+  ],
 
   // ---- RELEASES -----------------------------------------------
   // Release singola/EP/album → catalog: "SSSCLTR001", "SSSCLTR002", ecc.

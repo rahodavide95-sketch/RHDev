@@ -298,6 +298,7 @@ function syncGauge() {
   stops = [].slice.call(pageEl.querySelectorAll('.stop')); syncPals();
   gItems = [].slice.call(pageEl.querySelectorAll('[data-g]'));
   gauge.className = 'gauge' + (st.page === 'artists' ? ' all' : '');
+  hapAct = null;
   gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); return '<button data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
   measure();
 }
@@ -331,19 +332,73 @@ function measure() {
   var a = bright(tgt[1]);
   if (a !== accStr) { accStr = a; document.documentElement.style.setProperty('--acc', a); }
   [].forEach.call(gauge.children, function (b, i) { b.setAttribute('aria-current', i === act ? 'true' : 'false'); });
+  site.classList.toggle('moved', window.scrollY > 8);
+  chapter(act);
   kick();
 }
 
 /* ------------------------------------------------------------ navigazione (indirizzi tipo #/release/sssc… ) */
 var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ------------------------------------------------------------ movimento morbido */
+/* Cambio pagina: la vecchia sfuma, la nuova affiora dal basso */
+var swapped = false, leaving = null;
+function swap(fn) {
+  if (!swapped || reduce || !pageEl.animate) { swapped = true; fn(); enter(); return; }
+  if (leaving) leaving.cancel();
+  var a = leaving = pageEl.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-6px)' }], { duration: 280, easing: 'ease-in', fill: 'forwards' });
+  a.onfinish = function () { if (leaving !== a) return; leaving = null; fn(); a.cancel(); enter(); };
+}
+function enter() {
+  if (reduce || !pageEl.animate) return;
+  pageEl.animate([{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { duration: 750, easing: 'cubic-bezier(.22,.61,.36,1)' });
+}
+/* Le immagini compaiono in dissolvenza quando sono pronte */
+document.addEventListener('load', function (e) { var t = e.target; if (t && t.tagName === 'IMG') t.classList.add('ld'); }, true);
+/* Ogni capitolo della Home affiora quando entra nello schermo */
+var revealIO = ('IntersectionObserver' in window) && !reduce ? new IntersectionObserver(function (es) {
+  es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); revealIO.unobserve(e.target); } });
+}, { threshold: .18 }) : null;
+
+/* ------------------------------------------------------------ vibrazione: un tocco leggerissimo a ogni capitolo della Home */
+var touchy = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+var hapAct = null, hapT = 0, hapSw = null;
+function buzz() {
+  var t = Date.now();
+  if (!touchy || t - hapT < 120) return;
+  hapT = t;
+  if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} return; }
+  /* iPhone: Safari non lascia vibrare il telefono, ma un interruttore nativo (iOS 17.4+) dà un piccolo tocco quando cambia */
+  if (!hapSw) {
+    hapSw = document.createElement('label');
+    hapSw.className = 'haptic'; hapSw.setAttribute('aria-hidden', 'true');
+    hapSw.innerHTML = '<input type="checkbox" switch tabindex="-1">';
+    document.body.appendChild(hapSw);
+  }
+  hapSw.click();
+  hapSw.firstChild.blur();
+}
+function chapter(act) {
+  if (st.page !== 'home' || hapAct === null) { hapAct = act; return; }
+  if (act !== hapAct) { hapAct = act; buzz(); }
+}
 var TITLES = { home: '', releases: 'Releases', artists: 'Artists', podcast: 'Podcast', events: 'Events', store: 'Store', contact: 'Contact', search: 'Search' };
 function navHtml(withHome) {
   return (withHome ? '<a href="#/" data-p="home">Surface</a>' : '') + PAGES.map(function (p) { return '<a href="#/' + p[0] + '" data-p="' + p[0] + '">' + p[1] + '</a>'; }).join('');
 }
-function setMenu(open) { menu.hidden = !open; menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Menu'); }
+var menuT = 0;
+function setMenu(open) {
+  menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Menu');
+  clearTimeout(menuT);
+  if (open) { menu.hidden = false; void menu.offsetWidth; menu.classList.add('open'); }
+  else if (!menu.hidden) { menu.classList.remove('open'); menuT = setTimeout(function () { menu.hidden = true; }, reduce ? 0 : 500); }
+}
 function render(keep) {
   site.setAttribute('data-page', st.page);
+  document.documentElement.classList.toggle('chapters', st.page === 'home');
   pageEl.innerHTML = P[st.page]();
+  [].forEach.call(pageEl.querySelectorAll('img'), function (im) { if (im.complete && im.naturalWidth) im.classList.add('ld'); });
+  if (revealIO) [].forEach.call(pageEl.querySelectorAll('.layer, .deeper, .bed'), function (s) { s.classList.add('rv'); revealIO.observe(s); });
   var topP = st.page === 'release' ? 'releases' : st.page === 'artist' ? 'artists' : st.page;
   [].forEach.call(document.querySelectorAll('.links a, .menu a'), function (b) { b.setAttribute('aria-current', b.getAttribute('data-p') === topP ? 'true' : 'false'); });
   var name = st.page === 'release' ? relById(st.arg).t : st.page === 'artist' ? artById(st.arg).n : TITLES[st.page];
@@ -362,13 +417,15 @@ function route() {
   if (!allowed || !P[p]) p = 'home';
   st.page = p; st.arg = arg; st.gq = ''; $('q').value = '';
   setMenu(false); setSearch(false);
-  var smooth = document.documentElement.style.scrollBehavior;
-  document.documentElement.style.scrollBehavior = 'auto';
-  render();
-  document.documentElement.style.scrollBehavior = smooth;
+  swap(function () {
+    var smooth = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = 'auto';
+    render();
+    document.documentElement.style.scrollBehavior = smooth;
+  });
 }
 window.addEventListener('hashchange', route);
-menuBtn.addEventListener('click', function () { setSearch(false); setMenu(menu.hidden); });
+menuBtn.addEventListener('click', function () { setSearch(false); setMenu(!menu.classList.contains('open')); });
 /* Su telefono la ricerca si apre dalla lente e si richiude da sola quando non serve più */
 var topEl = document.querySelector('.top'), searchBtn = $('searchBtn');
 function setSearch(open) {
@@ -466,6 +523,17 @@ document.addEventListener('visibilitychange', kick);
 $('links').innerHTML = navHtml(false);
 menu.innerHTML = navHtml(true);
 $('footCopy').innerHTML = '© ' + (LABEL.foundedYear && +LABEL.foundedYear < now.getFullYear() ? LABEL.foundedYear + '–' : '') + now.getFullYear() + ' <span class="nm">SUBCONSCIOUS Culture</span>';
+(function () {
+  var mail = function (t) { return esc(t).replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, function (m) { return '<a href="mailto:' + m + '">' + m + '</a>'; }); };
+  var cols = [], about = LABEL.about || LABEL.tagline || '';
+  $('footClaim').textContent = (LABEL.tagline || '').split('\n')[0];
+  if (about) cols.push(['About', '<p>' + mail(about).replace(/\n/g, '<br>') + '</p>']);
+  var faq = (S.faq || []).filter(function (f) { return f && f.q && f.a; });
+  if (faq.length) cols.push(['FAQ', '<dl>' + faq.map(function (f) { return '<div><dt>' + esc(f.q) + '</dt><dd>' + mail(f.a) + '</dd></div>'; }).join('') + '</dl>']);
+  var credits = (S.credits || []).filter(Boolean).concat([plural(REL.length, 'release') + ' · ' + plural(ART.length, 'artist')]);
+  cols.push(['Credits', '<ul>' + credits.map(function (c) { return '<li>' + mail(c) + '</li>'; }).join('') + '</ul>']);
+  $('footGrid').innerHTML = cols.map(function (c) { return '<section class="fcol"><h2>' + c[0] + '</h2>' + c[1] + '</section>'; }).join('');
+})();
 $('footSocial').innerHTML = [['Instagram', LABEL.instagram], ['SoundCloud', LABEL.soundcloud], ['Bandcamp', LABEL.bandcamp], ['Resident Advisor', LABEL.ra]]
   .filter(function (s) { return ok(s[1]); }).map(function (s) { return '<a href="' + esc(s[1]) + '" target="_blank" rel="noopener">' + s[0] + '</a>'; }).join('');
 route();

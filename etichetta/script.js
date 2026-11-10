@@ -141,7 +141,7 @@ P.home = function () {
     show.map(function (r) {
       var d = dz(r);
       return '<section class="layer stop" data-pal="' + r.i + '" data-g="' + (d < 0 ? '+' + (-d) : '−' + d) + ' d · ' + esc(r.t) + '">' +
-        '<div class="meta"><span>' + esc(r.c) + '</span><span>' + esc(r.d) + '</span><span>' + r.kind + '</span>' + (d < 0 ? '<span class="up">Upcoming</span>' : '') + '</div>' +
+        '<div class="meta"><span>' + esc(r.c) + '</span><span>' + esc(r.d) + '</span><span>' + r.kind + '</span>' + (d < 0 ? '<i class="br"></i><span class="up">Upcoming</span>' : '') + '</div>' +
         '<h2 class="big"><a href="#/release/' + r.id + '">' + esc(r.t) + '</a></h2><div class="by">' + esc(r.a) + '</div>' +
         '<div class="row"><a class="cvbig" href="#/release/' + r.id + '" aria-label="Open ' + esc(r.t) + '">' + cover(r) + '</a><div class="side"><div class="cta">' + listen(r, true) + '<a class="btn" href="#/release/' + r.id + '">Open release</a></div></div></div></section>';
     }).join('') +
@@ -208,7 +208,7 @@ P.release = function () {
   var r = relById(st.arg), d = dz(r), L = REL.slice().sort(desc), i = L.indexOf(r), above = L[i - 1], below = L[i + 1];
   var tracks = r.tracks.filter(function (t) { return t && t.title; });
   return '<a class="back" href="#/releases">All releases</a><section class="rel">' +
-    '<div class="meta"><span>' + esc(r.c) + '</span><span>' + esc(r.d) + '</span><span>' + r.kind + (r.fmt ? ' · ' + esc(r.fmt) : '') + '</span>' + (d < 0 ? '<span class="up">Upcoming</span>' : '') + '</div>' +
+    '<div class="meta"><span>' + esc(r.c) + '</span><span>' + esc(r.d) + '</span><span>' + r.kind + (r.fmt ? ' · ' + esc(r.fmt) : '') + '</span>' + (d < 0 ? '<i class="br"></i><span class="up">Upcoming</span>' : '') + '</div>' +
     '<h1 class="big">' + esc(r.t) + '</h1><div class="by">' + (r.names.length || r.k === 'va' ? esc(r.a) : artLink(r.a)) + '</div>' +
     (r.names.length ? '<div class="vaa">' + r.names.map(function (n) { return artLink(String(n)); }).join('') + '</div>' : '') +
     '<div class="row"><span class="cvbig">' + cover(r) + '</span><div class="side"><span class="depth">' + depthText(r) + '</span><div class="cta">' + listen(r, true) + '</div></div></div></section>' +

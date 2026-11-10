@@ -584,6 +584,12 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
   .fbtn { padding: 7px 11px; font-size: 10px; letter-spacing: .08em; }
 }
 
+/* Ricerca, Filters e vista: tutti della stessa altezza */
+.tools.bar { align-items: stretch; }
+.tools.bar .in, .tools.bar .fbtn, .tools.bar .view .chip { box-sizing: border-box; height: 40px; }
+.tools.bar .in { padding-block: 0; }
+.tools.bar .fbtn, .tools.bar .view .chip { display: inline-flex; align-items: center; justify-content: center; padding-block: 0; }
+
 /* Telefono e tablet: testo dei campi a 16 px, così iPhone non ingrandisce la pagina quando si scrive */
 @media (max-width: 980px), (hover: none) and (pointer: coarse) {
   .in, .sel, .search { font-size: 16px; }

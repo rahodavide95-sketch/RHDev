@@ -134,7 +134,7 @@ P.home = function () {
   if (VIS.podcast && (S.podcast || []).length) extras += '<div>' + sec('Podcast', 'All episodes', 'podcast') + S.podcast.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.title) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
   if (VIS.events && (S.events || []).length)   extras += '<div>' + sec('Events', 'All dates', 'events') + S.events.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
   if (VIS.merch && (S.merch || []).length)     extras += '<div>' + sec('Store', 'Open store', 'store') + S.merch.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.price || '') + '</span></div>'; }).join('') + '</div>';
-  return '<section class="hero stop" data-pal="mono" data-g="Surface"><div class="lockup"><img src="images/logo.png" alt="" width="200" height="200"><h1><span><b>SUBCONSCIOUS</b></span> <span>Culture</span></h1></div>' +
+  return '<section class="hero stop" data-pal="mono" data-g="Surface"><div class="lockup"><img src="images/logo-640.png" alt="" width="200" height="200" decoding="async" fetchpriority="high"><h1><span><b>SUBCONSCIOUS</b></span> <span>Culture</span></h1></div>' +
     (LABEL.tagline ? '<p class="sh">' + LABEL.tagline.split('\n').map(function (l) { return '<span class="tl">' + esc(l) + '</span>'; }).join('') + '</p>' : '') +
     '<div class="hint"><i></i><span class="hl"><span class="tl">Scroll to descend</span><span class="tl">Depth is measured in days since release</span></span></div></section>' +
     show.map(function (r) {
@@ -333,7 +333,7 @@ P.search = function () {
 function extract(im) {
   try {
     var N = 24, c = document.createElement('canvas'); c.width = c.height = N;
-    var x = c.getContext('2d'); x.drawImage(im, 0, 0, N, N);
+    var x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0, N, N);   /* lettura dei pixel senza bloccare la grafica */
     var d = x.getImageData(0, 0, N, N).data, px = [];
     for (var i = 0; i < d.length; i += 4) {
       var r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255;
@@ -353,11 +353,31 @@ function extract(im) {
     return [dark, mid, light];
   } catch (e) { return null; }
 }
+/* i colori si calcolano una copertina alla volta, nei momenti in cui il telefono è libero:
+   al primo avvio arrivano tante copertine insieme e farlo subito bloccava l'animazione */
+var palQ = [], palBusy = false;
+var idle = window.requestIdleCallback ? function (f) { requestIdleCallback(f, { timeout: 700 }); } : function (f) { setTimeout(f, 80); };
+function palNext() {
+  var job = palQ.shift();
+  function next() { if (palQ.length) idle(palNext); else palBusy = false; }
+  if (!job || job[0].pal) return next();
+  /* la copertina (già scaricata) si fa decodificare e rimpicciolire dal browser in secondo piano,
+     poi si leggono i colori dalla versione minuscola: così il telefono non si blocca */
+  var t = job[1], src = t.currentSrc || t.src;
+  var small = (window.createImageBitmap && window.fetch)
+    ? fetch(src).then(function (r) { return r.blob(); }).then(function (bl) { return createImageBitmap(bl, { resizeWidth: 24, resizeHeight: 24, resizeQuality: 'low' }); })
+    : Promise.reject();
+  small.catch(function () { return t; }).then(function (im) { idle(function () {
+    if (!job[0].pal) { job[0].pal = extract(im) || MONO; syncPals(); measure(); }
+    if (im.close) im.close();
+    next();
+  }); });
+}
 document.addEventListener('load', function (e) {
   var t = e.target;
   if (!t || t.tagName !== 'IMG' || !t.hasAttribute('data-rid')) return;
   var r = REL[+t.getAttribute('data-rid')];
-  if (r && !r.pal) { r.pal = extract(t) || MONO; syncPals(); measure(); }
+  if (r && !r.pal) { palQ.push([r, t]); if (!palBusy) { palBusy = true; idle(palNext); } }
 }, true);
 
 /* ------------------------------------------------------------ misuratore + colore del fluido */
@@ -406,9 +426,11 @@ function measure() {
     base = p || MONO;
   }
   tgt = (hoverRel && hoverRel.pal) || base;
-  var a = bright(tgt[1]);
+  /* il colore d'accento (variabile di tutta la pagina) cambia solo quando cambia il capitolo:
+     aggiornarlo a ogni pixel di scorrimento costringeva il telefono a ricalcolare tutto lo stile */
+  var a = bright(((hoverRel && hoverRel.pal) || (stops.length && act >= 0 && stopPals[act]) || base)[1]);
   if (a !== accStr) { accStr = a; document.documentElement.style.setProperty('--acc', a); }
-  [].forEach.call(gauge.children, function (b, i) { b.setAttribute('aria-current', i === act ? 'true' : 'false'); });
+  [].forEach.call(gauge.children, function (b, i) { var v = i === act ? 'true' : 'false'; if (b.getAttribute('aria-current') !== v) b.setAttribute('aria-current', v); });
   site.classList.toggle('moved', sy > 8);
   site.classList.toggle('in-rel', act >= 0 && !!gItems[act] && gItems[act].classList.contains('layer'));
   chapter(act);
@@ -562,8 +584,19 @@ function fitLines(p, min) {
   if (size >= min) p.style.fontSize = size + 'px'; else p.classList.add('wrap');
 }
 function fitTag() {
-  fitLines(pageEl.querySelector('.hero .sh'), 11.5);
-  fitLines(pageEl.querySelector('.hero .hl'), 9.5);
+  /* prima si azzerano entrambe le righe, poi si misura tutto, poi si scrive: un solo ricalcolo della pagina */
+  var L = [[pageEl.querySelector('.hero .sh'), 11.5], [pageEl.querySelector('.hero .hl'), 9.5]].filter(function (x) { return x[0]; });
+  L.forEach(function (x) { x[0].classList.remove('wrap'); x[0].style.fontSize = ''; });
+  L.map(function (x) {
+    var p = x[0], hero = p.closest('.hero'), cs = getComputedStyle(hero);
+    var avail = hero.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    return [p, x[1], avail, parseFloat(getComputedStyle(p).fontSize), p.scrollWidth];
+  }).forEach(function (m) {
+    var p = m[0], min = m[1], avail = m[2], base = m[3], widest = m[4];
+    if (!widest || widest <= avail) return;
+    var size = Math.floor(base * avail / widest * 10) / 10;
+    if (size >= min) p.style.fontSize = size + 'px'; else p.classList.add('wrap');
+  });
 }
 function render(keep) {
   site.setAttribute('data-page', st.page);
@@ -688,16 +721,25 @@ var G = (function () {
 })();
 var t0 = performance.now(), mouse = [.5, .5], mt = [.5, .5];
 window.addEventListener('pointermove', function (e) { mt = [e.clientX / window.innerWidth, 1 - e.clientY / window.innerHeight]; }, { passive: true });
-function frame() {
+/* su telefono e tablet il fluido si ridisegna al massimo ~30 volte al secondo: si muove piano e la
+   differenza non si vede, ma la scheda grafica resta libera e lo scorrimento non ha scatti.
+   Le sfumature di colore sono legate al tempo, non ai fotogrammi: durano uguale. */
+var lastDraw = 0, minGap = touchy ? 30 : 0;
+function frame(now) {
   raf = 0;
   if (!G) return;
+  now = now || performance.now();
+  if (minGap && lastDraw && now - lastDraw < minGap) { if (!document.hidden) raf = requestAnimationFrame(frame); return; }
+  var steps = lastDraw ? Math.min(4, (now - lastDraw) / 16.67) : 1; lastDraw = now;
+  var ease = function (f) { return reduce ? 1 : 1 - Math.pow(1 - f, steps); };
   var moving = Math.abs(dim - dimT) > .004, i, k;
   for (i = 0; i < 3; i++) {
     for (k = 0; k < 3; k++) if (Math.abs(cur[i][k] - tgt[i][k]) > .004) moving = true;
-    cur[i] = mix(cur[i], tgt[i], reduce ? 1 : .08);
+    cur[i] = mix(cur[i], tgt[i], ease(.08));
   }
-  dim += (dimT - dim) * (reduce ? 1 : .08);
-  mouse = [mouse[0] + (mt[0] - mouse[0]) * .06, mouse[1] + (mt[1] - mouse[1]) * .06];
+  dim += (dimT - dim) * ease(.08);
+  var em = 1 - Math.pow(1 - .06, steps);
+  mouse = [mouse[0] + (mt[0] - mouse[0]) * em, mouse[1] + (mt[1] - mouse[1]) * em];
   /* il fluido è morbido: si disegna a bassa risoluzione, con un tetto di pixel per i telefoni */
   var cw = canvas.clientWidth, ch = canvas.clientHeight, sc = Math.min(.55, Math.sqrt(320000 / Math.max(1, cw * ch)));
   var w = Math.max(2, Math.round(cw * sc)), h = Math.max(2, Math.round(ch * sc)), gl = G.gl;
@@ -711,9 +753,14 @@ function frame() {
   if (!document.hidden && (!reduce || moving)) raf = requestAnimationFrame(frame);
 }
 function kick() { if (!raf) raf = requestAnimationFrame(frame); }
-window.addEventListener('scroll', measure, { passive: true });
-window.addEventListener('resize', measure);
-window.addEventListener('resize', fitTag);
+var measureQ = 0;
+function measureSoon() { if (!measureQ) measureQ = requestAnimationFrame(function () { measureQ = 0; measure(); }); }
+window.addEventListener('scroll', measureSoon, { passive: true });
+window.addEventListener('resize', measureSoon);
+/* le righe del titolo dipendono solo dalla larghezza: su iPhone la barra di Safari che si chiude
+   cambia solo l'altezza, e non deve far rifare i calcoli del testo */
+var fitW = window.innerWidth;
+window.addEventListener('resize', function () { if (window.innerWidth !== fitW) { fitW = window.innerWidth; fitTag(); } });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTag);
 document.addEventListener('visibilitychange', kick);
 

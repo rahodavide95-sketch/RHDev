@@ -122,7 +122,7 @@ const SITE = {
       link:    "https://www.submithub.com/link/somnia-i-va-subconscious-culture",
       // ARTISTI DELLA COMPILATION: scrivi qui i nomi, tra virgolette e separati da virgola
       // es. artists: [ "Raho", "Jacom", "Pøl" ],
-      artists: [ "Daryn Steytler", "Egotot", "FALN", "Jack Fresia", "Vita", "Jacom", "Kevin Ferhati", "Pøl", "Raho", "Rhythm Assembler", "Zimer" ],
+      artists: [ "Daryn Steytler", "Egotot", "FALN", "Jack Fresia feat. VITA", "Jacom", "Kevin Ferhati", "Pøl", "Raho", "Rhythm Assembler", "Zimer" ],
     },
     {
       artist:  "Various Artists",
@@ -212,15 +212,7 @@ const SITE = {
   soundcloud: "#",
 },
 {
-  name:       "Jack Fresia",
-  origin:     "Città, Paese",
-  bio:        "Breve descrizione dell'artista.",
-  photo:      "images/artists/jack-fresia.jpg",
-  instagram:  "#",
-  soundcloud: "#",
-},
-{
-  name:       "VITA / Peramore",
+  name:       "Jack Fresia feat. VITA",
   origin:     "Città, Paese",
   bio:        "Breve descrizione dell'artista.",
   photo:      "images/artists/jack-fresia.jpg",

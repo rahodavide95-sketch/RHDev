@@ -130,7 +130,7 @@ var P = {};
 P.home = function () {
   var L = REL.slice().sort(desc), up = L.filter(function (r) { return dz(r) < 0; }), out = L.filter(function (r) { return dz(r) >= 0; });
   var show = L.slice(0, 5);                                     /* al massimo 5 uscite, poi il link alla discografia */
-  var faces = ART.filter(function (a) { return a.photo; }).slice(0, desk ? 10 : 9);   /* telefono: 3 righe da 3 · computer: 2 righe da 5 */
+  var faces = ART.filter(function (a) { return a.photo; }).slice(0, wide ? 10 : 9);   /* telefono: 3 righe da 3 · computer e tablet: 2 righe da 5 */
   var extras = '';
   if (VIS.podcast && (S.podcast || []).length) extras += '<div>' + sec('Podcast', 'All episodes', 'podcast') + S.podcast.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.title) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
   if (VIS.events && (S.events || []).length)   extras += '<div>' + sec('Events', 'All dates', 'events') + S.events.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
@@ -397,7 +397,7 @@ function syncGauge() {
   gItems = [].slice.call(pageEl.querySelectorAll('[data-g]'));
   gauge.className = 'gauge' + (st.page === 'artists' ? ' all' : '');
   hapAct = null;
-  gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); if (desk || isIPad) l = l.replace(/^[+−-]?\d+ d · /, ''); return '<button' + (e.classList.contains('layer') ? ' class="r"' : '') + ' data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
+  gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); if (wide || isIPad) l = l.replace(/^[+−-]?\d+ d · /, ''); return '<button' + (e.classList.contains('layer') ? ' class="r"' : '') + ' data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
   measure();
 }
 gauge.addEventListener('click', function (e) {
@@ -437,7 +437,7 @@ function measure() {
   [].forEach.call(gauge.children, function (b, i) { var v = i === act ? 'true' : 'false'; if (b.getAttribute('aria-current') !== v) b.setAttribute('aria-current', v); });
   site.classList.toggle('moved', sy > 8);
   /* computer: arrivati all'ultima sezione (in Home gli Artisti, altrove la barra in fondo) il misuratore sparisce */
-  if (desk) {
+  if (wide) {
     var ft = footEl ? footEl.getBoundingClientRect().top : 1e9;
     site.classList.toggle('at-end', ft < window.innerHeight * .9 || (st.page === 'home' && gItems.length > 1 && act === gItems.length - 1));
   }
@@ -473,6 +473,9 @@ var revealIO = ('IntersectionObserver' in window) && !reduce ? new IntersectionO
 var touchy = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 /* computer (schermo largo e mouse): le stesse condizioni delle regole "Computer" in style.css */
 var desk = window.matchMedia('(min-width: 981px) and (hover: hover) and (pointer: fine)').matches;
+/* tablet: stesso disegno del computer (blocco "Computer e tablet" in style.css), ma con il tocco */
+var tablet = window.matchMedia('(min-width: 700px) and (min-height: 600px) and (hover: none) and (pointer: coarse)').matches;
+var wide = desk || tablet;
 
 /* ------------------------------------------------------------ capitoli alti quanto quello che si vede davvero
    Su iPhone (Safari recente) la pagina si vede anche sotto la barra degli indirizzi, oltre l'altezza "100lvh":

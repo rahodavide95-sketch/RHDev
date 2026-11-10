@@ -91,7 +91,7 @@ img { display: block; max-width: 100%; }
 .search:focus { text-align: left; background: rgba(244,241,234,.1); border-color: rgba(244,241,234,.3); outline: none; }
 .search-btn, .menu-btn { display: none; width: 40px; height: 40px; place-items: center; border-radius: 0; color: var(--fg); }
 .search-btn { color: var(--dim); }
-.search-btn[aria-expanded="true"] { color: var(--fg); background: rgba(244,241,234,.1); }
+.search-btn[aria-expanded="true"] { color: var(--fg); }   /* attiva: la lente si illumina, senza riquadro */
 .menu-btn path { transform-box: fill-box; transform-origin: center; transition: transform .6s cubic-bezier(.22,.61,.36,1); }
 .menu-btn[aria-expanded="true"] .b1 { transform: translate(-3px, 4px) rotate(90deg) scaleX(.8); }
 .menu-btn[aria-expanded="true"] .b2 { transform: translate(3px, -4px) rotate(90deg) scaleX(.8); }
@@ -109,10 +109,15 @@ img { display: block; max-width: 100%; }
   .search {
     flex: 1 1 0; min-width: 0; max-width: 0; font-size: 16px; text-align: left;
     padding: 10px 0; opacity: 0; visibility: hidden; border-width: 0;
-    transition: max-width .55s cubic-bezier(.22,.61,.36,1), padding .55s ease, opacity .4s ease, visibility 0s linear .55s, background .25s, border-color .25s;
+    transition: max-width .55s cubic-bezier(.22,.61,.36,1), padding .55s ease, margin .55s ease, opacity .4s ease, visibility 0s linear .55s, background .25s, border-color .25s;
   }
   /* aprendo, il campo diventa subito attivo (così si può scrivere) e poi si allarga in dissolvenza */
-  .top.searching .search { max-width: 100%; padding-inline: 16px; opacity: 1; visibility: visible; border-width: 1px; transition-delay: 0s; }
+  .top.searching .search { max-width: 100%; padding-inline: 12px; opacity: 1; visibility: visible; border-width: 1px; transition-delay: 0s; }
+  /* barra della ricerca in proporzione con logo e icone */
+  .search { box-sizing: border-box; height: 34px; padding-block: 0; margin-inline: 0; }
+  /* aperta, la barra si stacca dal logo e dalla lente */
+  .top.searching .search { margin-left: 16px; margin-right: 6px; }
+  .top.searching .search, .top.searching .search:focus { background: rgba(244,241,234,.06); border-color: rgba(244,241,234,.2); }
 }
 @media (max-width: 480px) {
   .brand { gap: 8px; }
@@ -202,6 +207,14 @@ img { display: block; max-width: 100%; }
   .bed .face, .faces.all .face { font-size: 12px; letter-spacing: .02em; }
   /* Home su telefono: il capitolo degli artisti parte subito sotto la barra in alto */
   .site[data-page="home"] .bed { padding-top: 18px; }
+  /* titolo, 9 foto e pulsante "All the artists" stanno in una schermata: foto quadrate,
+     grandi quanto l'altezza dello schermo permette */
+  .site[data-page="home"] .bed .faces { gap: 12px 10px; }
+  .site[data-page="home"] .bed .face { width: min(calc((100% - 20px) / 3), calc((100vh - 390px) / 3)); gap: 6px; font-size: 11px; line-height: 1.25; }
+  .site[data-page="home"] .bed .face { width: min(calc((100% - 20px) / 3), calc((100svh - 390px) / 3)); }
+  .site[data-page="home"] .bed .face img, .site[data-page="home"] .bed .face .ph { aspect-ratio: 1 / 1; }
+  .site[data-page="home"] .bed-title { font-size: 44px; margin-bottom: 14px; }
+  .site[data-page="home"] .bed-more { margin-top: 18px; }
 }
 
 /* Il nome dell'etichetta: sempre in grassetto, SUBCONSCIOUS maiuscolo e Culture normale */
@@ -239,10 +252,11 @@ img { display: block; max-width: 100%; }
 /* ---------- Home: la discesa ---------- */
 .hero {
   min-height: calc(100vh - var(--head-h));
-  min-height: calc(100svh - var(--head-h));
+  min-height: calc(100lvh - var(--head-h));   /* alta quanto lo schermo più grande: anche a barre del browser nascoste non si vede nulla sotto */
   display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 24px;
   text-align: center;
   padding-block: 40px;
+  padding-bottom: calc(40px + 100lvh - 100svh);
   /* centrata sullo schermo: annulla lo spazio lasciato a sinistra per il misuratore */
   margin-left: calc(-1 * var(--pl, 0px));
   padding-inline: 34px;
@@ -527,9 +541,32 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
   html.chapters .stop { scroll-snap-align: start; scroll-snap-stop: always; }
   html.chapters .hero,
   html.chapters .layer,
-  html.chapters .deeper { min-height: calc(100svh - var(--head-h)); padding-block: 24px; }
+  html.chapters .deeper { min-height: calc(100vh - var(--head-h)); min-height: calc(100lvh - var(--head-h)); padding-block: 24px; }
+  /* lo spazio in più (barre del browser) va in fondo: il contenuto resta centrato nella parte sempre visibile */
+  html.chapters .hero,
+  html.chapters .layer,
+  html.chapters .deeper { padding-bottom: calc(24px + 100lvh - 100svh); }
+  /* ogni capitolo è alto almeno quanto lo schermo più grande possibile (barre del browser nascoste):
+     così il capitolo successivo non si affaccia mai in fondo, su qualsiasi telefono e browser */
+  html.chapters .bed { min-height: calc(100vh - var(--head-h)); min-height: calc(100lvh - var(--head-h)); }
   html.chapters .foot { scroll-snap-align: end; }
 }
+
+/* Telefoni stretti (320 px) e bassi: tutto più compatto, così ogni capitolo sta nello schermo */
+@media (max-width: 360px) {
+  .cvbig { width: clamp(110px, min(76vw, calc(100vh - var(--head-h) - 430px)), 320px); }
+  .cvbig { width: clamp(110px, min(76vw, calc(100svh - var(--head-h) - 430px)), 320px); }
+  .layer h2 { font-size: 44px; }
+  .layer { gap: 12px; }
+}
+@media (max-height: 600px) {
+  .lockup img { width: 84px; }
+  .hero { gap: 16px; }
+  .hero .hint { margin-top: 18px; }
+  .hero h1 { line-height: .95; }
+}
+/* menu aperto: la pagina sotto resta ferma, scorre solo il menu se serve */
+.menu { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 
 /* ---------- Ricerca, Filtri e vista sulla stessa riga ---------- */
 .tools.bar { flex-wrap: nowrap; gap: 8px; margin-bottom: 4px; }

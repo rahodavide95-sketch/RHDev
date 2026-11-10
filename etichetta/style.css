@@ -69,8 +69,6 @@ img { display: block; max-width: 100%; }
 }
 .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; white-space: nowrap; justify-self: start; }
 .brand img { width: 36px; height: 36px; }
-.wordmark { font-size: 16px; font-weight: 600; letter-spacing: .02em; }
-.wordmark b { font-weight: 600; letter-spacing: .06em; }
 .links { display: flex; gap: 2px; justify-self: end; }
 .links a {
   padding: 8px 11px;
@@ -115,21 +113,13 @@ img { display: block; max-width: 100%; }
   }
   /* aprendo, il campo diventa subito attivo (così si può scrivere) e poi si allarga in dissolvenza */
   .top.searching .search { max-width: 100%; padding-inline: 16px; opacity: 1; visibility: visible; border-width: 1px; transition-delay: 0s; }
-  .wordmark { display: inline-block; max-width: 70vw; overflow: hidden; transition: opacity .35s ease, max-width .55s cubic-bezier(.22,.61,.36,1); }
-  .top.searching .wordmark { opacity: 0; max-width: 0; }
-  /* sull'apertura della Home in alto resta solo il logo: il nome compare appena si scorre */
-  .site[data-page="home"]:not(.moved) .wordmark { opacity: 0; }
-  .wordmark { transition: opacity .6s ease, max-width .55s cubic-bezier(.22,.61,.36,1); }
 }
 @media (max-width: 480px) {
   .brand { gap: 8px; }
   .brand img { width: 32px; height: 32px; }
-  .wordmark { font-size: 13px; }
-  .wordmark b { letter-spacing: .03em; }
   .top-in { column-gap: 2px; }
   .search-btn, .menu-btn { width: 38px; height: 38px; }
 }
-@media (max-width: 370px) { .wordmark { display: none; } }
 
 .menu {
   position: fixed; inset: 0; z-index: 29;
@@ -460,7 +450,7 @@ img { display: block; max-width: 100%; }
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 26px 48px;
   padding: clamp(28px, 4vw, 44px) clamp(20px, 4vw, 48px);
 }
-.foot-links { flex-basis: 100%; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.foot-links { flex-basis: 100%; display: flex; flex-direction: column; align-items: center; gap: 18px; padding-top: 24px; border-top: 1px solid var(--line); }
 .foot-copy { flex-basis: 100%; padding-top: 22px; border-top: 1px solid var(--line); text-align: center; font-size: 12px; letter-spacing: .08em; color: var(--dim); }
 .foot-brand { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; font-size: 15px; letter-spacing: .02em; text-decoration: none; }
 .foot-brand img { flex: none; width: 44px; height: 44px; }

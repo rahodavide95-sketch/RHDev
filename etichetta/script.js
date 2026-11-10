@@ -385,7 +385,7 @@ function buzz() {
   var t = Date.now();
   if (!touchy || t - hapT < 120) return;
   hapT = t;
-  if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} return; }
+  if (navigator.vibrate) { try { navigator.vibrate(20); } catch (e) {} return; }
   /* iPhone: Safari non lascia vibrare il telefono, ma un interruttore nativo (iOS 17.4+) dà un piccolo tocco quando cambia */
   if (!hapSw) {
     hapSw = document.createElement('label');

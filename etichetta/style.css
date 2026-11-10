@@ -200,6 +200,8 @@ img { display: block; max-width: 100%; }
   /* Artisti in fondo alla Home: centrati */
   .bed .sec { flex-direction: column; align-items: center; text-align: center; gap: 8px; }
   .bed .face, .faces.all .face { font-size: 12px; letter-spacing: .02em; }
+  /* Home su telefono: il capitolo degli artisti parte subito sotto la barra in alto */
+  .site[data-page="home"] .bed { padding-top: 18px; }
 }
 
 /* Il nome dell'etichetta: sempre in grassetto, SUBCONSCIOUS maiuscolo e Culture normale */

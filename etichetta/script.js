@@ -137,7 +137,7 @@ P.home = function () {
   if (VIS.merch && (S.merch || []).length)     extras += '<div>' + sec('Store', 'Open store', 'store') + S.merch.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.price || '') + '</span></div>'; }).join('') + '</div>';
   return '<section class="hero stop" data-pal="mono" data-g="Surface"><div class="lockup"><img src="images/logo-640.png" alt="" width="200" height="200" decoding="async" fetchpriority="high"><h1><span><b>SUBCONSCIOUS</b></span> <span>Culture</span></h1></div>' +
     (LABEL.tagline ? '<p class="sh">' + LABEL.tagline.split('\n').map(function (l) { return '<span class="tl">' + esc(l) + '</span>'; }).join('') + '</p>' : '') +
-    '<div class="hint"><i></i><span class="hl"><span class="tl">Scroll to descend</span><span class="tl">Dive into the subconscious</span></span></div></section>' +
+    '<div class="hint"><i></i><span class="hl"><span class="tl">Scroll to descend</span><span class="tl">Enter the subconscious</span></span></div></section>' +
     show.map(function (r) {
       var d = dz(r);
       return '<section class="layer stop" data-pal="' + r.i + '" data-g="' + (d < 0 ? '+' + (-d) : '−' + d) + ' d · ' + esc(r.t) + '">' +
@@ -397,7 +397,7 @@ function syncGauge() {
   gItems = [].slice.call(pageEl.querySelectorAll('[data-g]'));
   gauge.className = 'gauge' + (st.page === 'artists' ? ' all' : '');
   hapAct = null;
-  gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); if (desk) l = l.replace(/^[+−-]?\d+ d · /, ''); return '<button' + (e.classList.contains('layer') ? ' class="r"' : '') + ' data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
+  gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); if (desk || isIPad) l = l.replace(/^[+−-]?\d+ d · /, ''); return '<button' + (e.classList.contains('layer') ? ' class="r"' : '') + ' data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
   measure();
 }
 gauge.addEventListener('click', function (e) {
@@ -485,8 +485,11 @@ lvProbe.style.height = '100lvh';
 document.body.appendChild(lvProbe);
 var isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 var safariV = (navigator.userAgent.match(/Version\/(\d+)/) || [])[1];
-/* da Safari 26 la pagina si vede fino in fondo allo schermo, anche sotto la barra in vetro */
-var glassUI = isIOS && !(safariV && +safariV < 26);
+/* da Safari 26 su iPhone la pagina si vede fino in fondo allo schermo, anche sotto la barra in vetro.
+   Su iPad la barra sta in alto (e la finestra può essere più piccola dello schermo): lì non serve */
+var isIPad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (isIPad) document.documentElement.classList.add('ipad');
+var glassUI = /iP(hone|od)/.test(navigator.userAgent) && !(safariV && +safariV < 26);
 var tailMax = -1, tailW = 0;
 function fitTail() {
   if (!touchy) return;

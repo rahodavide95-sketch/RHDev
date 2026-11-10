@@ -3,52 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Seconda linea di difesa: la stessa policy arriva anche come header HTTP da vercel.json.
-       Qui vale anche se il sito viene pubblicato su un hosting che non permette header (es. GitHub Pages). -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://api.web3forms.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests">
-  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="description" content="Subconscious Culture — Independent Record Label">
+  <title>Subconscious Culture</title>
 
-  <title>Subconscious Culture — Independent Techno Label</title>
-  <meta name="description" content="Subconscious Culture — independent techno label from Milano, founded and curated by Raho. Releases, artists and contacts.">
-  <meta name="theme-color" content="#080808">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
 
-  <!-- Anteprima quando il link viene condiviso (WhatsApp, Instagram, Telegram…).
-       Quando hai il dominio definitivo, metti l'indirizzo completo in og:image e og:url
-       (es. https://subconsciousculture.com/images/og-image.jpg): alcune app lo richiedono. -->
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Subconscious Culture">
-  <meta property="og:title" content="Subconscious Culture — Independent Techno Label">
-  <meta property="og:description" content="A new vision of underground culture, art and music. Techno independent label founded and curated by Raho.">
-  <meta property="og:image" content="images/og-image.jpg">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta name="twitter:card" content="summary_large_image">
-
-  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
-  <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
-
-  <!-- Font ospitati sul sito (niente Google Fonts: nessun IP dei visitatori inviato a terzi) -->
-  <link rel="preload" href="fonts/syne.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "Subconscious Culture",
-    "description": "Independent techno record label founded and curated by Raho.",
-    "foundingDate": "2026",
-    "foundingLocation": "Milano, Italia",
-    "email": "subconscious.infoart@gmail.com",
-    "sameAs": [
-      "https://instagram.com/subconscious.culture",
-      "https://soundcloud.com/subconscious_culture",
-      "https://subconsciousculture26.bandcamp.com"
-    ]
-  }
-  </script>
 </head>
 <body>
 
@@ -63,10 +25,10 @@
   </div>
 
   <!-- ========== NAVBAR ========== -->
-  <nav class="navbar" id="navbar" aria-label="Main">
+  <nav class="navbar" id="navbar">
     <div class="navbar-inner">
-      <a href="#home" class="navbar-brand" aria-label="Subconscious Culture — home">
-        <img src="images/logo.webp" alt="" class="nav-logo" width="32" height="32">
+      <a href="#home" class="navbar-brand">
+        <img src="images/logo.png" alt="Subconscious Culture" class="nav-logo" onerror="this.style.display='none'">
         <span class="nav-name" id="nav-name">Subconscious Culture</span>
       </a>
 
@@ -79,7 +41,7 @@
         <li><a href="#contact"  class="nav-link">Contact</a></li>
       </ul>
 
-      <button class="nav-toggle" id="navToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -89,7 +51,7 @@
   <section class="hero" id="home">
     <div class="hero-content">
       <div class="hero-logo-wrap">
-        <img src="images/logo.webp" alt="Subconscious Culture logo" class="hero-logo" width="130" height="130" fetchpriority="high">
+        <img src="images/logo.png" alt="Subconscious Culture" class="hero-logo" onerror="this.style.display='none'">
       </div>
       <h1 class="hero-title" id="hero-title">Subconscious Culture</h1>
       <p  class="hero-tagline" id="hero-tagline">Independent Record Label</p>
@@ -112,7 +74,7 @@
     <div class="container">
       <div class="section-head section-head--row" data-aos="fade-up">
         <h2 class="section-title">Releases</h2>
-        <button class="btn-view-all" id="releasesViewAll" type="button" aria-haspopup="dialog">View All</button>
+        <button class="btn-view-all" id="releasesViewAll">View All</button>
       </div>
       <div class="releases-grid" id="releases-grid"></div>
     </div>
@@ -123,7 +85,7 @@
     <div class="container">
       <div class="section-head section-head--row" data-aos="fade-up">
         <h2 class="section-title">Artists</h2>
-        <button class="btn-view-all" id="artistsViewAll" type="button" aria-haspopup="dialog">View All</button>
+        <button class="btn-view-all" id="artistsViewAll">View All</button>
       </div>
       <div class="artists-grid" id="artists-grid"></div>
     </div>
@@ -173,31 +135,24 @@
           <div class="form-row">
             <div class="field">
               <label for="f-name">Name</label>
-              <input type="text" id="f-name" name="name" placeholder="Your name" autocomplete="name" maxlength="100" required>
+              <input type="text" id="f-name" name="name" placeholder="Your name" required>
             </div>
             <div class="field">
               <label for="f-email">Email</label>
-              <input type="email" id="f-email" name="email" placeholder="Your email" autocomplete="email" maxlength="254" required>
+              <input type="email" id="f-email" name="email" placeholder="Your email" required>
             </div>
           </div>
           <div class="field">
             <label for="f-subject">Subject</label>
-            <input type="text" id="f-subject" name="subject" placeholder="Booking · Demo · Press · Other" maxlength="150">
+            <input type="text" id="f-subject" name="subject" placeholder="Booking · Demo · Press · Other">
           </div>
           <div class="field">
             <label for="f-message">Message</label>
-            <textarea id="f-message" name="message" rows="4" placeholder="Your message…" minlength="10" maxlength="5000" required></textarea>
-          </div>
-          <!-- Honeypot anti-spam: invisibile alle persone, i bot lo compilano e vengono scartati -->
-          <div class="hp-field" aria-hidden="true">
-            <label for="f-website">Website</label>
-            <input type="text" id="f-website" name="website" tabindex="-1" autocomplete="off">
+            <textarea id="f-message" name="message" rows="4" placeholder="Your message…" required></textarea>
           </div>
           <div class="form-footer">
-            <p class="form-note">We use your details only to reply to your message. No newsletter, no tracking.</p>
             <button type="submit" class="btn-send">Send Message</button>
           </div>
-          <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
         </form>
       </div>
 
@@ -207,7 +162,7 @@
   <!-- ========== FOOTER ========== -->
   <footer class="footer">
     <div class="container footer-inner">
-      <img src="images/logo.webp" alt="" class="footer-logo" width="36" height="36" loading="lazy">
+      <img src="images/logo.png" alt="Subconscious Culture" class="footer-logo" onerror="this.style.display='none'">
       <p class="footer-copy" id="footer-copy"></p>
       <div class="footer-social" id="footer-social"></div>
     </div>
@@ -218,7 +173,7 @@
     <div class="releases-modal-inner">
       <div class="releases-modal-head">
         <h2 class="releases-modal-title">Discography</h2>
-        <input type="text" class="modal-search" id="releasesSearch" placeholder="Search…" autocomplete="off" aria-label="Search">
+        <input type="text" class="modal-search" id="releasesSearch" placeholder="Search…" autocomplete="off">
         <div class="releases-filter-wrap">
           <select class="releases-sort" id="releasesSort" aria-label="Sort releases">
             <option value="newest">Newest First</option>
@@ -227,7 +182,7 @@
             <option value="name">Name A–Z</option>
           </select>
         </div>
-        <button class="releases-modal-close" id="releasesClose" type="button" aria-label="Close">✕</button>
+        <button class="releases-modal-close" id="releasesClose" aria-label="Close">✕</button>
       </div>
       <div class="releases-grid" id="releases-all-grid"></div>
     </div>
@@ -238,14 +193,14 @@
     <div class="releases-modal-inner">
       <div class="releases-modal-head">
         <h2 class="releases-modal-title">Artists</h2>
-        <input type="text" class="modal-search" id="artistsSearch" placeholder="Search…" autocomplete="off" aria-label="Search">
+        <input type="text" class="modal-search" id="artistsSearch" placeholder="Search…" autocomplete="off">
         <div class="releases-filter-wrap">
           <select class="releases-sort" id="artistsSort" aria-label="Sort artists">
             <option value="az">A–Z</option>
             <option value="za">Z–A</option>
           </select>
         </div>
-        <button class="releases-modal-close" id="artistsClose" type="button" aria-label="Close">✕</button>
+        <button class="releases-modal-close" id="artistsClose" aria-label="Close">✕</button>
       </div>
       <div class="artists-grid" id="artists-all-grid"></div>
     </div>

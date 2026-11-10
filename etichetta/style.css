@@ -510,6 +510,12 @@ img { display: block; max-width: 100%; }
 .info { display: grid; gap: 30px; max-width: 64ch; padding-bottom: 30px; }
 .info .lead { font-family: var(--f-serif); font-style: italic; font-size: clamp(26px, 3.6vw, 44px); line-height: 1.18; color: var(--fg); }
 .info p { font-size: 17px; line-height: 1.8; color: rgba(244,241,234,.86); }
+/* About: testo giustificato, una riga vuota tra un paragrafo e l'altro */
+/* sillabazione solo su parole lunghe: righe giustificate senza buchi larghi tra le parole */
+.about-txt p { text-align: justify; text-wrap: pretty; -webkit-hyphens: auto; hyphens: auto; hyphenate-limit-chars: 8 4 3; }
+.about-txt p + p { margin-top: 1.8em; }
+/* telefono: un filo più piccolo, più parole per riga e spazi più regolari */
+@media (max-width: 720px) { .about-txt p { font-size: 15.5px; letter-spacing: -.005em; } }
 .faq { display: grid; margin: 0; max-width: 72ch; }
 .faq .qa { display: grid; gap: 8px; padding-block: 26px; border-top: 1px solid var(--line); }
 .faq .qa:last-child { border-bottom: 1px solid var(--line); }

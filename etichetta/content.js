@@ -220,10 +220,10 @@ const SITE = {
   soundcloud: "#",
 },
 {
-  name:       "Vita",
+  name:       "VITA / Peramore",
   origin:     "Città, Paese",
   bio:        "Breve descrizione dell'artista.",
-  photo:      "images/artists/vita.jpg",
+  photo:      "images/artists/jack-fresia.jpg",
   instagram:  "#",
   soundcloud: "#",
 },

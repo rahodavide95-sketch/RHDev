@@ -209,7 +209,7 @@ P.artist = function () {
   return '<a class="back" href="#/artists">← All artists</a><div class="arthead">' + avatar(a) + '<div><div class="meta"><b>Artist</b>' + (a.org ? '<span>' + esc(a.org) + '</span>' : '') + '</div><h1 class="big">' + esc(a.n) + '</h1>' +
     (a.ig || a.sc ? '<div class="cta">' + (a.ig ? extLink(a.ig, 'Instagram') : '') + (a.sc ? extLink(a.sc, 'SoundCloud') : '') + '</div>' : '') + '</div></div>' +
     (a.bio ? '<p class="bio sh">' + esc(a.bio).replace(/\n/g, '<br>') + '</p>' : '') +
-    (rels.length ? sec('Releases on SUBCONSCIOUS Culture') + '<div class="grid">' + rels.map(card).join('') + '</div>' : '');
+    (rels.length ? sec('Releases on <span class="nm">SUBCONSCIOUS Culture</span>') + '<div class="grid">' + rels.map(card).join('') + '</div>' : '');
 };
 
 P.podcast = function () {
@@ -240,7 +240,7 @@ P.contact = function () {
   /* Solo l'email principale dell'etichetta: gli altri indirizzi di content.js non sono mai stati pubblicati. */
   var rows = [['Email', LABEL.email || CONTACT.email]].filter(function (m) { return m[1]; });
   var ig = CONTACT.instagramUrl || LABEL.instagram;
-  return '<div class="head"><div class="meta"><b>' + esc(LABEL.name || 'SUBCONSCIOUS Culture') + '</b></div><h1 class="big">Contact</h1></div><div class="contact"><div>' +
+  return '<div class="head"><div class="meta"><b class="nm">SUBCONSCIOUS Culture</b></div><h1 class="big">Contact</h1></div><div class="contact"><div>' +
     rows.map(function (m) { return '<div class="mail"><small>' + m[0] + '</small><a href="mailto:' + esc(m[1]) + '">' + esc(m[1]) + '</a></div>'; }).join('') +
     (ig ? '<div class="mail"><small>Instagram</small><a href="' + esc(ig) + '" target="_blank" rel="noopener">' + esc(CONTACT.instagram || 'Instagram') + ' ↗</a></div>' : '') +
     '</div></div>';
@@ -458,7 +458,7 @@ document.addEventListener('visibilitychange', kick);
 /* ------------------------------------------------------------ avvio */
 $('links').innerHTML = navHtml(false);
 menu.innerHTML = navHtml(true);
-$('footCopy').textContent = '© ' + (LABEL.foundedYear && +LABEL.foundedYear < now.getFullYear() ? LABEL.foundedYear + '–' : '') + now.getFullYear() + ' SUBCONSCIOUS Culture';
+$('footCopy').innerHTML = '© ' + (LABEL.foundedYear && +LABEL.foundedYear < now.getFullYear() ? LABEL.foundedYear + '–' : '') + now.getFullYear() + ' <span class="nm">SUBCONSCIOUS Culture</span>';
 $('footSocial').innerHTML = [['Instagram', LABEL.instagram], ['SoundCloud', LABEL.soundcloud], ['Bandcamp', LABEL.bandcamp], ['Resident Advisor', LABEL.ra]]
   .filter(function (s) { return ok(s[1]); }).map(function (s) { return '<a href="' + esc(s[1]) + '" target="_blank" rel="noopener">' + s[0] + ' ↗</a>'; }).join('');
 route();

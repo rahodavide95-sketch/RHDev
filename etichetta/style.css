@@ -299,8 +299,13 @@ img { display: block; max-width: 100%; }
 .layer h2 a { text-decoration: none; transition: opacity .25s; }
 .layer h2 a:hover { opacity: .78; }
 .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 22px; margin-top: 18px; }
-.cvbig { display: block; width: clamp(120px, 17vw, 196px); aspect-ratio: 1; box-shadow: 0 20px 60px rgba(0,0,0,.5); overflow: hidden; background: #0c0e13; }
+/* copertina grande quanto lo spazio permette, senza far uscire l'uscita dalla sua schermata */
+.cvbig { display: block; width: clamp(150px, min(24vw, 38vh), 340px); aspect-ratio: 1; box-shadow: 0 20px 60px rgba(0,0,0,.5); overflow: hidden; background: #0c0e13; }
 .cvbig img { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 720px) {
+  .cvbig { width: clamp(120px, min(76vw, calc(100vh - var(--head-h) - 350px)), 320px); }
+  .cvbig { width: clamp(120px, min(76vw, calc(100svh - var(--head-h) - 350px)), 320px); }
+}
 .side { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
 .cta { display: flex; flex-wrap: wrap; gap: 10px; }
 .depth { font-size: 12px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; text-shadow: 0 1px 20px rgba(0,0,0,.7); }
@@ -431,7 +436,7 @@ img { display: block; max-width: 100%; }
 /* ---------- Barra in fondo: tutti i collegamenti ---------- */
 .foot { display: grid; gap: 30px; margin-top: 120px; padding-block: 52px 30px; border-top: 1px solid var(--line); }
 .foot-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 26px 48px; }
-.foot-brand { display: flex; align-items: center; gap: 14px; font-size: 15px; letter-spacing: .02em; text-decoration: none; }
+.foot-brand { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; font-size: 15px; letter-spacing: .02em; text-decoration: none; }
 .foot-brand img { flex: none; width: 44px; height: 44px; }
 .foot-nav, .foot-social { display: flex; flex-wrap: wrap; gap: 12px 30px; }
 .foot-nav a, .foot-social a {

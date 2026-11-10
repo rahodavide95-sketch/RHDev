@@ -137,7 +137,7 @@ P.home = function () {
   if (VIS.merch && (S.merch || []).length)     extras += '<div>' + sec('Store', 'Open store', 'store') + S.merch.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.price || '') + '</span></div>'; }).join('') + '</div>';
   return '<section class="hero stop" data-pal="mono" data-g="Surface"><div class="lockup"><img src="images/logo-640.png" alt="" width="200" height="200" decoding="async" fetchpriority="high"><h1><span><b>SUBCONSCIOUS</b></span> <span>Culture</span></h1></div>' +
     (LABEL.tagline ? '<p class="sh">' + LABEL.tagline.split('\n').map(function (l) { return '<span class="tl">' + esc(l) + '</span>'; }).join('') + '</p>' : '') +
-    '<div class="hint"><i></i><span class="hl"><span class="tl">Scroll to descend</span><span class="tl">Depth is measured in days since release</span></span></div></section>' +
+    '<div class="hint"><i></i><span class="hl"><span class="tl">Scroll to descend</span><span class="tl">Dive into the subconscious</span></span></div></section>' +
     show.map(function (r) {
       var d = dz(r);
       return '<section class="layer stop" data-pal="' + r.i + '" data-g="' + (d < 0 ? '+' + (-d) : '−' + d) + ' d · ' + esc(r.t) + '">' +

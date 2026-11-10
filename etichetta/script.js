@@ -86,17 +86,16 @@ var site = $('site'), pageEl = $('page'), gauge = $('gauge'), canvas = $('gl'), 
 
 function cover(r) { return img(r.cover, '', r.i); }
 function depthText(r) { var d = dz(r); return d < 0 ? 'Above the surface · surfaces in ' + plural(-d, 'day') : d === 0 ? 'At the surface · out today' : 'Depth · ' + plural(d, 'day'); }
-function shortDepth(r) { var d = dz(r); return d < 0 ? r.d : '−' + d + ' d'; }
 function listen(r, pri) { return r.l ? '<a class="btn' + (pri ? ' pri' : '') + '" href="' + esc(r.l) + '" target="_blank" rel="noopener">' + (dz(r) < 0 ? 'Pre-save' : 'Listen') + ' ↗</a>' : ''; }
 function card(r) {
   var d = dz(r);
   return '<a class="card" href="#/release/' + r.id + '" data-hov="' + r.i + '"><span class="cv">' + cover(r) +
-    (d < 0 ? '<span class="tag">In ' + plural(-d, 'day') + '</span>' : '') + '</span><span class="cat">' + esc(r.c) + ' · ' + shortDepth(r) +
+    (d < 0 ? '<span class="tag">In ' + plural(-d, 'day') + '</span>' : '') + '</span><span class="cat">' + esc(r.c) + ' · ' + esc(r.d) +
     '</span><b>' + esc(r.t) + '</b><span class="a">' + esc(r.a) + '</span></a>';
 }
 function lrow(r) {
   return '<a class="lrow" href="#/release/' + r.id + '" data-hov="' + r.i + '"><span class="cv">' + cover(r) + '</span><b>' + esc(r.t) + '</b><span>' + esc(r.a) +
-    '</span><span class="hs">' + esc(r.c) + '</span><span class="hs">' + esc(r.d) + '</span><span class="hs">' + (dz(r) < 0 ? 'Upcoming' : shortDepth(r)) + '</span></a>';
+    '</span><span class="hs">' + esc(r.c) + '</span><span class="hs">' + esc(r.d) + '</span><span class="hs">' + (dz(r) < 0 ? 'Upcoming' : r.kind) + '</span></a>';
 }
 function sec(t, more, p) { return '<div class="sec"><h2>' + t + '</h2>' + (more ? '<a href="#/' + p + '">' + more + ' →</a>' : '') + '</div>'; }
 function avatar(a) { return a.photo ? img(a.photo, 'av') : '<span class="av">' + esc(a.n.charAt(0)) + '</span>'; }
@@ -147,8 +146,7 @@ function relResults() {
   var h = '', y = null, buf = [];
   function flush() {
     if (!buf.length) return;
-    var ds = buf.map(dz).filter(function (d) { return d >= 0; }), lo = ds.length ? Math.min.apply(0, ds) : 0, hi = ds.length ? Math.max.apply(0, ds) : 0;
-    h += '<div class="yh" data-g="' + y + '">' + y + '<small>' + plural(buf.length, 'release') + (ds.length ? ' · ' + lo + ' to ' + hi + ' days deep' : ' · above the surface') + '</small></div>' + open + buf.map(item).join('') + '</div>';
+    h += '<div class="yh" data-g="' + y + '">' + y + '<small>' + plural(buf.length, 'release') + '</small></div>' + open + buf.map(item).join('') + '</div>';
     buf = [];
   }
   L.forEach(function (r) { var yy = r.date.getFullYear(); if (yy !== y) { flush(); y = yy; } buf.push(r); });
@@ -165,7 +163,7 @@ P.releases = function () {
     '<div class="tools"><input class="in" id="rq" type="search" placeholder="Title, artist or catalogue no." aria-label="Filter releases" value="' + esc(st.q) + '" autocomplete="off"></div>' +
     '<div class="tools">' + (hasVa && hasEp ? '<div>' + chip('type', 'all', 'All') + chip('type', 'ep', 'EPs &amp; albums') + chip('type', 'va', 'Compilations') + '</div>' : '') +
     (years.length > 1 ? '<div>' + chip('year', 'all', 'All years') + years.map(function (y) { return chip('year', y, y); }).join('') + '</div>' : '') +
-    '<div class="right"><select class="sel" id="sort" aria-label="Sort">' + [['new', 'Shallowest first'], ['old', 'Deepest first'], ['az', 'Title A–Z'], ['artist', 'Artist A–Z']].map(function (o) { return '<option value="' + o[0] + '"' + (st.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+    '<div class="right"><select class="sel" id="sort" aria-label="Sort">' + [['new', 'Newest first'], ['old', 'Oldest first'], ['az', 'Title A–Z'], ['artist', 'Artist A–Z']].map(function (o) { return '<option value="' + o[0] + '"' + (st.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
     '</select>' + chip('mode', 'grid', 'Covers') + chip('mode', 'list', 'List') + '</div></div><div id="res">' + relResults() + '</div>';
 };
 
@@ -180,9 +178,9 @@ P.release = function () {
       return '<div class="trk"><i>' + (n + 1) + '</i><div><b>' + esc(t.title) + '</b>' + (t.artist ? '<small>' + esc(t.artist) + '</small>' : '') + '</div>' + (ok(t.link) ? extLink(t.link, 'Listen') : '<span></span>') + '</div>';
     }).join('') : '') +
     '<div class="pn">' +
-      (below ? '<a href="#/release/' + below.id + '" data-hov="' + below.i + '"><small>↓ Keep descending · ' + shortDepth(below) + '</small><b>' + esc(below.t) + '</b></a>'
+      (below ? '<a href="#/release/' + below.id + '" data-hov="' + below.i + '"><small>↓ Keep descending · ' + esc(below.d) + '</small><b>' + esc(below.t) + '</b></a>'
              : '<a href="#/artists"><small>↓ You reached the seabed</small><b>Meet the artists</b></a>') +
-      (above ? '<a href="#/release/' + above.id + '" data-hov="' + above.i + '"><small>↑ Back towards the surface · ' + shortDepth(above) + '</small><b>' + esc(above.t) + '</b></a>' : '') +
+      (above ? '<a href="#/release/' + above.id + '" data-hov="' + above.i + '"><small>↑ Back towards the surface · ' + esc(above.d) + '</small><b>' + esc(above.t) + '</b></a>' : '') +
     '</div>';
 };
 

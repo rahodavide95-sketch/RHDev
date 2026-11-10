@@ -363,16 +363,25 @@ function route() {
   var allowed = p === 'home' || p === 'release' || p === 'artist' || PAGES.some(function (x) { return x[0] === p; });
   if (!allowed || !P[p]) p = 'home';
   st.page = p; st.arg = arg; st.gq = ''; $('q').value = '';
-  setMenu(false);
+  setMenu(false); setSearch(false);
   var smooth = document.documentElement.style.scrollBehavior;
   document.documentElement.style.scrollBehavior = 'auto';
   render();
   document.documentElement.style.scrollBehavior = smooth;
 }
 window.addEventListener('hashchange', route);
-menuBtn.addEventListener('click', function () { setMenu(menu.hidden); });
+menuBtn.addEventListener('click', function () { setSearch(false); setMenu(menu.hidden); });
+/* Su telefono la ricerca si apre dalla lente e si richiude da sola quando non serve più */
+var topEl = document.querySelector('.top'), searchBtn = $('searchBtn');
+function setSearch(open) {
+  topEl.classList.toggle('searching', open);
+  searchBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) $('q').focus();
+}
+searchBtn.addEventListener('click', function () { setMenu(false); setSearch(!topEl.classList.contains('searching')); });
+$('q').addEventListener('blur', function () { if (!$('q').value) setTimeout(function () { if (document.activeElement !== $('q')) setSearch(false); }, 150); });
 menu.addEventListener('click', function (e) { if (e.target.closest('a')) setMenu(false); });
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { setMenu(false); setSearch(false); } });
 
 site.addEventListener('click', function (e) {
   var t, T = e.target;
@@ -386,7 +395,7 @@ site.addEventListener('input', function (e) {
   else if (id === 'q') {
     st.gq = e.target.value.trim();
     if (st.gq) { st.page = 'search'; render(true); }
-    else if (st.page === 'search') { route(); }
+    else if (st.page === 'search') { var open = topEl.classList.contains('searching'); route(); if (open) setSearch(true); }
   }
 });
 site.addEventListener('change', function (e) { if (e.target.id === 'sort') { st.sort = e.target.value; $('res').innerHTML = relResults(); syncGauge(); } });

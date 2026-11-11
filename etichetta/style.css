@@ -812,11 +812,21 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
   .foot-nav { grid-column: 1 / -1; justify-content: space-between; }
   .foot-copy { grid-column: 1 / -1; grid-row: 3; margin-top: 16px; padding: 0; border-top: 0; text-align: left; }
 }
-/* tablet in orizzontale: artisti in Home con più aria (foto un po' più piccole e più distanziate) */
+/* tablet in orizzontale: lo schermo è largo ma basso. Artisti in Home come le uscite: titolo, numero e tasto
+   a sinistra, foto a destra in un mosaico 3×3 alto quanto lo schermo (foto grandi, niente impilato) */
 @media (min-width: 700px) and (min-height: 600px) and (hover: none) and (pointer: coarse) and (orientation: landscape) {
-  .bed .faces { gap: 16px; margin-top: 40px; width: min(88%, calc((100vh - var(--head-h) - 400px) * 2.5 + 24px)); width: min(88%, calc((100svh - var(--head-h) - 400px) * 2.5 + 24px)); }
-  .bed .face { width: calc((100% - 64px) / 5); }
-  .bed-more { margin-top: 40px; }
+  .bed { display: grid; grid-template-columns: max-content auto; grid-template-rows: 1fr auto auto auto 1fr;
+         justify-content: center; align-items: center; column-gap: clamp(40px, 5vw, 64px); text-align: left; }
+  .bed-title { grid-column: 1; grid-row: 2; text-align: left; }
+  .bed .sub { grid-column: 1; grid-row: 3; margin-top: 18px; }
+  .bed-more { grid-column: 1; grid-row: 4; justify-content: flex-start; margin-top: 32px; }
+  .bed .three { grid-column: 1 / -1; grid-row: 6; }
+  .bed .faces { grid-column: 2; grid-row: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0;
+    width: min(calc(100vh - var(--head-h) - 90px), calc(min(1040px, 100vw - 128px) - 380px));
+    width: min(calc(100svh - var(--head-h) - 90px), calc(min(1040px, 100vw - 128px) - 380px)); }
+  .bed .face { width: auto; }
+  .bed .face:nth-child(n+10) { display: none; }      /* 3×3: nove foto */
+  .bed .fname { text-align: center; }
 }
 /* computer e tablet: About, FAQ, Contact e Credits centrati sullo schermo */
 @media (min-width: 981px) and (hover: hover) and (pointer: fine), (min-width: 700px) and (min-height: 600px) and (hover: none) and (pointer: coarse) {

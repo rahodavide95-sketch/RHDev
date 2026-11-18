@@ -969,7 +969,10 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       // parts of each document D took away (D: "eliminare campi che non mi servono in qualsiasi modulo"): hide[doc][item] = 1
       hide:{},
       // documents put aside half done (D: "salvare anche delle bozze"): {id, doc, who, snap, created, at}; draftId = the one open in the form
-      drafts:[], draftId:''
+      drafts:[], draftId:'',
+      // the dates of the document are today's by themselves (D): r = receipt date, c = contract date;
+      // 'on' automatic, 'hand' chosen by D, 'kept' the date of a document already in the archive (see autoDates())
+      dates:{r:'on', c:'on'}
     };
   }
   function merge(d, s){
@@ -1956,7 +1959,8 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (fd.type === 'select') inner = '<select id="' + id + '" data-path="' + fd.p + '">' + fd.opts.map(function(o){ return '<option value="' + esc(o[0]) + '"' + (String(v) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
     else inner = '<input type="' + (fd.type === 'date' ? 'date' : 'text') + '" id="' + id + '" data-path="' + fd.p + '"' + (fd.num ? ' class="num" inputmode="decimal"' : '') + (fd.eur ? ' data-eur="1"' : '')
       + (fd.ph ? ' placeholder="' + esc(fd.ph) + '"' : '') + ' value="' + esc(v) + '">';
-    return '<div class="f' + (fx ? ' hx' : '') + '"><label for="' + id + '">' + esc(fd.l) + '</label>' + fx + inner + (fd.hint ? '<p class="hint">' + esc(fd.hint) + '</p>' : '') + '</div>';
+    var lab = fd.p === 'date' ? dateLabel('r') : fd.p === 'c.date' ? dateLabel('c') : fd.l;
+    return '<div class="f' + (fx ? ' hx' : '') + '"><label for="' + id + '">' + esc(lab) + '</label>' + fx + inner + (fd.hint ? '<p class="hint">' + esc(fd.hint) + '</p>' : '') + '</div>';
   }
   // the form is made of a few cards, one per topic; inside a card each section has its own small title
   var GROUPS = [
@@ -2102,7 +2106,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (has(state.c.date)) state.fee.contractDate = state.c.date;
     state.fee.from = ctr && DOCS[ctr.doc].kind === 'contract' ? ctr.id : '';
     if (!en) state.fee.net = true;   // the contract fee is the net one
-    state.doc = en ? 'bkr-est' : 'bkr-it'; state.viewing = ''; state.draftId = ''; state.date = todayISO();
+    state.doc = en ? 'bkr-est' : 'bkr-it'; state.viewing = ''; state.draftId = ''; state.date = todayISO(); state.dates.r = 'on';
     syncTop(); renderFields(); update();
     setStatus('Ricevuta ' + (part === 'dep' ? 'dell\'acconto' : part === 'bal' ? 'del saldo' : 'di questa data') + ' pronta dal contratto: controlla i dati e scaricala.', 'ok');
     var f = document.getElementById('fields'); if (f && f.scrollIntoView) document.getElementById('form').scrollTop = 0;
@@ -2179,13 +2183,35 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var m = missing(), mine = m.some(function(x){ return /^(nome|codice fiscale|IBAN|email di booking)$/.test(x); });
     if (m.length) setStatus('Da completare: ' + m.join(', ') + (mine ? ' (i tuoi dati sono nel Menu)' : ''), 'bad'); else setStatus('Pronto da scaricare', 'ok');
   }
-  function update(){ var dr = draftOf(state.draftId); if (dr) keepDraft(dr); else state.draftId = ''; persist(); renderPreview(); bolloHint(); partHint(); refreshStatus(); refreshEditBar(); if (view === 'archive') renderArchive(); else archBadge(); }
+  // today's date by itself (D: "la data mettila in modo automatico, quindi in data odierna"). Not on a document that is in the
+  // archive as it is (reopened, or just downloaded): it keeps its date, so downloading it again keeps its number and a receipt made
+  // from the contract keeps the contract's date. As soon as the form becomes a new document, the dates are today's again.
+  // A date D writes by hand stays until the document is downloaded; emptied, it is today's again.
+  function autoDates(){
+    var m = state.dates, t = todayISO();
+    if (archivedTwin()) { m.r = 'kept'; m.c = 'kept'; return; }
+    if (m.r === 'kept') m.r = 'on'; if (m.c === 'kept') m.c = 'on';
+    if (m.r === 'on') state.date = t;
+    if (m.c === 'on') state.c.date = t;
+  }
+  // the two date fields of the form follow (value and label), unless D is writing in them
+  function dateInputs(){
+    [['date', 'r', state.date], ['c-date', 'c', state.c.date]].forEach(function(x){
+      var el = document.getElementById('f-' + x[0]); if (!el) return;
+      if (document.activeElement !== el && el.value !== x[2]) el.value = x[2];
+      var lb = document.querySelector('label[for="f-' + x[0] + '"]'); if (lb) lb.textContent = dateLabel(x[1]);
+    });
+    var nf = document.getElementById('f-number'); if (nf) nf.value = currentNumber();   // a new document gets the next number at once
+  }
+  function dateLabel(k){ return state.dates[k] === 'on' ? 'Data (oggi, automatica)' : 'Data'; }
+  function update(){ autoDates(); dateInputs(); var dr = draftOf(state.draftId); if (dr) keepDraft(dr); else state.draftId = ''; persist(); renderPreview(); bolloHint(); partHint(); refreshStatus(); refreshEditBar(); if (view === 'archive') renderArchive(); else archBadge(); }
 
   // ---------- events ----------
   var form = document.getElementById('form');
   form.addEventListener('submit', function(e){ e.preventDefault(); });
   form.addEventListener('input', function(e){
     var el = e.target;
+    if (el.dataset.path === 'date' || el.dataset.path === 'c.date') state.dates[el.dataset.path === 'date' ? 'r' : 'c'] = el.value ? 'hand' : 'on';
     if (el.dataset.path) set(el.dataset.path, el.type === 'checkbox' ? el.checked : el.value);
     else if (el.dataset.line != null) state.lines[+el.dataset.line][el.dataset.key] = el.value;
     else return;
@@ -2233,7 +2259,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var tr = t.closest('[data-torec]'); if (tr) { toReceipt(tr.dataset.torec); return; }
     if (t.id === 'unlinkCtr') { state.fee.from = ''; renderFields(); update(); return; }
     var od = t.closest('[data-open-data]'); if (od) { openData(od.dataset.openData); return; }
-    if (t.id === 'newDoc') { state.viewing = ''; renderFields(); update(); return; }
+    if (t.id === 'newDoc') { state.viewing = ''; state.dates = {r:'on', c:'on'}; state.date = state.c.date = todayISO(); update(); renderFields(); return; }
     if (t.id === 'addLine') { state.lines.push(emptyLine()); renderFields(); update(); var inp = document.getElementById('line' + (state.lines.length - 1) + '-title'); if (inp) inp.focus(); return; }
     var sv = t.closest('[data-save]');
     if (sv) {
@@ -2732,7 +2758,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   }
   function openDraft(id){
     var dr = draftOf(id); if (!dr) return;
-    applySnap(dr.snap, dr.doc); state.viewing = ''; state.draftId = id;
+    applySnap(dr.snap, dr.doc); state.viewing = ''; state.draftId = id; state.dates = {r:'on', c:'on'};
     syncTop(); renderFields(); update(); setView('form');
     document.getElementById('form').scrollTop = 0; if (!wide.matches) window.scrollTo(0, 0);
   }
@@ -2741,7 +2767,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var defs = defaults();
     state.draftId = ''; state.viewing = '';
     ['label', 'lines', 'client', 'ev', 'fee', 'c'].forEach(function(k){ state[k] = clone(defs[k]); });
-    state.date = todayISO(); state.rit = true; state.bolloId = '';
+    state.date = todayISO(); state.rit = true; state.bolloId = ''; state.dates = {r:'on', c:'on'};
     syncTop(); renderFields(); update();
     setStatus('Bozza chiusa: è in Archivio › Bozze. Ora il modulo è vuoto.', 'ok');
   }
@@ -3356,6 +3382,13 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   }
 
   function syncable(s){ var o = clone(s); delete o.ui; delete o.viewing; return o; }
+  // nothing written yet on this device: a new device signing in takes the data online as they are. The automatic dates
+  // (today's, see autoDates()) do not count as something written.
+  function blankState(s){
+    var x = syncable(s), d = syncable(defaults());
+    ['date', 'dates', 'mt'].forEach(function(k){ x[k] = d[k]; }); x.c = Object.assign({}, x.c, {date:d.c.date});
+    return JSON.stringify(x) === JSON.stringify(d);
+  }
   // two versions changed on two devices: the newer one wins for the form, lists are joined (deleted documents stay deleted)
   function mergeStates(a, b){
     var base = (a.mt || 0) >= (b.mt || 0) ? a : b, other = base === a ? b : a, out = clone(base), gone = {};
@@ -3440,7 +3473,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       sync.version = +rows[0].version; sync.hash = hashOf(JSON.stringify(syncable(load(cloud)))); saveSync();
       syncPhase = 'ready';
       var local = syncable(state);
-      adopt(state.history.length || hashOf(JSON.stringify(local)) !== hashOf(JSON.stringify(syncable(defaults()))) ? mergeStates(local, cloud) : cloud);
+      adopt(state.history.length || !blankState(state) ? mergeStates(local, cloud) : cloud);
     } else {
       syncSalt = crypto.getRandomValues(new Uint8Array(16)); syncKey = await deriveKey(password, syncSalt); await rememberKey();
       sync.version = 0; sync.hash = ''; saveSync(); syncPhase = 'ready';
@@ -3805,7 +3838,12 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (k && k.key) { syncKey = k.key; syncSalt = k.salt; syncPhase = 'ready'; refreshAccount(); refreshUser(); await pull(true); }
     else { syncPhase = 'locked'; refreshAccount(); }
   }
-  document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') pull(); else push(); });
+  var lastDay = todayISO();
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState !== 'visible') { push(); return; }
+    if (todayISO() !== lastDay) { lastDay = todayISO(); update(); }
+    pull();
+  });
   window.addEventListener('online', function(){ pull(true); });
   window.addEventListener('focusout', function(){ setTimeout(function(){ if (!typing()) pull(); }, 300); });
   setInterval(function(){ if (document.visibilityState === 'visible') pull(); }, 30000);
@@ -3840,7 +3878,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
 
   // ---------- start ----------
   applyTheme(); barSize(); sbWidth();
-  syncTop(); renderFields(); update();
+  autoDates(); syncTop(); renderFields(); update();
   startSync().catch(function(){}).then(function(){
     if (demo || inClaude) return;
     if (syncPhase === 'out' && confirmLanding()) return;

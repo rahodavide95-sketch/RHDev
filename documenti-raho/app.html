@@ -290,6 +290,7 @@ html.gated,html.gated body{overflow:hidden}
 input::placeholder{color:var(--faint);opacity:1}
 select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
 input[type="date"]{display:block}
+input[type="date"]:disabled{opacity:.4;cursor:not-allowed}
 input.num{font-variant-numeric:tabular-nums;text-align:right}
 input:focus-visible,select:focus-visible,#edText:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ring);background:var(--panel)}
 button:focus-visible,summary:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
@@ -941,7 +942,8 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
 
   function todayISO(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
   // a release: the period is two dates chosen on the calendar (from, to, as 2026-01-31); "period" is only an old period written by hand
-  function emptyLine(){ return {title:'', cat:'', stmt:'', from:'', to:'', period:'', amount:''}; }
+  // fromStart: the statement covers everything since the start (D: «Dall'inizio»), in place of the first date
+  function emptyLine(){ return {title:'', cat:'', stmt:'', from:'', fromStart:false, to:'', period:'', amount:''}; }
   // an old period written by hand ("01/01/26 – 30/06/26", "1.1.2026-30.6.2026") becomes the two dates; without the year it stays as written
   function splitPeriod(l){
     if (has(l.from) || has(l.to) || !has(l.period)) return;
@@ -953,8 +955,9 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   // on the sheet: 01/01/26 – 30/06/26 (as the placeholder always said); a missing date stays to be filled
   function periodHtml(l, en){
     var ph = function(t){ return '<span class="ph">[' + t + ']</span>'; }, short = function(iso){ var x = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return x ? x[3] + '/' + x[2] + '/' + x[1].slice(2) : ''; };
-    if (!has(l.from) && !has(l.to)) return has(l.period) ? esc(String(l.period).trim()) : ph(en ? 'DD/MM/YY – DD/MM/YY' : 'GG/MM/AA – GG/MM/AA');
-    return (has(l.from) ? short(l.from) : ph(en ? 'DD/MM/YY' : 'GG/MM/AA')) + ' – ' + (has(l.to) ? short(l.to) : ph(en ? 'DD/MM/YY' : 'GG/MM/AA'));
+    if (!l.fromStart && !has(l.from) && !has(l.to)) return has(l.period) ? esc(String(l.period).trim()) : ph(en ? 'DD/MM/YY – DD/MM/YY' : 'GG/MM/AA – GG/MM/AA');
+    var start = l.fromStart ? (en ? 'From the start' : 'Dall\'inizio') : has(l.from) ? short(l.from) : ph(en ? 'DD/MM/YY' : 'GG/MM/AA');
+    return start + ' – ' + (has(l.to) ? short(l.to) : ph(en ? 'DD/MM/YY' : 'GG/MM/AA'));
   }
   function defaults(){
     return {
@@ -2112,8 +2115,9 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
           return cells.length === 2 ? '<div class="grid2">' + cells.join('') + '</div>' : cells.join('');
         })()
         // the period from date to date, with the calendar (D: "da data a data con il calendario")
-        + '<div class="grid2"><div class="f"><label for="' + p + 'from">Periodo dal</label><input type="date" id="' + p + 'from" data-line="' + i + '" data-key="from" value="' + esc(l.from) + '"' + (l.to ? ' max="' + esc(l.to) + '"' : '') + '></div>'
-        + '<div class="f"><label for="' + p + 'to">al</label><input type="date" id="' + p + 'to" data-line="' + i + '" data-key="to" value="' + esc(l.to) + '"' + (l.from ? ' min="' + esc(l.from) + '"' : '') + '></div></div>'
+        + '<div class="grid2"><div class="f"><label for="' + p + 'from">Periodo dal</label><input type="date" id="' + p + 'from" data-line="' + i + '" data-key="from" value="' + esc(l.from) + '"' + (l.to ? ' max="' + esc(l.to) + '"' : '') + (l.fromStart ? ' disabled' : '') + '></div>'
+        + '<div class="f"><label for="' + p + 'to">al</label><input type="date" id="' + p + 'to" data-line="' + i + '" data-key="to" value="' + esc(l.to) + '"' + (l.from && !l.fromStart ? ' min="' + esc(l.from) + '"' : '') + '></div></div>'
+        + '<label class="check" for="' + p + 'fromStart"><input type="checkbox" id="' + p + 'fromStart" data-line="' + i + '" data-key="fromStart"' + (l.fromStart ? ' checked' : '') + '><span>Dall\'inizio (al posto della prima data)</span></label>'
         + (!has(l.from) && !has(l.to) && has(l.period) ? '<p class="hint">Scritto prima a mano: «' + esc(l.period) + '». Scegli le due date per sostituirlo.</p>' : '')
         + '<div class="f"><label for="' + p + 'amount">Importo lordo €</label><input type="text" class="num" inputmode="decimal" data-eur="1" id="' + p + 'amount" data-line="' + i + '" data-key="amount" placeholder="0,00" value="' + esc(l.amount) + '"></div></div>';
     }).join('');
@@ -2245,12 +2249,17 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (el.dataset.path === 'date' || el.dataset.path === 'c.date') state.dates[el.dataset.path === 'date' ? 'r' : 'c'] = el.value ? 'hand' : 'on';
     if (el.dataset.path) set(el.dataset.path, el.type === 'checkbox' ? el.checked : el.value);
     else if (el.dataset.line != null) {
-      var ln = state.lines[+el.dataset.line], k = el.dataset.key; ln[k] = el.value;
+      var ln = state.lines[+el.dataset.line], k = el.dataset.key; ln[k] = el.type === 'checkbox' ? el.checked : el.value;
+      // «Dall'inizio»: the first date is not used (kept, in case the box is unticked)
+      if (k === 'fromStart') {
+        var fromEl = document.getElementById('line' + el.dataset.line + '-from'), toEl = document.getElementById('line' + el.dataset.line + '-to');
+        if (fromEl) fromEl.disabled = el.checked; if (toEl) toEl.min = el.checked ? '' : ln.from || '';
+      }
       // the two dates of a period keep each other in order on the calendar; the old period written by hand gives way
-      if (k === 'from' || k === 'to') {
+      if (k === 'from' || k === 'to' || k === 'fromStart') {
         ln.period = '';
         var other = document.getElementById('line' + el.dataset.line + '-' + (k === 'from' ? 'to' : 'from'));
-        if (other) other[k === 'from' ? 'min' : 'max'] = el.value;
+        if (other && k !== 'fromStart') other[k === 'from' ? 'min' : 'max'] = el.value;
       }
     }
     else return;

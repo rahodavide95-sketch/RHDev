@@ -961,7 +961,22 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   };
 
   function todayISO(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
-  function emptyLine(){ return {title:'', cat:'', stmt:'', period:'', amount:''}; }
+  // a release: the period is two dates chosen on the calendar (from, to, as 2026-01-31); "period" is only an old period written by hand
+  function emptyLine(){ return {title:'', cat:'', stmt:'', from:'', to:'', period:'', amount:''}; }
+  // an old period written by hand ("01/01/26 – 30/06/26", "1.1.2026-30.6.2026") becomes the two dates; without the year it stays as written
+  function splitPeriod(l){
+    if (has(l.from) || has(l.to) || !has(l.period)) return;
+    var m = /^\s*(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2}|\d{4})\s*[–—-]\s*(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2}|\d{4})\s*$/.exec(l.period); if (!m) return;
+    var iso = function(d, mo, y){ return +mo >= 1 && +mo <= 12 && +d >= 1 && +d <= 31 ? (y.length === 2 ? '20' + y : y) + '-' + ('0' + mo).slice(-2) + '-' + ('0' + d).slice(-2) : ''; };
+    var a = iso(m[1], m[2], m[3]), b = iso(m[4], m[5], m[6]); if (!a || !b) return;
+    l.from = a; l.to = b; l.period = '';
+  }
+  // on the sheet: 01/01/26 – 30/06/26 (as the placeholder always said); a missing date stays to be filled
+  function periodHtml(l, en){
+    var ph = function(t){ return '<span class="ph">[' + t + ']</span>'; }, short = function(iso){ var x = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return x ? x[3] + '/' + x[2] + '/' + x[1].slice(2) : ''; };
+    if (!has(l.from) && !has(l.to)) return has(l.period) ? esc(String(l.period).trim()) : ph(en ? 'DD/MM/YY – DD/MM/YY' : 'GG/MM/AA – GG/MM/AA');
+    return (has(l.from) ? short(l.from) : ph(en ? 'DD/MM/YY' : 'GG/MM/AA')) + ' – ' + (has(l.to) ? short(l.to) : ph(en ? 'DD/MM/YY' : 'GG/MM/AA'));
+  }
   function defaults(){
     return {
       doc:'bkc-en', logo:{bk:'rhbkng', roy:'raho'}, logoImg:'',
@@ -993,7 +1008,9 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       drafts:[], draftId:'',
       // the dates of the document are today's by themselves (D): r = receipt date, c = contract date;
       // 'on' automatic, 'hand' chosen by D, 'kept' the date of a document already in the archive (see autoDates())
-      dates:{r:'on', c:'on'}
+      dates:{r:'on', c:'on'},
+      // the Oggetto of each kind of receipt written by D (empty = the usual one); the bank transfer reference is "Oggetto – Ricevuta n. …"
+      subj:{}
     };
   }
   function merge(d, s){
@@ -1050,6 +1067,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       var h = o.hide[d]; if (!DOCS[d] || !h || typeof h !== 'object') return;
       var keep = {}; Object.keys(h).forEach(function(k){ if (h[k]) keep[k] = 1; }); if (Object.keys(keep).length) s.hide[d] = keep;
     });
+    if (o && o.subj && typeof o.subj === 'object' && !Array.isArray(o.subj)) Object.keys(o.subj).forEach(function(d){ if (DOCS[d] && typeof o.subj[d] === 'string') s.subj[d] = o.subj[d]; });
     s.drafts = s.drafts.filter(function(x){ return x && typeof x === 'object' && x.id && x.snap && typeof x.snap === 'object' && DOCS[x.doc]; });
     if (!s.drafts.some(function(x){ return x.id === s.draftId; })) s.draftId = '';
     if (o && o.seqStart && typeof o.seqStart === 'object' && !Array.isArray(o.seqStart)) s.seqStart = o.seqStart;
@@ -1062,6 +1080,8 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     s.accounts = s.accounts.filter(function(a){ return a && typeof a === 'object'; });
     s.accounts.forEach(function(a){ if (!a.id) a.id = newId(); });
     // there used to be one signature (sig.img): it becomes the first saved one
+    s.lines = s.lines.filter(function(l){ return l && typeof l === 'object'; }).map(function(l){ var x = Object.assign(emptyLine(), l); splitPeriod(x); return x; });
+    if (!s.lines.length) s.lines = [emptyLine()];
     s.sigs = cleanMarks(s.sigs, false); s.inis = cleanMarks(s.inis, true);
     if (!s.sigs.length && o && o.sig && goodImg(o.sig.img)) s.sigs = [{id:'s0', name:'Firma 1', img:o.sig.img}];
     [['sig', 'sigs'], ['ini', 'inis']].forEach(function(p){ var c = s[p[0]], L = s[p[1]]; if (!L.some(function(m){ return m.id === c.sel; })) c.sel = L[0] ? L[0].id : ''; });
@@ -1117,7 +1137,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   }
   // made-up data to try every part of the tool: a contract waiting for its deposit, receipts paid and not, address book, account, initials
   function demoState(){
-    var t = todayISO(), at = function(d){ return addDays(t, d); };
+    var t = todayISO(), at = function(d){ return addDays(t, d); }, yr = t.slice(0, 4);
     var me = {name:'Alex Demo', addr:'Via dei Mille 12', zip:'20121', city:'Milano', prov:'MI', cf:'DMELXA90A01F205Q', email:'royalties@esempio.it', bookingEmail:'booking@esempio.it', phone:'+39 333 123 4567'};
     var club = {name:'Club Esempio Srl', rep:'Mario Bianchi, legale rappresentante', addr:'Via Tortona 30', zip:'20144', city:'Milano', prov:'MI', country:'', vat:'', piva:'01234567890', cf:'01234567890', contact:'Luca, +39 340 000 0000'};
     var gmbh = {name:'Example Club GmbH', rep:'', addr:'Friedrichstraße 100', zip:'10117', city:'Berlin', prov:'Berlin', country:'Germania', vat:'DE123456789', piva:'', cf:'', contact:''};
@@ -1126,9 +1146,9 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var ev = {name:'Closing Party', venue:'Club Esempio', address:'Via Tortona 30, Milano', date:at(25), start:'01:00', end:'03:00', duration:'120', doors:'23:00', check:'22:30', capacity:'800', billing:'headliner', others:'Altri due DJ'};
     var past = [
       {d:-170, doc:'bkr-it', who:club.name, amount:1200, paid:-160, snap:{client:club, ev:{name:'Notte Techno', venue:'Club Esempio', date:at(-171)}, fee:{amount:'1.200,00', net:true, rit:true}}},
-      {d:-120, doc:'roy-est', who:labEst.name, amount:845.5, paid:-100, snap:{label:labEst, lines:[{title:'Night Drive', cat:'SR012', stmt:'Q1', period:'01/01 – 31/03', amount:'845,50'}]}},
+      {d:-120, doc:'roy-est', who:labEst.name, amount:845.5, paid:-100, snap:{label:labEst, lines:[{title:'Night Drive', cat:'SR012', stmt:'Q1', from:yr + '-01-01', to:yr + '-03-31', amount:'845,50'}]}},
       {d:-40, doc:'bkr-est', who:gmbh.name, amount:1650, paid:0, snap:{client:gmbh, ev:{name:'Warehouse Session', venue:'Example Club', date:at(-41)}, fee:{amount:'1.500,00', expenses:'150,00'}}},
-      {d:-20, doc:'roy-it', who:labIt.name, amount:400, paid:-5, snap:{label:labIt, lines:[{title:'Deep Signal', cat:'EE007', stmt:'S1', period:'01/01 – 30/06', amount:'500,00'}], rit:true}}
+      {d:-20, doc:'roy-it', who:labIt.name, amount:400, paid:-5, snap:{label:labIt, lines:[{title:'Deep Signal', cat:'EE007', stmt:'S1', from:yr + '-01-01', to:yr + '-06-30', amount:'500,00'}], rit:true}}
     ];
     var seq = {}, history = past.map(function(h, i){
       var date = at(h.d), y = date.slice(0, 4); seq[y] = (seq[y] || 0) + 1;
@@ -1145,7 +1165,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       inis:[{id:'demo-ini', name:'Sigle 1', text:'A.D.', img:''}], ini:{use:true, sel:'demo-ini'}, bolloId:'01234567890123', history:history, saved:saved,
       sigs:demoSig(), sig:{use:true, sel:'demo-sig'}, logo:{bk:'img', roy:'img'}, logoImg:demoLogo(),
       drafts:[{id:'demo-draft', doc:'roy-it', who:labIt.name, created:at(-2) + 'T16:20:00.000Z', at:at(-2) + 'T16:40:00.000Z',
-        snap:{doc:'roy-it', date:t, label:labIt, lines:[{title:'Night Shift', cat:'EE009', stmt:'', period:'01/07 – 30/09', amount:''}], rit:true}}]};
+        snap:{doc:'roy-it', date:t, label:labIt, lines:[{title:'Night Shift', cat:'EE009', stmt:'', from:yr + '-07-01', to:yr + '-09-30', amount:''}], rit:true}}]};
   }
   // the trial's logo, in "Immagine": "[RH] Documents" (D), white on a black badge like the app icon, so it shows on the white
   // receipts and on the black band of the contracts. D's own logos stay in the choice too (D: "i miei lasciali ma mettine anche uno di prova").
@@ -1326,14 +1346,17 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       + (status ? ed('status', W.status, 'p-small') : '') + '</div>'
       + '<div class="p-col"><div class="lbl rule">' + W.billTo + '</div>'
       + '<div class="p-who"><div class="p-name" data-f="' + o.to + 'name">' + o.toName + '</div><div class="p-addr">' + o.toLines.join('<br>') + '</div></div></div></section>';
-    if (subj) h += '<section class="p-subj"><div class="lbl">' + W.desc + '</div>' + ed('subject', o.subject, 's') + '</section>';
+    // the Oggetto: D's own for this kind of receipt, or the usual one; the reference under the bank details repeats it (D)
+    var mySubj = String(state.subj[state.doc] || '').trim(), subjHtml = mySubj ? esc(mySubj) : o.subject, sf = 'f:subj.' + state.doc;
+    var subjText = edited().subject != null ? String(edited().subject).replace(/\*\*/g, '').replace(/\s+/g, ' ').trim() : mySubj || o.subject;
+    if (subj) h += '<section class="p-subj" data-f="' + sf + '"><div class="lbl">' + W.desc + '</div>' + ed('subject', subjHtml, 's') + '</section>';
     h += '<section class="p-items"><table class="p-tab"><thead><tr><th>' + o.cols[0] + '</th><th>' + o.cols[1] + '</th><th>' + o.cols[2] + '</th></tr></thead><tbody>'
       + o.rows + '</tbody></table><div class="p-total"><div class="k">' + o.totalLabel + '</div><div class="v" data-f="' + o.totalF + '">' + o.totalValue + '</div></div></section>';
     var A = account(), pg = 'Pagamento';
     var pay = (show('holder', 'Intestatario', pg) ? '<div class="k">' + W.holder + '</div><div>' + val(has(A.holder) ? A.holder : M.name, W.name) + '</div>' : '')
       + '<div class="k">IBAN</div><div class="m iban">' + val(has(A.iban) ? ibanGroups(A.iban) : '', 'IT00 X000 0000 0000 0000 0000 000') + '</div>'
       + (en && show('bic', 'BIC / SWIFT', pg) ? '<div class="k">BIC / SWIFT</div><div class="m">' + val(A.bic, 'XXXXITXX') + '</div>' : '')
-      + (show('ref', 'Causale', pg) ? '<div class="k">' + W.ref + '</div><div data-f="f:number">' + W.refNo + num + '</div>' : '');
+      + (show('ref', 'Causale', pg) ? '<div class="k">' + W.ref + '</div><div data-f="' + sf + '">' + esc(subjText) + ' – ' + W.refNo + num + '</div>' : '');
     h += '<section class="p-two pay"><div class="p-col notes"><div class="lbl rule">' + W.notes + '</div>'
       + o.notes.map(function(n){ return ed('note.' + n[0], esc(n[1]), 'p-note'); }).join('') + '</div>'
       + '<div class="p-col notes"><div class="lbl rule">' + W.pay + '</div><div class="p-pay" data-f="acc">' + pay + '</div></div></section>';
@@ -1379,7 +1402,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       var n = parseAmount(l.amount), ln = function(k, h){ return at('line:' + i + ':' + k, h); };
       var meta = [catOn ? 'Cat. ' + ln('cat', val(l.cat, 'XXX000')) : '', stmtOn ? 'Statement ' + ln('stmt', val(l.stmt, 'n.')) : ''].filter(Boolean).join(' · ');
       return '<tr class="rel"><td><div class="t">' + ln('title', val(l.title, en ? 'Release title' : 'Titolo release')) + '</div>' + (meta ? '<div class="meta">' + meta + '</div>' : '') + '</td>'
-        + '<td class="per">' + ln('period', val(l.period, en ? 'DD/MM/YY – DD/MM/YY' : 'GG/MM/AA – GG/MM/AA')) + '</td>'
+        + '<td class="per">' + ln('from', periodHtml(l, en)) + '</td>'
         + '<td class="amt">' + ln('amount', n != null ? cur(n) : none) + '</td></tr>';
     }).join('');
     if (!en) {
@@ -1902,8 +1925,13 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   var ALL = Object.keys(DOCS), REC = ['bkr-est','bkr-it','roy-est','roy-it'], ROY = ['roy-est','roy-it'], BK = ['bkc-en','bkc-it','bkr-est','bkr-it'],
       BKC = ['bkc-en','bkc-it'], BKR = ['bkr-est','bkr-it'], EST = ['bkr-est','bkc-en'], ITB = ['bkr-it','bkc-it'];
   function F(path, label, o){ o = o || {}; o.p = path; o.l = label; return o; }
+  var SUBJ_HINT = 'Vuoto = quello solito. Sotto i dati bancari la causale diventa «Oggetto – Ricevuta n. …», con il numero di questa ricevuta.';
   var SECTIONS = [
     {t:'Ricevuta', g:'meta', docs:REC, pick:'acc', f:[F('number','Numero (automatico)',{half:1, auto:1}), F('date','Data',{type:'date', half:1}),
+      F('subj.bkr-it','Oggetto (anche nella causale del bonifico)',{docs:['bkr-it'], ph:'Esibizione DJ come Raho', hint:SUBJ_HINT}),
+      F('subj.bkr-est','Oggetto (anche nella causale del bonifico)',{docs:['bkr-est'], ph:'DJ performance as Raho', hint:SUBJ_HINT}),
+      F('subj.roy-it','Oggetto (anche nella causale del bonifico)',{docs:['roy-it'], ph:'Royalties', hint:SUBJ_HINT}),
+      F('subj.roy-est','Oggetto (anche nella causale del bonifico)',{docs:['roy-est'], ph:'Royalties', hint:SUBJ_HINT}),
       F('me.email','Email in fondo (Info generali)',{docs:ROY, ph:'La tua email per le royalties', hint:'Vale per tutte le ricevute royalties. È la «Email» dei tuoi dati.'}),
       F('me.bookingEmail','Email in fondo (Info generali)',{docs:BKR, ph:'La tua email di booking'})]},
     {t:'Etichetta', g:'who', docs:ROY, saved:'labels', from:'label', f:[F('label.name','Ragione sociale'), F('label.addr','Indirizzo'),
@@ -2104,8 +2132,11 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
           });
           return cells.length === 2 ? '<div class="grid2">' + cells.join('') + '</div>' : cells.join('');
         })()
-        + '<div class="grid2"><div class="f"><label for="' + p + 'period">Periodo</label><input type="text" id="' + p + 'period" data-line="' + i + '" data-key="period" placeholder="01/01/26 – 30/06/26" value="' + esc(l.period) + '"></div>'
-        + '<div class="f"><label for="' + p + 'amount">Importo lordo €</label><input type="text" class="num" inputmode="decimal" data-eur="1" id="' + p + 'amount" data-line="' + i + '" data-key="amount" placeholder="0,00" value="' + esc(l.amount) + '"></div></div></div>';
+        // the period from date to date, with the calendar (D: "da data a data con il calendario")
+        + '<div class="grid2"><div class="f"><label for="' + p + 'from">Periodo dal</label><input type="date" id="' + p + 'from" data-line="' + i + '" data-key="from" value="' + esc(l.from) + '"' + (l.to ? ' max="' + esc(l.to) + '"' : '') + '></div>'
+        + '<div class="f"><label for="' + p + 'to">al</label><input type="date" id="' + p + 'to" data-line="' + i + '" data-key="to" value="' + esc(l.to) + '"' + (l.from ? ' min="' + esc(l.from) + '"' : '') + '></div></div>'
+        + (!has(l.from) && !has(l.to) && has(l.period) ? '<p class="hint">Scritto prima a mano: «' + esc(l.period) + '». Scegli le due date per sostituirlo.</p>' : '')
+        + '<div class="f"><label for="' + p + 'amount">Importo lordo €</label><input type="text" class="num" inputmode="decimal" data-eur="1" id="' + p + 'amount" data-line="' + i + '" data-key="amount" placeholder="0,00" value="' + esc(l.amount) + '"></div></div>';
     }).join('');
   }
   // contracts: the receipt of this date, with the client, the event and the fee already in (all of it, the deposit or the balance)
@@ -2234,7 +2265,15 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var el = e.target;
     if (el.dataset.path === 'date' || el.dataset.path === 'c.date') state.dates[el.dataset.path === 'date' ? 'r' : 'c'] = el.value ? 'hand' : 'on';
     if (el.dataset.path) set(el.dataset.path, el.type === 'checkbox' ? el.checked : el.value);
-    else if (el.dataset.line != null) state.lines[+el.dataset.line][el.dataset.key] = el.value;
+    else if (el.dataset.line != null) {
+      var ln = state.lines[+el.dataset.line], k = el.dataset.key; ln[k] = el.value;
+      // the two dates of a period keep each other in order on the calendar; the old period written by hand gives way
+      if (k === 'from' || k === 'to') {
+        ln.period = '';
+        var other = document.getElementById('line' + el.dataset.line + '-' + (k === 'from' ? 'to' : 'from'));
+        if (other) other[k === 'from' ? 'min' : 'max'] = el.value;
+      }
+    }
     else return;
     update();
   });
@@ -2743,7 +2782,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     ctr: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h3"/>'
   };
   function docTitle(doc){ return (KIND[doc] || {}).t || 'Documento'; }
-  var SNAP = ['doc', 'date', 'label', 'lines', 'rit', 'client', 'ev', 'fee', 'bolloId', 'acc', 'en', 't', 'c'];
+  var SNAP = ['doc', 'date', 'label', 'lines', 'rit', 'client', 'ev', 'fee', 'bolloId', 'acc', 'en', 't', 'c', 'subj'];
   function clone(o){ return JSON.parse(JSON.stringify(o)); }
   function snapshot(){ var s = {}; SNAP.forEach(function(k){ s[k] = clone(state[k]); }); s.logo = state.logo[D().cat]; return s; }
   function archiveSave(file){
@@ -2799,8 +2838,9 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   }
   function applySnap(snap, doc){
     var defs = defaults();
-    SNAP.forEach(function(k){ if (!(k in snap)) return; var v = clone(snap[k]); state[k] = v && typeof v === 'object' && !Array.isArray(v) ? merge(defs[k], v) : v; });
+    SNAP.forEach(function(k){ if (!(k in snap)) return; var v = clone(snap[k]); state[k] = v && typeof v === 'object' && !Array.isArray(v) && k !== 'subj' ? merge(defs[k], v) : v; });
     if (snap.logo && LOGOS[DOCS[doc].cat].indexOf(snap.logo) !== -1) state.logo[DOCS[doc].cat] = snap.logo;
+    state.lines = (state.lines || []).map(function(l){ var x = Object.assign(emptyLine(), l); splitPeriod(x); return x; });   // periods from before the calendar
   }
   function reopen(id, toRec){
     var h = state.history.filter(function(x){ return x.id === id; })[0]; if (!h) return;

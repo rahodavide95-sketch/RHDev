@@ -1204,7 +1204,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var X = k.cat === 'roy' ? 'label' : 'client';
     return {'to.addr':[X + '.addr'], 'to.city':[X + '.zip', X + '.city', X + '.prov'], 'to.country':[X + '.country'], 'to.vat':[X + '.vat'], 'to.piva':[X + '.piva'],
       'to.cf':[X + '.cf'], 'ev.place':['ev.venue', 'ev.address'], 'contractDate':['fee.contractDate'], 'contact':[k.cat === 'roy' ? 'me.email' : 'me.bookingEmail'],
-      'line.cat':['line.cat'], 'line.stmt':['line.stmt']};
+      'line.cat':['line.cat'], 'line.stmt':['line.stmt'], 'bollo':['bolloId']};
   }
   function itemOf(path){ var m = itemFields(); return Object.keys(m).filter(function(id){ return m[id].indexOf(path) !== -1; })[0] || ''; }
   function fieldOff(path){ var id = itemOf(path); return !!id && hidden(id); }
@@ -1343,8 +1343,10 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       + o.notes.map(function(n){ return ed('note.' + n[0], esc(n[1]), 'p-note'); }).join('') + '</div>'
       + '<div class="p-col notes"><div class="lbl rule">' + W.pay + '</div><div class="p-pay" data-f="acc">' + pay + '</div></div></section>';
     // the signature space is there only when "Aggiungi la mia firma" is ticked; the contact email goes under a thin line, on the right
-    h += '<footer class="p-foot' + (o.bollo ? '' : ' nobollo') + '">'
-      + (o.bollo ? '<div class="p-bollo" data-f="f:bolloId"><div class="p-box">' + W.stamp + '<b>€ 2,00</b></div><div class="mono p-stampid">ID ' + val(state.bolloId, W.digits) + '</div></div>' : '')
+    // the stamp box and its code can be taken away from the PDF (D: for the foreign label, which does not need them); the stamp stays on the original
+    var stamp = show('bollo', 'Riquadro della marca da bollo', 'In fondo') && o.bollo, stampId = show('bolloId', 'Codice della marca da bollo', 'In fondo');
+    h += '<footer class="p-foot' + (stamp ? '' : ' nobollo') + '">'
+      + (stamp ? '<div class="p-bollo" data-f="f:bolloId"><div class="p-box">' + W.stamp + '<b>€ 2,00</b></div>' + (stampId ? '<div class="mono p-stampid">ID ' + val(state.bolloId, W.digits) + '</div>' : '') + '</div>' : '')
       + (state.sig.use ? '<div class="p-sign" data-f="sig"><div class="ln">' + sigHtml() + '</div><div class="lbl">' + W.sign + '</div></div>' : '') + '</footer>'
       + (show('contact', 'Email in fondo (Info generali)', 'In fondo') && has(o.mail) ? '<div class="p-contact" data-f="' + (D().cat === 'roy' ? 'f:me.email' : 'f:me.bookingEmail') + '"><span class="lbl">' + W.contact + '</span><span>' + esc(String(o.mail).trim()) + '</span></div>' : '');
     return {html:h, cls:'receipt'};
@@ -1395,7 +1397,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (en) {
       notes.push(['vat', 'Not subject to Italian VAT: the issuer is not VAT-registered (art. 5 DPR 633/1972).']);
       notes.push(['norit', 'No Italian withholding tax: the payer is not resident in Italy.']);
-      if (bollo) notes.push(['bollo', 'Italian stamp duty of EUR 2,00 paid on the original.']);
+      if (bollo) notes.push(['bollo', 'Italian stamp duty (EUR 2,00) paid by the issuer on the original receipt. No action required.']);
     } else {
       notes.push(['vat', 'Operazione non soggetta a IVA per mancanza del presupposto soggettivo (art. 5 DPR 633/1972).']);
       notes.push(state.rit ? ['rit', 'Ritenuta d\'acconto del 20% sul compenso lordo, versata dal committente in qualità di sostituto d\'imposta (art. 25 DPR 600/1973), che rilascerà la Certificazione Unica.']
@@ -1445,7 +1447,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (en) {
       notes.push(['vat', 'Occasional self-employed service, outside the scope of Italian VAT (art. 5 DPR 633/1972).']);
       notes.push(['norit', 'No Italian withholding tax. Any foreign withholding tax is borne by the client, as agreed.']);
-      if (bollo) notes.push(['bollo', 'Italian stamp duty of EUR 2,00 paid on the original.']);
+      if (bollo) notes.push(['bollo', 'Italian stamp duty (EUR 2,00) paid by the issuer on the original receipt. No action required.']);
     } else {
       notes.push(['vat', 'Prestazione di lavoro autonomo occasionale (art. 2222 c.c.), non soggetta a IVA per mancanza del presupposto soggettivo (art. 5 DPR 633/1972).']);
       notes.push(F.rit ? ['rit', 'Ritenuta d\'acconto del 20% sul compenso lordo, versata dal committente in qualità di sostituto d\'imposta (art. 25 DPR 600/1973), che rilascerà la Certificazione Unica.']
@@ -2173,6 +2175,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var lordo = D().cat === 'roy' ? royaltyTotals() : bookingTotals();
     el.textContent = lordo.any && lordo.lordo <= BOLLO_SOGLIA
       ? 'Sotto i 77,47 € la marca da bollo non serve: il riquadro sparisce dal documento.'
+      : hidden('bollo') ? 'Riquadro tolto da questo PDF (in «Campi del documento»). Sopra i 77,47 € la marca va comunque incollata sull\'originale che conservi.'
       : 'Serve sopra i 77,47 €. Incolla la marca sull\'originale firmato e conservalo; al committente mandi il PDF.';
   }
   function syncTop(){
@@ -2211,7 +2214,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       if (BKR.indexOf(d) !== -1 && !has(state.client.name)) list.push('committente');
       if (parseAmount(state.fee.amount) == null) list.push('compenso');
     }
-    if (REC.indexOf(d) !== -1) { var t = d.indexOf('roy') === 0 ? royaltyTotals() : bookingTotals(); if ((t.lordo > BOLLO_SOGLIA || !t.any) && !has(state.bolloId)) list.push('marca da bollo'); }
+    if (REC.indexOf(d) !== -1) { var t = d.indexOf('roy') === 0 ? royaltyTotals() : bookingTotals(); if ((t.lordo > BOLLO_SOGLIA || !t.any) && !has(state.bolloId) && !hidden('bollo') && !hidden('bolloId')) list.push('marca da bollo'); }
     return list;
   }
   function refreshStatus(){

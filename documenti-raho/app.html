@@ -153,6 +153,17 @@ details.card > .inner{display:flex;flex-direction:column;gap:14px;margin-top:14p
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 @media (max-width:440px){.grid2{grid-template-columns:minmax(0,1fr)}}
 .f{display:flex;flex-direction:column;gap:6px;min-width:0}
+/* × beside a field: takes it out of the document (and the form); faint until pointed at */
+.f.hx{position:relative}
+.f.hx > label{padding-right:28px}
+.fx{appearance:none;-webkit-appearance:none;border:0;position:absolute;top:-4px;right:2px;width:26px;height:26px;border-radius:50%;padding:0;display:grid;place-items:center;background:transparent;color:var(--faint);cursor:pointer;transition:background-color .15s,color .15s}
+.fx svg{width:13px;height:13px}
+.fx:hover,.fx:focus-visible{background:var(--warn-bg);color:var(--warn)}
+details.card.parts > summary{gap:10px}
+details.card.parts > summary h2{margin-right:auto}
+.pcount{font:600 12px var(--ui);color:var(--warn);background:var(--warn-bg);padding:4px 10px;border-radius:999px}
+.pgrp{display:flex;flex-direction:column;gap:8px}
+.pgrp h3{margin:4px 0 0}
 .f label{font-size:13px;font-weight:500;color:var(--muted)}
 input[type="text"],input[type="password"],input[type="date"],select,#edText{font:16px var(--ui);color:var(--fg);background:var(--field);border:0;border-radius:14px;padding:12px 14px;min-height:48px;width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;transition:background-color .15s,box-shadow .15s}
 input[type="text"]:hover,input[type="password"]:hover,input[type="date"]:hover,select:hover{background:var(--field-2)}
@@ -347,6 +358,17 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 .reopen{background:var(--accent);color:var(--accent-fg);flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .reopen p{margin:0;flex:1 1 220px;font-size:13.5px;line-height:1.45}
 .reopen .btn.ghost{background:var(--accent-fg);color:var(--accent)}
+/* "Salva bozza" at the right of the first card's title */
+#docCard > h2{display:flex;align-items:center}
+#formTop{display:flex;flex-direction:column;gap:12px}
+#formTop:empty{display:none}
+.draftbtn{margin-left:auto;min-height:36px;padding:0 16px;font-size:13px}
+.arch-drafts{gap:10px}
+.arch-drafts .arch-k span{color:var(--muted);font-weight:500}
+.draft{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:center;padding:12px;border-radius:16px;background:var(--well)}
+.draft.open{box-shadow:inset 0 0 0 2px var(--accent)}
+.draft .arch-ico,.draft .arch-main,.draft .arch-act{grid-area:auto}
+.draft .arch-act{grid-column:2;margin-top:2px}
 
 /* archive: a solid tile in a sober colour says the kind of document at a glance (booking black, royalties brown, contracts blue) */
 :root{--bk:#141414;--bk-fg:#ffffff;--roy:#6e4a2c;--roy-fg:#fbf4ea;--ctr:#1f3f73;--ctr-fg:#ffffff}
@@ -724,8 +746,9 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
 
   <div class="work">
     <form class="form" id="form" autocomplete="off">
+      <div id="formTop"></div>
       <section class="card" id="docCard">
-        <h2><span class="step">1</span>Documento</h2>
+        <h2><span class="step">1</span>Documento<button type="button" class="btn ghost draftbtn" id="draftSave">Salva bozza</button></h2>
         <h3>Booking</h3>
         <div class="tiles" role="radiogroup" aria-label="Documenti booking">
           <input type="radio" name="doc" id="doc-bkc-en" value="bkc-en"><label for="doc-bkc-en"><span class="ico ctr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h3"/></svg></span><span><b>Contratto DJ EN</b><small>Date all'estero</small></span></label>
@@ -906,7 +929,6 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   var RHBKNG_LOGO = 'logo-rhbkng.webp'; // D's file exactly as sent: no crop, no edits
   var RHBKNG_CONTRACT = 'logo-rhbkng-contract.png'; // the logo exactly as in the official EN contract
   var fmtIT = new Intl.NumberFormat('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2, useGrouping:'always'});
-  var fmtEN = new Intl.NumberFormat('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
 
   var DOCS = {
     'bkc-en': {cat:'bk', kind:'contract', lang:'en', name:'Contract'},
@@ -943,7 +965,11 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
           nights:'1', room:'single', stars:'3', hotel:'to be agreed', guests:'1 or more', drinks:'Gin and tonic water (separate bottles); Sugar-free energy drinks; Beer',
           cdj:'4', mixer:'any', changeDays:'7', cancelDays:'30', refundDays:'14', fmMonths:'6', proofDays:'7', law:'Italian', courts:'Italy'},
       c:{place:'', date:''}, edits:{}, ui:{theme:'auto'}, itv:2,
-      saved:{labels:{}, clients:{}}
+      saved:{labels:{}, clients:{}},
+      // parts of each document D took away (D: "eliminare campi che non mi servono in qualsiasi modulo"): hide[doc][item] = 1
+      hide:{},
+      // documents put aside half done (D: "salvare anche delle bozze"): {id, doc, who, snap, created, at}; draftId = the one open in the form
+      drafts:[], draftId:''
     };
   }
   function merge(d, s){
@@ -996,6 +1022,12 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var s = merge(defaults(), o), me = (o && o.me) || {};
     // merge() keeps only the keys defaults() has, so the saved labels and clients are copied as they are
     ['labels', 'clients'].forEach(function(k){ var v = o && o.saved && o.saved[k]; if (v && typeof v === 'object' && !Array.isArray(v)) s.saved[k] = v; });
+    if (o && o.hide && typeof o.hide === 'object' && !Array.isArray(o.hide)) Object.keys(o.hide).forEach(function(d){
+      var h = o.hide[d]; if (!DOCS[d] || !h || typeof h !== 'object') return;
+      var keep = {}; Object.keys(h).forEach(function(k){ if (h[k]) keep[k] = 1; }); if (Object.keys(keep).length) s.hide[d] = keep;
+    });
+    s.drafts = s.drafts.filter(function(x){ return x && typeof x === 'object' && x.id && x.snap && typeof x.snap === 'object' && DOCS[x.doc]; });
+    if (!s.drafts.some(function(x){ return x.id === s.draftId; })) s.draftId = '';
     if (o && o.seqStart && typeof o.seqStart === 'object' && !Array.isArray(o.seqStart)) s.seqStart = o.seqStart;
     // before the archive the tool kept the next number in "number": it becomes the starting point of that year
     else { var m = /^(\d+)\/(\d{4})$/.exec(String(o && o.number || '').trim()); if (m && +m[1] > 1) s.seqStart[m[2]] = +m[1] - 1; }
@@ -1069,10 +1101,10 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var labEst = {name:'Sample Records Ltd', addr:'1 Example Street', zip:'E1 6AN', city:'London', prov:'', country:'Regno Unito', vat:'GB123456789', piva:'', cf:''};
     var ev = {name:'Closing Party', venue:'Club Esempio', address:'Via Tortona 30, Milano', date:at(25), start:'01:00', end:'03:00', duration:'120', doors:'23:00', check:'22:30', capacity:'800', billing:'headliner', others:'Altri due DJ'};
     var past = [
-      {d:-170, doc:'bkr-it', who:club.name, amount:1200, paid:-160, snap:{client:club, ev:{name:'Notte Techno', venue:'Club Esempio', date:at(-171)}, fee:{amount:'1200', net:true, rit:true}}},
+      {d:-170, doc:'bkr-it', who:club.name, amount:1200, paid:-160, snap:{client:club, ev:{name:'Notte Techno', venue:'Club Esempio', date:at(-171)}, fee:{amount:'1.200,00', net:true, rit:true}}},
       {d:-120, doc:'roy-est', who:labEst.name, amount:845.5, paid:-100, snap:{label:labEst, lines:[{title:'Night Drive', cat:'SR012', stmt:'Q1', period:'01/01 – 31/03', amount:'845,50'}]}},
-      {d:-40, doc:'bkr-est', who:gmbh.name, amount:1650, paid:0, snap:{client:gmbh, ev:{name:'Warehouse Session', venue:'Example Club', date:at(-41)}, fee:{amount:'1500', expenses:'150'}}},
-      {d:-20, doc:'roy-it', who:labIt.name, amount:400, paid:-5, snap:{label:labIt, lines:[{title:'Deep Signal', cat:'EE007', stmt:'S1', period:'01/01 – 30/06', amount:'500'}], rit:true}}
+      {d:-40, doc:'bkr-est', who:gmbh.name, amount:1650, paid:0, snap:{client:gmbh, ev:{name:'Warehouse Session', venue:'Example Club', date:at(-41)}, fee:{amount:'1.500,00', expenses:'150,00'}}},
+      {d:-20, doc:'roy-it', who:labIt.name, amount:400, paid:-5, snap:{label:labIt, lines:[{title:'Deep Signal', cat:'EE007', stmt:'S1', period:'01/01 – 30/06', amount:'500,00'}], rit:true}}
     ];
     var seq = {}, history = past.map(function(h, i){
       var date = at(h.d), y = date.slice(0, 4); seq[y] = (seq[y] || 0) + 1;
@@ -1081,13 +1113,15 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       return e;
     });
     history.push({id:'demo-ctr', doc:'bkc-it', number:'', date:at(-5), who:club.name, amount:2000, file:'esempio.pdf',
-      snap:{doc:'bkc-it', client:club, ev:ev, fee:{amount:'2000'}, t:{depositPct:'30', depositDays:'10'}, c:{place:'Milano', date:at(-5)}}, created:at(-5) + 'T10:00:00.000Z', at:at(-5) + 'T10:00:00.000Z'});
+      snap:{doc:'bkc-it', client:club, ev:ev, fee:{amount:'2.000,00'}, t:{depositPct:'30', depositDays:'10'}, c:{place:'Milano', date:at(-5)}}, created:at(-5) + 'T10:00:00.000Z', at:at(-5) + 'T10:00:00.000Z'});
     var saved = {clients:{}, labels:{}};
     saved.clients[club.name] = club; saved.clients[gmbh.name] = gmbh; saved.labels[labIt.name] = labIt; saved.labels[labEst.name] = labEst;
-    return {doc:'bkc-it', me:me, client:club, ev:ev, fee:{amount:'2000'}, t:{depositPct:'30', depositDays:'10'}, c:{place:'Milano', date:at(-5)}, label:labIt,
+    return {doc:'bkc-it', me:me, client:club, ev:ev, fee:{amount:'2.000,00'}, t:{depositPct:'30', depositDays:'10'}, c:{place:'Milano', date:at(-5)}, label:labIt,
       accounts:[{id:'demo-acc', label:'Conto di prova', holder:'Alex Demo', iban:'IT60X0542811101000000123456', bic:'BPMOIT22XXX'}], acc:'demo-acc',
       inis:[{id:'demo-ini', name:'Sigle 1', text:'A.D.', img:''}], ini:{use:true, sel:'demo-ini'}, bolloId:'01234567890123', history:history, saved:saved,
-      sigs:demoSig(), sig:{use:true, sel:'demo-sig'}, logo:{bk:'img', roy:'img'}, logoImg:demoLogo()};
+      sigs:demoSig(), sig:{use:true, sel:'demo-sig'}, logo:{bk:'img', roy:'img'}, logoImg:demoLogo(),
+      drafts:[{id:'demo-draft', doc:'roy-it', who:labIt.name, created:at(-2) + 'T16:20:00.000Z', at:at(-2) + 'T16:40:00.000Z',
+        snap:{doc:'roy-it', date:t, label:labIt, lines:[{title:'Night Shift', cat:'EE009', stmt:'', period:'01/07 – 30/09', amount:''}], rit:true}}]};
   }
   // the trial's logo, in "Immagine": "[RH] Documents" (D), white on a black badge like the app icon, so it shows on the white
   // receipts and on the black band of the contracts. D's own logos stay in the choice too (D: "i miei lasciali ma mettine anche uno di prova").
@@ -1122,6 +1156,35 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function has(v){ return String(v == null ? '' : v).trim() !== ''; }
   function val(v, ph){ return has(v) ? esc(String(v).trim()) : '<span class="ph">[' + esc(ph) + ']</span>'; }
+  // ---- parts of a document that D can take away ----
+  // Building a document registers each removable part (show()); hidden ones are left out. docItems = the parts of the document just built.
+  var docItems = [], itemsDoc = '', itemGroup = '';
+  function hidden(id, doc){ var h = state.hide[doc || state.doc]; return !!(h && h[id]); }
+  function show(id, label, group){ docItems.push({id:id, label:String(label).replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').trim(), group:group || itemGroup}); return !hidden(id); }
+  // the fields of the form behind each part: hiding the part hides them from the form too
+  var ROWF_IT = {'p.company':['client.name'], 'p.rep':['client.rep'], 'p.addr':['client.addr', 'client.zip', 'client.city', 'client.prov'], 'p.vat':['client.piva', 'client.cf'],
+    'p.contact':['client.contact'], 'e.name':['ev.name'], 'e.venue':['ev.venue', 'ev.address'], 'e.date':['ev.date'], 'e.set':['ev.start', 'ev.end', 'ev.duration'],
+    'e.doors':['ev.doors', 'ev.check'], 'e.capacity':['ev.capacity'], 'e.billing':['ev.billing'], 'e.lineup':['ev.others'], 'pay.deposit':['t.depositPct', 't.depositDays'],
+    'pay.balance':['t.balanceDate'], 'b.trip':['t.persons', 't.transport', 't.outbound', 't.ret', 't.bags', 't.pnrDays'], 'b.car':['t.carAmount'],
+    'b.hotel':['t.nights', 't.room', 't.stars', 't.hotel'], 'h.guests':['t.guests'], 'h.booth':['t.drinks'], 'r.players':['t.cdj'], 'r.mixer':['t.mixer'],
+    'c.nofm':['t.refundDays'], 'fm.effect':['t.fmMonths'], 'fm.proof':['t.proofDays'], 'o.law':['t.foro']};
+  var ROWF_EN = {'pay.deposit':['en.depositPct', 'en.depositDays'], 'pay.balance':['en.balanceDate'], 'tax.cert':['en.certDays'],
+    'b.flights':['en.persons', 'en.outbound', 'en.ret', 'en.bags', 'en.bagKg'], 'b.tickets':['en.pnrDays'], 'b.hotel':['en.nights', 'en.room', 'en.stars', 'en.hotel'],
+    'h.guests':['en.guests'], 'h.booth':['en.drinks'], 'r.players':['en.cdj'], 'r.mixer':['en.mixer'], 'c.nofm':['en.refundDays'], 'fm.effect':['en.fmMonths'],
+    'fm.proof':['en.proofDays'], 'o.law':['en.law', 'en.courts']};
+  function itemFields(){
+    var d = state.doc, k = DOCS[d];
+    if (k.kind === 'contract') return d === 'bkc-it' ? ROWF_IT : ROWF_EN;
+    var X = k.cat === 'roy' ? 'label' : 'client';
+    return {'to.addr':[X + '.addr'], 'to.city':[X + '.zip', X + '.city', X + '.prov'], 'to.country':[X + '.country'], 'to.vat':[X + '.vat'], 'to.piva':[X + '.piva'],
+      'to.cf':[X + '.cf'], 'ev.place':['ev.venue', 'ev.address'], 'contractDate':['fee.contractDate'], 'contact':[k.cat === 'roy' ? 'me.email' : 'me.bookingEmail'],
+      'line.cat':['line.cat'], 'line.stmt':['line.stmt']};
+  }
+  function itemOf(path){ var m = itemFields(); return Object.keys(m).filter(function(id){ return m[id].indexOf(path) !== -1; })[0] || ''; }
+  function fieldOff(path){ var id = itemOf(path); return !!id && hidden(id); }
+  // the parts of the current document (built once if the preview has not built it yet)
+  function itemsNow(){ if (itemsDoc !== state.doc) buildPages(); return docItems; }
+  function itemLabel(id){ var it = itemsNow().filter(function(x){ return x.id === id; })[0]; return it ? it.label : id; }
   // a part of the sheet that comes from a field: clicking it goes to that field (goField())
   function at(target, html){ return '<span data-f="' + target + '">' + html + '</span>'; }
   function parseAmount(s){
@@ -1220,7 +1283,8 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       holder:'Account holder', ref:'Reference', refNo:'Receipt no. ', sign:'Signature', contact:'General info', stamp:'Revenue stamp', digits:'14 digits',
       name:'Full name', street:'Street, number', city:'Postcode City', cf:'Italian tax code: ', cfPh:'TAX CODE', country:', Italy', status:'Private individual, not VAT-registered'}
   };
-  function rMoney(en, n){ return '€ ' + (en ? fmtEN : fmtIT).format(n); }
+  // amounts as 1.500,00 in every document, the English ones too (D: "metti la , prima dei decimali e il punto ogni 3 cifre")
+  function rMoney(en, n){ return '€ ' + fmtIT.format(n); }
   function receiptPage(o){
     var en = o.est, W = en ? RT.en : RT.it, M = state.me, num = esc(currentNumber());
     var h = '<header class="p-head"><div class="p-headl">' + logoHtml()
@@ -1228,28 +1292,32 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       + '<div class="p-headr"><div class="lbl">' + W.no + '</div>'
       + '<div class="p-num" data-f="f:number">' + num + '</div>'
       + '<div class="p-date" data-f="f:date">' + W.date + val(itDate(state.date), W.datePh) + '</div></div></header>';
-    var meLines = [ at('me:addr', val(M.addr, W.street)), at('me:city', val(cityLine(M), W.city)) + W.country, W.cf + at('me:cf', val(M.cf, W.cfPh)) ];
+    var meLines = [], mine = 'Emittente (i tuoi dati)';
+    if (show('me.addr', 'Indirizzo', mine)) meLines.push(at('me:addr', val(M.addr, W.street)));
+    if (show('me.city', 'CAP e città', mine)) meLines.push(at('me:city', val(cityLine(M), W.city)) + W.country);
+    if (show('me.cf', 'Codice fiscale', mine)) meLines.push(W.cf + at('me:cf', val(M.cf, W.cfPh)));
+    var status = show('status', 'Persona fisica senza partita IVA', mine), subj = show('subject', 'Oggetto', 'Documento');
     h += '<section class="p-two"><div class="p-col"><div class="lbl rule">' + W.issuer + '</div>'
       + '<div class="p-who"><div class="p-name" data-f="me:first">' + val(M.name, W.name) + '</div><div class="p-addr">' + meLines.join('<br>') + '</div></div>'
-      + ed('status', W.status, 'p-small') + '</div>'
+      + (status ? ed('status', W.status, 'p-small') : '') + '</div>'
       + '<div class="p-col"><div class="lbl rule">' + W.billTo + '</div>'
       + '<div class="p-who"><div class="p-name" data-f="' + o.to + 'name">' + o.toName + '</div><div class="p-addr">' + o.toLines.join('<br>') + '</div></div></div></section>';
-    h += '<section class="p-subj"><div class="lbl">' + W.desc + '</div>' + ed('subject', o.subject, 's') + '</section>';
+    if (subj) h += '<section class="p-subj"><div class="lbl">' + W.desc + '</div>' + ed('subject', o.subject, 's') + '</section>';
     h += '<section class="p-items"><table class="p-tab"><thead><tr><th>' + o.cols[0] + '</th><th>' + o.cols[1] + '</th><th>' + o.cols[2] + '</th></tr></thead><tbody>'
       + o.rows + '</tbody></table><div class="p-total"><div class="k">' + o.totalLabel + '</div><div class="v" data-f="' + o.totalF + '">' + o.totalValue + '</div></div></section>';
-    var A = account();
-    var pay = '<div class="k">' + W.holder + '</div><div>' + val(has(A.holder) ? A.holder : M.name, W.name) + '</div>'
+    var A = account(), pg = 'Pagamento';
+    var pay = (show('holder', 'Intestatario', pg) ? '<div class="k">' + W.holder + '</div><div>' + val(has(A.holder) ? A.holder : M.name, W.name) + '</div>' : '')
       + '<div class="k">IBAN</div><div class="m iban">' + val(has(A.iban) ? ibanGroups(A.iban) : '', 'IT00 X000 0000 0000 0000 0000 000') + '</div>'
-      + (en ? '<div class="k">BIC / SWIFT</div><div class="m">' + val(A.bic, 'XXXXITXX') + '</div>' : '')
-      + '<div class="k">' + W.ref + '</div><div data-f="f:number">' + W.refNo + num + '</div>';
+      + (en && show('bic', 'BIC / SWIFT', pg) ? '<div class="k">BIC / SWIFT</div><div class="m">' + val(A.bic, 'XXXXITXX') + '</div>' : '')
+      + (show('ref', 'Causale', pg) ? '<div class="k">' + W.ref + '</div><div data-f="f:number">' + W.refNo + num + '</div>' : '');
     h += '<section class="p-two pay"><div class="p-col notes"><div class="lbl rule">' + W.notes + '</div>'
       + o.notes.map(function(n){ return ed('note.' + n[0], esc(n[1]), 'p-note'); }).join('') + '</div>'
       + '<div class="p-col notes"><div class="lbl rule">' + W.pay + '</div><div class="p-pay" data-f="acc">' + pay + '</div></div></section>';
     // the signature space is there only when "Aggiungi la mia firma" is ticked; the contact email goes under a thin line, on the right
     h += '<footer class="p-foot' + (o.bollo ? '' : ' nobollo') + '">'
-      + (o.bollo ? '<div class="p-bollo" data-f="f:bolloId"><div class="p-box">' + W.stamp + '<b>€ 2' + (en ? '.' : ',') + '00</b></div><div class="mono p-stampid">ID ' + val(state.bolloId, W.digits) + '</div></div>' : '')
+      + (o.bollo ? '<div class="p-bollo" data-f="f:bolloId"><div class="p-box">' + W.stamp + '<b>€ 2,00</b></div><div class="mono p-stampid">ID ' + val(state.bolloId, W.digits) + '</div></div>' : '')
       + (state.sig.use ? '<div class="p-sign" data-f="sig"><div class="ln">' + sigHtml() + '</div><div class="lbl">' + W.sign + '</div></div>' : '') + '</footer>'
-      + (has(o.mail) ? '<div class="p-contact" data-f="' + (D().cat === 'roy' ? 'f:me.email' : 'f:me.bookingEmail') + '"><span class="lbl">' + W.contact + '</span><span>' + esc(String(o.mail).trim()) + '</span></div>' : '');
+      + (show('contact', 'Email in fondo (Info generali)', 'In fondo') && has(o.mail) ? '<div class="p-contact" data-f="' + (D().cat === 'roy' ? 'f:me.email' : 'f:me.bookingEmail') + '"><span class="lbl">' + W.contact + '</span><span>' + esc(String(o.mail).trim()) + '</span></div>' : '');
     return {html:h, cls:'receipt'};
   }
 
@@ -1279,15 +1347,14 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
 
   function royaltyReceipt(){
     var en = state.doc === 'roy-est', L = state.label, t = royaltyTotals();
-    var cur = function(n){ return rMoney(en, n); }, none = '<span class="ph">€ [0' + (en ? '.' : ',') + '00]</span>';
+    var cur = function(n){ return rMoney(en, n); }, none = '<span class="ph">€ [0,00]</span>';
     var amt = function(n){ return t.any ? cur(n) : none; };
-    var to = function(k, h){ return at('f:label.' + k, h); };
-    var toLines = [ to('addr', val(L.addr, en ? 'Address' : 'Indirizzo')), to('city', val(cityLine(L, en), en ? 'Postcode City, Region' : 'CAP Città (Prov.)')) ];
-    if (en) { toLines.push(to('country', val(L.country, 'Country'))); toLines.push('VAT / Tax ID: ' + to('vat', val(L.vat, 'number'))); }
-    else { toLines.push('P.IVA: ' + to('piva', val(L.piva, 'numero'))); toLines.push('C.F.: ' + to('cf', val(L.cf, 'numero'))); }
+    var toLines = toLinesOf(L, 'label', en);
+    var catOn = show('line.cat', 'Catalogo', 'Release'), stmtOn = show('line.stmt', 'N. statement', 'Release');
     var rows = state.lines.map(function(l, i){
       var n = parseAmount(l.amount), ln = function(k, h){ return at('line:' + i + ':' + k, h); };
-      return '<tr class="rel"><td><div class="t">' + ln('title', val(l.title, en ? 'Release title' : 'Titolo release')) + '</div><div class="meta">Cat. ' + ln('cat', val(l.cat, 'XXX000')) + ' · Statement ' + ln('stmt', val(l.stmt, 'n.')) + '</div></td>'
+      var meta = [catOn ? 'Cat. ' + ln('cat', val(l.cat, 'XXX000')) : '', stmtOn ? 'Statement ' + ln('stmt', val(l.stmt, 'n.')) : ''].filter(Boolean).join(' · ');
+      return '<tr class="rel"><td><div class="t">' + ln('title', val(l.title, en ? 'Release title' : 'Titolo release')) + '</div>' + (meta ? '<div class="meta">' + meta + '</div>' : '') + '</td>'
         + '<td class="per">' + ln('period', val(l.period, en ? 'DD/MM/YY – DD/MM/YY' : 'GG/MM/AA – GG/MM/AA')) + '</td>'
         + '<td class="amt">' + ln('amount', n != null ? cur(n) : none) + '</td></tr>';
     }).join('');
@@ -1299,7 +1366,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (en) {
       notes.push(['vat', 'Not subject to Italian VAT: the issuer is not VAT-registered (art. 5 DPR 633/1972).']);
       notes.push(['norit', 'No Italian withholding tax: the payer is not resident in Italy.']);
-      if (bollo) notes.push(['bollo', 'Italian stamp duty of EUR 2.00 paid on the original.']);
+      if (bollo) notes.push(['bollo', 'Italian stamp duty of EUR 2,00 paid on the original.']);
     } else {
       notes.push(['vat', 'Operazione non soggetta a IVA per mancanza del presupposto soggettivo (art. 5 DPR 633/1972).']);
       notes.push(state.rit ? ['rit', 'Ritenuta d\'acconto del 20% sul compenso lordo, versata dal committente in qualità di sostituto d\'imposta (art. 25 DPR 600/1973), che rilascerà la Certificazione Unica.']
@@ -1313,21 +1380,32 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       notes: notes, bollo: bollo });
   }
 
+  // the recipient (label or client) under its name: each line can be taken away
+  function toLinesOf(X, path, en){
+    var g = 'Destinatario', to = function(k, h){ return at('f:' + path + '.' + k, h); }, out = [];
+    if (show('to.addr', 'Indirizzo', g)) out.push(to('addr', val(X.addr, en ? 'Address' : 'Indirizzo')));
+    if (show('to.city', 'CAP e città', g)) out.push(to('city', val(cityLine(X, en), en ? 'Postcode City, Region' : 'CAP Città (Prov.)')));
+    if (en) {
+      if (show('to.country', 'Stato', g)) out.push(to('country', val(X.country, 'Country')));
+      if (show('to.vat', 'VAT / Tax ID', g)) out.push('VAT / Tax ID: ' + to('vat', val(X.vat, 'number')));
+    } else {
+      if (show('to.piva', 'Partita IVA', g)) out.push('P.IVA: ' + to('piva', val(X.piva, 'numero')));
+      if (show('to.cf', 'Codice fiscale', g)) out.push('C.F.: ' + to('cf', val(X.cf, 'numero')));
+    }
+    return out;
+  }
   function bookingReceipt(){
     var en = state.doc === 'bkr-est', C = state.client, E = state.ev, F = state.fee, t = bookingTotals();
-    var cur = function(n){ return rMoney(en, n); }, none = '<span class="ph">€ [0' + (en ? '.' : ',') + '00]</span>';
+    var cur = function(n){ return rMoney(en, n); }, none = '<span class="ph">€ [0,00]</span>';
     var amt = function(n){ return t.any ? cur(n) : none; };
-    var to = function(k, h){ return at('f:client.' + k, h); };
-    var toLines = [ to('addr', val(C.addr, en ? 'Address' : 'Indirizzo')), to('city', val(cityLine(C, en), en ? 'Postcode City, Region' : 'CAP Città (Prov.)')) ];
-    if (en) { toLines.push(to('country', val(C.country, 'Country'))); toLines.push('VAT / Tax ID: ' + to('vat', val(C.vat, 'number'))); }
-    else { toLines.push('P.IVA: ' + to('piva', val(C.piva, 'numero'))); toLines.push('C.F.: ' + to('cf', val(C.cf, 'numero'))); }
-    var meta = at('f:ev.venue', val(E.venue, en ? 'Venue' : 'Locale')) + (has(E.address) ? ', ' + at('f:ev.address', esc(E.address)) : '');
+    var toLines = toLinesOf(C, 'client', en);
+    var meta = show('ev.place', 'Locale e indirizzo', 'Evento') ? at('f:ev.venue', val(E.venue, en ? 'Venue' : 'Locale')) + (has(E.address) ? ', ' + at('f:ev.address', esc(E.address)) : '') : '';
     // deposit / balance: on the line of the contract date, short, so even the fullest receipt keeps its spacing
     var part = F.part && t.all != null ? (en ? (F.part === 'dep' ? 'deposit ' : 'balance ') + partPct(F) + '% of ' + cur(t.all) + ' net'
       : (F.part === 'dep' ? 'acconto ' : 'saldo ') + String(partPct(F)).replace('.', ',') + '% di ' + cur(t.all) + (F.net ? ' netti' : '')) : '';
-    if (has(F.contractDate)) meta += '<br>' + at('f:fee.contractDate', (en ? 'Agreement dated ' : 'Contratto del ') + esc(itDate(F.contractDate))) + (part ? ' · ' + at('f:fee.part', part) : '');
-    else if (part) meta += '<br>' + at('f:fee.part', part.charAt(0).toUpperCase() + part.slice(1));
-    var rows = '<tr class="rel"><td><div class="t">' + at('f:ev.name', val(E.name, en ? 'Event name' : 'Nome evento')) + '</div><div class="meta">' + meta + '</div></td>'
+    if (has(F.contractDate) && show('contractDate', 'Data del contratto', 'Evento')) meta += (meta ? '<br>' : '') + at('f:fee.contractDate', (en ? 'Agreement dated ' : 'Contratto del ') + esc(itDate(F.contractDate))) + (part ? ' · ' + at('f:fee.part', part) : '');
+    else if (part) meta += (meta ? '<br>' : '') + at('f:fee.part', part.charAt(0).toUpperCase() + part.slice(1));
+    var rows = '<tr class="rel"><td><div class="t">' + at('f:ev.name', val(E.name, en ? 'Event name' : 'Nome evento')) + '</div>' + (meta ? '<div class="meta">' + meta + '</div>' : '') + '</td>'
       + '<td class="per">' + at('f:ev.date', val(itDate(E.date), en ? 'DD/MM/YYYY' : 'GG/MM/AAAA')) + '</td><td class="amt">' + at('f:fee.amount', amt(t.lordo)) + '</td></tr>';
     if (en && t.ex) rows += '<tr class="sum first last"><td colspan="2">' + at('f:fee.expenses', 'Expense reimbursement') + '</td><td class="amt">' + at('f:fee.expenses', cur(t.ex)) + '</td></tr>';
     if (!en) {
@@ -1338,7 +1416,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (en) {
       notes.push(['vat', 'Occasional self-employed service, outside the scope of Italian VAT (art. 5 DPR 633/1972).']);
       notes.push(['norit', 'No Italian withholding tax. Any foreign withholding tax is borne by the client, as agreed.']);
-      if (bollo) notes.push(['bollo', 'Italian stamp duty of EUR 2.00 paid on the original.']);
+      if (bollo) notes.push(['bollo', 'Italian stamp duty of EUR 2,00 paid on the original.']);
     } else {
       notes.push(['vat', 'Prestazione di lavoro autonomo occasionale (art. 2222 c.c.), non soggetta a IVA per mancanza del presupposto soggettivo (art. 5 DPR 633/1972).']);
       notes.push(F.rit ? ['rit', 'Ritenuta d\'acconto del 20% sul compenso lordo, versata dal committente in qualità di sostituto d\'imposta (art. 25 DPR 600/1973), che rilascerà la Certificazione Unica.']
@@ -1395,7 +1473,6 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   function htmlText(html){ var d = document.createElement('div'); d.innerHTML = html; return toText(d); }
 
   // ---------- contracts ----------
-  var fmtEN0 = new Intl.NumberFormat('en-GB', {maximumFractionDigits:0});
   var fmtIT0 = new Intl.NumberFormat('it-IT', {maximumFractionDigits:0, useGrouping:'always'});
   function numOr(v){ var n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : null; }
 
@@ -1410,12 +1487,17 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var mine = iniHtml(), ini = mine ? initials.replace('______', function(){ return mine; }) : initials;   // the promoter's blank stays
     var foot = function(i){ return '<footer class="ag-foot"><span class="ini" data-f="ini">' + ini + '</span><span class="pg">' + pageWord + ' ' + i + ' / ' + total + '</span></footer>'; };
     k.page = function(i, body){ k.pages.push({html: band + '<div class="ag-body">' + body + '</div>' + foot(i), cls:'ag'}); };
-    k.sec = function(n, title){ return '<div class="ag-sec"><span class="n">' + n + '</span>' + ed('sec' + n, title, 'st') + '</div>'; };
+    var mark = 0, cap = function(t){ t = String(t).replace(/<[^>]*>/g, '').trim(); return t.charAt(0) + t.slice(1).toLowerCase(); };
+    k.sec = function(n, title){ itemGroup = cap(title); mark = docItems.length; return '<div class="ag-sec"><span class="n">' + n + '</span>' + ed('sec' + n, title, 'st') + '</div>'; };
     // gap: from the line above to the top of the title letters, as in the original
     k.group = function(key, title, note, gap, rows){
+      for (var i = mark; i < docItems.length; i++) docItems[i].group = cap(title);   // the rows just built belong to this group
+      mark = docItems.length;
+      if (!rows.join('')) return '';   // every row taken away: no empty title
       return '<section class="ag-g" style="margin-top:' + r2(gap - 1.5) + 'pt"><div class="ag-gh">' + ed(key, title, 'gt') + (note ? '<i>' + note + '</i>' : '') + '</div>' + rows.join('') + '</section>';
     };
     k.row = function(key, label, value, o){
+      if (!show(key, label)) return '';
       o = o || {};
       return '<div class="ag-row"' + (o.h ? ' style="min-height:' + o.h + 'pt"' : '') + '>' + ed(key + '.k', label, 'k') + ed(key, value, 'v' + (o.j ? ' j' : '')) + '</div>';
     };
@@ -1435,7 +1517,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   function contractEN(){
     var M = state.me, E = state.en, K = agKit(9, 'DJ PERFORMANCE AGREEMENT', 'Initials   Artist ______   Promoter ______', 'PAGE');
     var ph = K.ph, v = K.v, ln = K.ln, lines = K.lines, page = K.page, sec = K.sec, group = K.group, row = K.row;
-    var eur = function(n){ return n == null ? ph('amount') : (Math.round(n) === n ? fmtEN0 : fmtEN).format(n); };
+    var eur = function(n){ return n == null ? ph('amount') : (Math.round(n) === n ? fmtIT0 : fmtIT).format(n); };
     var net = parseAmount(state.fee.amount), pct = numOr(E.depositPct);
     var dep = net != null && pct != null ? r2(net * pct / 100) : null, bal = net != null && dep != null ? r2(net - dep) : null;
     var pctTxt = has(E.depositPct) ? esc(E.depositPct) : ph('50'), balPct = pct != null ? r2(100 - pct) : ph('50');
@@ -1691,7 +1773,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
 
   function buildPages(){
     var d = D();
-    defaultsHtml = {};
+    defaultsHtml = {}; docItems = []; itemsDoc = state.doc; itemGroup = '';
     if (state.doc === 'bkc-en') return contractEN();
     if (state.doc === 'bkc-it') return contractIT();
     return [d.cat === 'roy' ? royaltyReceipt() : bookingReceipt()];
@@ -1819,12 +1901,12 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       F('ev.doors','Apertura porte',{half:1, docs:BKC}), F('ev.check','Prova attrezzatura',{half:1, docs:BKC}),
       F('ev.billing','Line-up',{type:'select', docs:BKC, opts:[['headliner','Headliner'],['co-headliner','Co-headliner'],['support','Support']]}),
       F('ev.others','Altri artisti',{docs:BKC})]},
-    {t:'Compenso', g:'what', docs:BK, part:1, f:[F('fee.amount','Compenso netto concordato €',{num:1, ph:'0,00'}),
+    {t:'Compenso', g:'what', docs:BK, part:1, f:[F('fee.amount','Compenso netto concordato €',{num:1, eur:1, ph:'0,00'}),
       F('fee.part','Questa ricevuta è per',{type:'select', docs:BKR, half:1, opts:[['','Tutto il compenso'],['dep','L\'acconto'],['bal','Il saldo']]}),
       F('fee.pct','Acconto concordato %',{num:1, half:1, docs:BKR, when:function(){ return !!state.fee.part; }}),
       F('fee.rit','Il committente è sostituto d\'imposta (ritenuta 20%)',{type:'check', docs:['bkr-it'], hint:'Società, associazioni, enti: sì. Un privato: no.'}),
       F('fee.net','L\'importo è il netto: calcola il lordo',{type:'check', docs:['bkr-it']}),
-      F('fee.expenses','Rimborso spese € (facoltativo)',{num:1, ph:'0,00', docs:['bkr-est']}),
+      F('fee.expenses','Rimborso spese € (facoltativo)',{num:1, eur:1, ph:'0,00', docs:['bkr-est']}),
       F('fee.contractDate','Data del contratto (facoltativa)',{type:'date', docs:BKR})]},
     {t:'Pagamento', g:'terms', docs:['bkc-en'], f:[F('en.depositPct','Acconto %',{half:1, num:1}), F('en.depositDays','Giorni per l\'acconto',{half:1, num:1}),
       F('en.balanceDate','Saldo con bonifico entro il (facoltativo)',{type:'date', hint:'Contanti o bonifico lo sceglie il promoter, spuntando una casella nel contratto.'}),
@@ -1844,7 +1926,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       F('t.balanceDate','Saldo con bonifico entro il (facoltativo)',{type:'date', hint:'Contanti o bonifico lo sceglie il committente, spuntando una casella nel contratto.'})]},
     {t:'Viaggio e alloggio', g:'terms', docs:['bkc-it'], f:[F('t.persons','Passeggeri',{half:1, num:1}), F('t.transport','Mezzo',{half:1, ph:'Treno / volo'}),
       F('t.outbound','Andata',{half:1}), F('t.ret','Ritorno',{half:1}), F('t.bags','Bagagli',{half:1, num:1}), F('t.pnrDays','Biglietti inviati giorni prima',{half:1, num:1}),
-      F('t.carAmount','Rimborso auto propria € (facoltativo)',{num:1}),
+      F('t.carAmount','Rimborso auto propria € (facoltativo)',{num:1, eur:1, ph:'0,00'}),
       F('t.nights','Notti',{half:1, num:1}), F('t.room','Camera',{type:'select', half:1, opts:[['single','Singola'],['double','Doppia']]}),
       F('t.stars','Stelle minime',{half:1, num:1}), F('t.hotel','Hotel',{half:1}), F('t.guests','Ospiti in lista',{half:1}),
       F('t.drinks','Bevande facoltative in consolle (separate da ;)')]},
@@ -1860,16 +1942,21 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     {t:'Ricevuta di questa data', g:'after', docs:BKC, custom:'toRec'},
   ];
 
+  // × next to a field: takes its part away from the document (and the field from the form)
+  function fxHtml(path){
+    var it = itemOf(path); if (!it) return '';
+    return '<button type="button" class="fx" data-hide="' + it + '" title="Togli dal documento" aria-label="Togli «' + esc(itemLabel(it)) + '» dal documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button>';
+  }
   function fieldHtml(fd){
-    var id = 'f-' + fd.p.replace(/\./g, '-'), v = fd.auto ? currentNumber() : get(fd.p);
+    var id = 'f-' + fd.p.replace(/\./g, '-'), v = fd.auto ? currentNumber() : get(fd.p), fx = fd.auto || fd.type === 'check' ? '' : fxHtml(fd.p);
     if (fd.auto) return '<div class="f"><label for="' + id + '">' + esc(fd.l) + '</label><input type="text" id="' + id + '" class="ro" readonly value="' + esc(v) + '"></div>';
     if (fd.type === 'check') return '<div><label class="check" for="' + id + '"><input type="checkbox" id="' + id + '" data-path="' + fd.p + '"' + (v ? ' checked' : '') + '><span>' + esc(fd.l) + '</span></label>'
       + (fd.hint ? '<p class="hint" style="margin:6px 0 0 30px">' + esc(fd.hint) + '</p>' : '') + '</div>';
     var inner;
     if (fd.type === 'select') inner = '<select id="' + id + '" data-path="' + fd.p + '">' + fd.opts.map(function(o){ return '<option value="' + esc(o[0]) + '"' + (String(v) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
-    else inner = '<input type="' + (fd.type === 'date' ? 'date' : 'text') + '" id="' + id + '" data-path="' + fd.p + '"' + (fd.num ? ' class="num" inputmode="decimal"' : '')
+    else inner = '<input type="' + (fd.type === 'date' ? 'date' : 'text') + '" id="' + id + '" data-path="' + fd.p + '"' + (fd.num ? ' class="num" inputmode="decimal"' : '') + (fd.eur ? ' data-eur="1"' : '')
       + (fd.ph ? ' placeholder="' + esc(fd.ph) + '"' : '') + ' value="' + esc(v) + '">';
-    return '<div class="f"><label for="' + id + '">' + esc(fd.l) + '</label>' + inner + (fd.hint ? '<p class="hint">' + esc(fd.hint) + '</p>' : '') + '</div>';
+    return '<div class="f' + (fx ? ' hx' : '') + '"><label for="' + id + '">' + esc(fd.l) + '</label>' + fx + inner + (fd.hint ? '<p class="hint">' + esc(fd.hint) + '</p>' : '') + '</div>';
   }
   // the form is made of a few cards, one per topic; inside a card each section has its own small title
   var GROUPS = [
@@ -1891,7 +1978,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (sec.custom === 'lines') body += '<div class="lines" id="lines">' + linesHtml() + '</div><button class="btn ghost" type="button" id="addLine" style="align-self:flex-start">Aggiungi release</button>';
     if (sec.custom === 'sig') body += sigBlockHtml();
     if (sec.custom === 'ini') body += iniBlockHtml();
-    var fs = (sec.f || []).filter(function(fd){ return (!fd.docs || fd.docs.indexOf(doc) !== -1) && (!fd.when || fd.when()); }), buf = [];
+    var fs = (sec.f || []).filter(function(fd){ return (!fd.docs || fd.docs.indexOf(doc) !== -1) && (!fd.when || fd.when()) && !fieldOff(fd.p); }), buf = [];
     var flush = function(){ if (buf.length) { body += buf.length > 1 ? '<div class="grid2">' + buf.join('') + '</div>' : buf[0]; buf = []; } };
     fs.forEach(function(fd){ if (fd.half) { buf.push(fieldHtml(fd)); if (buf.length === 2) flush(); } else { flush(); body += fieldHtml(fd); } });
     flush();
@@ -1937,7 +2024,12 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   }
   function renderFields(){
     var doc = state.doc, d = D(), out = '', v = viewed(), step = 1;
-    if (v) out += '<section class="card reopen"><p><b>Stai riaprendo ' + esc(docTitle(v.doc).toLowerCase()) + (v.number ? ' ' + esc(v.number) : '') + '.</b> Se la scarichi di nuovo, nell\'archivio viene aggiornata con lo stesso numero.</p>'
+    var dr = draftOf(state.draftId), top = '';
+    if (dr) top += '<section class="card reopen draftband"><p><b>Bozza' + (dr.who ? ': ' + esc(dr.who) : '') + '.</b> Si aggiorna da sola mentre scrivi'
+      + (dr.at ? ' (salvata alle ' + new Date(dr.at).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) + ')' : '') + '; quando scarichi il PDF diventa un documento dell\'archivio.</p>'
+      + '<button type="button" class="btn ghost" id="draftClose">Chiudi la bozza</button></section>';
+    var dsb = document.getElementById('draftSave'); if (dsb) dsb.textContent = dr ? 'Bozza ✓' : 'Salva bozza';
+    if (v) top += '<section class="card reopen"><p><b>Stai riaprendo ' + esc(docTitle(v.doc).toLowerCase()) + (v.number ? ' ' + esc(v.number) : '') + '.</b> Se la scarichi di nuovo, nell\'archivio viene aggiornata con lo stesso numero.</p>'
       + '<button type="button" class="btn ghost" id="newDoc">Nuovo documento</button></section>';
     GROUPS.forEach(function(gr){
       var secs = SECTIONS.filter(function(sec){ return sec.g === gr.g && sec.docs.indexOf(doc) !== -1; });
@@ -1951,8 +2043,29 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       });
       out += '<section class="card"><h2><span class="step">' + (++step) + '</span>' + title + '</h2>' + (gr.fold ? '<p class="hint">Sono già compilate con i valori del contratto: aprile solo per cambiare qualcosa.</p>' : '') + body + '</section>';
     });
+    out += partsCard(++step);
+    document.getElementById('formTop').innerHTML = top;   // the bands of a reopened document or an open draft: above the first card
     document.getElementById('fields').innerHTML = out;
     bolloHint(); partHint();
+  }
+  // "Campi del documento": every part that can be taken away, ticked = in the document (D: "eliminare campi che non mi servono")
+  var PART_ORDER = ['Emittente (i tuoi dati)', 'Destinatario', 'Documento', 'Evento', 'Release', 'Pagamento', 'In fondo'];
+  function partsCard(step){
+    var items = itemsNow(), groups = [], by = {}, off = items.filter(function(i){ return hidden(i.id); }).length;
+    items.forEach(function(i){ if (!by[i.group]) { by[i.group] = []; groups.push(i.group); } if (!by[i.group].some(function(x){ return x.id === i.id; })) by[i.group].push(i); });
+    if (D().kind === 'receipt') groups.sort(function(a, b){ return PART_ORDER.indexOf(a) - PART_ORDER.indexOf(b); });
+    return '<details class="card parts" data-card="parts"' + (openCards.parts ? ' open' : '') + '><summary><h2><span class="step">' + step + '</span>Campi del documento</h2>'
+      + (off ? '<span class="pcount">' + (off === 1 ? '1 tolto' : off + ' tolti') + '</span>' : '') + '</summary><div class="inner">'
+      + '<p class="hint">Togli quelli che non ti servono in questo documento: spariscono dal foglio e dal modulo. Li rimetti quando vuoi. Nel modulo puoi toglierli anche con la × accanto al campo.</p>'
+      + groups.map(function(g){ return '<div class="pgrp"><h3>' + esc(g) + '</h3>' + by[g].map(function(i){
+          return '<label class="check"><input type="checkbox" data-part="' + esc(i.id) + '"' + (hidden(i.id) ? '' : ' checked') + '><span>' + esc(i.label) + '</span></label>';
+        }).join('') + '</div>'; }).join('')
+      + (off ? '<button type="button" class="x" id="partsAll" style="align-self:flex-start">Rimetti tutti i campi</button>' : '') + '</div></details>';
+  }
+  function setPart(id, on){
+    var h = state.hide[state.doc] || (state.hide[state.doc] = {});
+    if (on) delete h[id]; else h[id] = 1;
+    if (!Object.keys(h).length) delete state.hide[state.doc];
   }
   function linesHtml(){
     return state.lines.map(function(l, i){
@@ -1960,10 +2073,14 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       return '<div class="line"><div class="line-head"><span>Release ' + (i + 1) + '</span>'
         + (state.lines.length > 1 ? '<button type="button" class="x" data-remove="' + i + '">Rimuovi</button>' : '') + '</div>'
         + '<div class="f"><label for="' + p + 'title">Titolo</label><input type="text" id="' + p + 'title" data-line="' + i + '" data-key="title" value="' + esc(l.title) + '"></div>'
-        + '<div class="grid2"><div class="f"><label for="' + p + 'cat">Catalogo</label><input type="text" id="' + p + 'cat" data-line="' + i + '" data-key="cat" value="' + esc(l.cat) + '"></div>'
-        + '<div class="f"><label for="' + p + 'stmt">N. statement</label><input type="text" id="' + p + 'stmt" data-line="' + i + '" data-key="stmt" value="' + esc(l.stmt) + '"></div></div>'
+        + (function(){
+          var cells = [['cat', 'Catalogo'], ['stmt', 'N. statement']].filter(function(c){ return !fieldOff('line.' + c[0]); }).map(function(c){
+            return '<div class="f hx"><label for="' + p + c[0] + '">' + c[1] + '</label>' + fxHtml('line.' + c[0]) + '<input type="text" id="' + p + c[0] + '" data-line="' + i + '" data-key="' + c[0] + '" value="' + esc(l[c[0]]) + '"></div>';
+          });
+          return cells.length === 2 ? '<div class="grid2">' + cells.join('') + '</div>' : cells.join('');
+        })()
         + '<div class="grid2"><div class="f"><label for="' + p + 'period">Periodo</label><input type="text" id="' + p + 'period" data-line="' + i + '" data-key="period" placeholder="01/01/26 – 30/06/26" value="' + esc(l.period) + '"></div>'
-        + '<div class="f"><label for="' + p + 'amount">Importo lordo €</label><input type="text" class="num" inputmode="decimal" id="' + p + 'amount" data-line="' + i + '" data-key="amount" placeholder="0,00" value="' + esc(l.amount) + '"></div></div></div>';
+        + '<div class="f"><label for="' + p + 'amount">Importo lordo €</label><input type="text" class="num" inputmode="decimal" data-eur="1" id="' + p + 'amount" data-line="' + i + '" data-key="amount" placeholder="0,00" value="' + esc(l.amount) + '"></div></div></div>';
     }).join('');
   }
   // contracts: the receipt of this date, with the client, the event and the fee already in (all of it, the deposit or the balance)
@@ -1985,7 +2102,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (has(state.c.date)) state.fee.contractDate = state.c.date;
     state.fee.from = ctr && DOCS[ctr.doc].kind === 'contract' ? ctr.id : '';
     if (!en) state.fee.net = true;   // the contract fee is the net one
-    state.doc = en ? 'bkr-est' : 'bkr-it'; state.viewing = ''; state.date = todayISO();
+    state.doc = en ? 'bkr-est' : 'bkr-it'; state.viewing = ''; state.draftId = ''; state.date = todayISO();
     syncTop(); renderFields(); update();
     setStatus('Ricevuta ' + (part === 'dep' ? 'dell\'acconto' : part === 'bal' ? 'del saldo' : 'di questa data') + ' pronta dal contratto: controlla i dati e scaricala.', 'ok');
     var f = document.getElementById('fields'); if (f && f.scrollIntoView) document.getElementById('form').scrollTop = 0;
@@ -2044,10 +2161,10 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     statusEl.className = 'status' + (kind ? ' ' + kind : ''); statusM.className = 'status statusm' + (kind ? ' ' + kind : '');
   }
   function missing(){
-    var d = state.doc, M = state.me, list = [];
-    if (!has(M.name)) list.push('nome'); if (!has(M.cf)) list.push('codice fiscale');
+    var d = state.doc, M = state.me, list = [], ctr = D().kind === 'contract';
+    if (!has(M.name)) list.push('nome'); if (!has(M.cf) && !hidden(ctr ? 'a.cf' : 'me.cf')) list.push('codice fiscale');
     if (REC.indexOf(d) !== -1 && !has(account().iban)) list.push('IBAN');
-    if (BK.indexOf(d) !== -1 && !has(M.bookingEmail)) list.push('email di booking');
+    if (BK.indexOf(d) !== -1 && !has(M.bookingEmail) && !hidden(ctr ? 'a.booking' : 'contact')) list.push('email di booking');
     if (d.indexOf('roy') === 0) {
       if (!has(state.label.name)) list.push('etichetta');
       if (state.lines.some(function(l){ return parseAmount(l.amount) == null; })) list.push('importi');
@@ -2062,7 +2179,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var m = missing(), mine = m.some(function(x){ return /^(nome|codice fiscale|IBAN|email di booking)$/.test(x); });
     if (m.length) setStatus('Da completare: ' + m.join(', ') + (mine ? ' (i tuoi dati sono nel Menu)' : ''), 'bad'); else setStatus('Pronto da scaricare', 'ok');
   }
-  function update(){ persist(); renderPreview(); bolloHint(); partHint(); refreshStatus(); refreshEditBar(); if (view === 'archive') renderArchive(); else archBadge(); }
+  function update(){ var dr = draftOf(state.draftId); if (dr) keepDraft(dr); else state.draftId = ''; persist(); renderPreview(); bolloHint(); partHint(); refreshStatus(); refreshEditBar(); if (view === 'archive') renderArchive(); else archBadge(); }
 
   // ---------- events ----------
   var form = document.getElementById('form');
@@ -2077,13 +2194,22 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   // details cards (I tuoi dati, Archivio) stay open or closed across re-renders
   var openCards = {};
   form.addEventListener('toggle', function(e){ var c = e.target.dataset && e.target.dataset.card; if (c) openCards[c] = e.target.open; }, true);
+  // an amount written as 1500 or 1500.5 becomes 1.500,00 / 1.500,50 when the field is left
+  function eurField(el){
+    var n = parseAmount(el.value); if (n == null) return;
+    var t = fmtIT.format(n); if (t === el.value) return;
+    el.value = t;
+    if (el.dataset.path) set(el.dataset.path, t); else if (el.dataset.line != null) state.lines[+el.dataset.line][el.dataset.key] = t;
+  }
   form.addEventListener('change', function(e){
     var el = e.target;
+    if (el.dataset.eur) { eurField(el); update(); return; }
     if (el.name === 'doc') { state.doc = el.value; if (viewed() && viewed().doc !== state.doc) state.viewing = ''; syncTop(); renderFields(); update(); }
     else if (el.name === 'logo') { state.logo[D().cat] = el.value; syncTop(); update(); if (el.value === 'img' && !state.logoImg) document.getElementById('logoFile').click(); }
     else if (el.id === 'sigUse') { state.sig.use = el.checked; renderFields(); update(); if (el.checked && !state.sigs.length) drawNew('sig'); }
     else if (el.id === 'iniUse') { state.ini.use = el.checked; renderFields(); update(); }
     else if (el.name === 'sigSel' || el.name === 'iniSel') { state[el.name.slice(0, 3)].sel = el.value; update(); }
+    else if (el.dataset.part) { setPart(el.dataset.part, el.checked); renderFields(); update(); }
     else if (el.type === 'checkbox' && el.dataset.path) { set(el.dataset.path, el.checked); update(); }
     else if (el.dataset.path === 'fee.part') { renderFields(); update(); }
     else if (el.dataset.saved && el.value) {
@@ -2095,6 +2221,14 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
   form.addEventListener('click', function(e){
     var t = e.target, r = t.closest('[data-remove]');
     if (r) { state.lines.splice(+r.dataset.remove, 1); renderFields(); update(); return; }
+    var fx = t.closest('[data-hide]');
+    if (fx) {
+      var lab = itemLabel(fx.dataset.hide); setPart(fx.dataset.hide, false); renderFields(); update();
+      setStatus('Tolto dal documento: ' + lab + '. Lo rimetti in «Campi del documento».', 'ok'); return;
+    }
+    if (t.id === 'partsAll') { delete state.hide[state.doc]; renderFields(); update(); return; }
+    if (t.id === 'draftSave') { saveDraft(); return; }
+    if (t.id === 'draftClose') { closeDraft(); return; }
     var dr = t.closest('[data-draw]'); if (dr) { drawNew(dr.dataset.draw); return; }
     var tr = t.closest('[data-torec]'); if (tr) { toReceipt(tr.dataset.torec); return; }
     if (t.id === 'unlinkCtr') { state.fee.from = ''; renderFields(); update(); return; }
@@ -2582,12 +2716,49 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     entry.id = newId(); entry.created = entry.at; state.history.push(entry); state.viewing = '';
     return {entry:entry, updated:false};
   }
+
+  // ---------- drafts (D: "salvare anche delle bozze qualora non sapessi inserire alcuni dati. ovviamente crea una sezione bozze") ----------
+  // "Salva bozza" puts the form aside in state.drafts; while a draft is open every change goes into it (update());
+  // its PDF downloaded, it becomes a document of the archive and leaves the drafts. Synced like the archive (deleted ones go in gone).
+  function draftOf(id){ return id ? state.drafts.filter(function(x){ return x.id === id; })[0] || null : null; }
+  function draftWho(){ return String((D().cat === 'roy' ? state.label.name : state.doc === 'bkc-en' ? '' : state.client.name) || state.ev.name || '').trim(); }
+  function keepDraft(dr){ dr.doc = state.doc; dr.who = draftWho(); dr.snap = snapshot(); dr.at = new Date().toISOString(); }
+  function saveDraft(){
+    var dr = draftOf(state.draftId);
+    if (!dr) { dr = {id:newId(), created:new Date().toISOString()}; state.drafts.push(dr); state.draftId = dr.id; }
+    keepDraft(dr); state.viewing = '';
+    renderFields(); update();
+    setStatus('Bozza salvata: la ritrovi in Archivio › Bozze. Finché è aperta si aggiorna da sola.', 'ok');
+  }
+  function openDraft(id){
+    var dr = draftOf(id); if (!dr) return;
+    applySnap(dr.snap, dr.doc); state.viewing = ''; state.draftId = id;
+    syncTop(); renderFields(); update(); setView('form');
+    document.getElementById('form').scrollTop = 0; if (!wide.matches) window.scrollTo(0, 0);
+  }
+  // out of the draft: a new empty document of the same kind (the draft stays in Bozze)
+  function closeDraft(){
+    var defs = defaults();
+    state.draftId = ''; state.viewing = '';
+    ['label', 'lines', 'client', 'ev', 'fee', 'c'].forEach(function(k){ state[k] = clone(defs[k]); });
+    state.date = todayISO(); state.rit = true; state.bolloId = '';
+    syncTop(); renderFields(); update();
+    setStatus('Bozza chiusa: è in Archivio › Bozze. Ora il modulo è vuoto.', 'ok');
+  }
+  function dropDraft(id){
+    state.drafts = state.drafts.filter(function(x){ return x.id !== id; });
+    if (state.gone.indexOf(id) === -1) state.gone.push(id);
+    if (state.draftId === id) state.draftId = '';
+  }
+  function applySnap(snap, doc){
+    var defs = defaults();
+    SNAP.forEach(function(k){ if (!(k in snap)) return; var v = clone(snap[k]); state[k] = v && typeof v === 'object' && !Array.isArray(v) ? merge(defs[k], v) : v; });
+    if (snap.logo && LOGOS[DOCS[doc].cat].indexOf(snap.logo) !== -1) state.logo[DOCS[doc].cat] = snap.logo;
+  }
   function reopen(id, toRec){
     var h = state.history.filter(function(x){ return x.id === id; })[0]; if (!h) return;
-    var defs = defaults();
-    SNAP.forEach(function(k){ if (!(k in h.snap)) return; var v = clone(h.snap[k]); state[k] = v && typeof v === 'object' && !Array.isArray(v) ? merge(defs[k], v) : v; });
-    if (h.snap.logo && LOGOS[DOCS[h.doc].cat].indexOf(h.snap.logo) !== -1) state.logo[DOCS[h.doc].cat] = h.snap.logo;
-    state.viewing = h.id;
+    applySnap(h.snap, h.doc);
+    state.viewing = h.id; state.draftId = '';
     syncTop(); renderFields(); update(); setView(wide.matches || toRec ? 'form' : 'preview');
     var card = toRec && document.querySelector('#fields [data-torec]');
     if (card) { card = card.closest('.card'); card.scrollIntoView({block:'start'}); card.classList.add('flash'); setTimeout(function(){ card.classList.remove('flash'); }, 1600); }
@@ -2747,6 +2918,19 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     var list = state.history.slice().reverse().filter(function(h){ return match(h, archFilter); });
     var count = function(c){ return state.history.filter(function(h){ return match(h, c); }).length; };
     var out = '';
+    // drafts: documents put aside half done
+    var drs = state.drafts.slice().sort(function(a, b){ return String(b.at || '').localeCompare(String(a.at || '')); });
+    out += '<section class="card arch-drafts"><div class="arch-k">Bozze' + (drs.length ? ' <span>' + drs.length + '</span>' : '') + '</div>'
+      + (drs.length ? drs.map(function(d){
+          var k = KIND[d.doc] || {cls:'ctr', t:'Documento', tag:''}, arm = draftArmed.id === d.id && Date.now() - draftArmed.at < 6000;
+          var when = d.at ? new Date(d.at) : null;
+          return '<div class="draft' + (d.id === state.draftId ? ' open' : '') + '"><div class="arch-ico ' + k.cls + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[k.cls] + '</svg></div>'
+            + '<div class="arch-main"><div class="arch-t">' + k.t + ' <span class="arch-tag ' + k.cls + '">' + k.tag + '</span></div>'
+            + '<div class="arch-s">' + [d.who ? esc(d.who) : '', when ? 'salvata il ' + itDate(when.toISOString().slice(0, 10)) + ' alle ' + when.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : '', d.id === state.draftId ? 'aperta nel modulo' : ''].filter(Boolean).join(' · ') + '</div></div>'
+            + '<div class="arch-act"><button type="button" class="btn ghost" data-draft-open="' + esc(d.id) + '">Apri</button>'
+            + '<button type="button" class="x danger" data-draft-del="' + esc(d.id) + '">' + (arm ? 'Sicuro? Tocca di nuovo' : 'Elimina') + '</button></div></div>';
+        }).join('') : '<p class="hint">Ti manca qualche dato? Nel modulo tocca «Salva bozza»: il documento a metà resta qui, e lo riprendi quando vuoi.</p>')
+      + '</section>';
     // money still to come in, and the next deadlines of the contracts
     if (mi.rec.length || mi.ctr.length) {
       out += '<section class="card arch-due"><div class="arch-k">Da incassare</div>'
@@ -2807,13 +2991,20 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     if (!b) return;
     b.textContent = n ? String(n) : ''; b.hidden = !n; b.title = n ? (n === 1 ? '1 pagamento in ritardo' : n + ' pagamenti in ritardo') : '';
   }
-  var archEl = document.getElementById('archive');
+  var archEl = document.getElementById('archive'), draftArmed = {};
   archEl.addEventListener('toggle', function(e){ if (e.target.dataset && e.target.dataset.card === 'sum') openCards.sum = e.target.open; }, true);
   archEl.addEventListener('click', async function(e){
     var t = e.target.closest('button'); if (!t) return;
     if (t.dataset.filter) { archFilter = t.dataset.filter; renderArchive(); return; }
     if (t.dataset.year) { sumYear = t.dataset.year; renderArchive(); return; }
     if (t.dataset.open) { reopen(t.dataset.open); return; }
+    if (t.dataset.draftOpen) { openDraft(t.dataset.draftOpen); return; }
+    if (t.dataset.draftDel) {
+      var did = t.dataset.draftDel;
+      if (draftArmed.id === did && Date.now() - draftArmed.at < 6000) { draftArmed = {}; dropDraft(did); renderFields(); update(); renderArchive(); }
+      else { draftArmed = {id:did, at:Date.now()}; renderArchive(); setTimeout(function(){ if (draftArmed.id === did) { draftArmed = {}; renderArchive(); } }, 6100); }
+      return;
+    }
     if (t.dataset.torecOf) { reopen(t.dataset.torecOf, true); return; }
     if (t.dataset.pay) {
       var h = state.history.filter(function(x){ return x.id === t.dataset.id; })[0]; if (!h) return;
@@ -3074,7 +3265,8 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
       else if (inClaude) { setStatus('Il download non è disponibile in questa vista. Apri la pagina su claude.ai.', 'bad'); return; }
       else pdf.save(name);
       offerShare(name, out);
-      var res = archiveSave(name);
+      var res = archiveSave(name), fromDraft = !!draftOf(state.draftId);
+      if (fromDraft) dropDraft(state.draftId);
       if (d.kind === 'receipt') {
         var key = d.cat === 'roy' ? 'labels' : 'clients', obj = d.cat === 'roy' ? state.label : state.client;
         if (has(obj.name)) state.saved[key][obj.name.trim()] = JSON.parse(JSON.stringify(obj));
@@ -3084,6 +3276,7 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
         if (state.doc !== 'bkc-en' && has(state.client.name)) state.saved.clients[state.client.name.trim()] = JSON.parse(JSON.stringify(state.client));
         setStatus(res.updated ? 'Contratto aggiornato nell\'archivio.' : 'Contratto salvato nell\'archivio.', 'ok');
       }
+      if (fromDraft) setStatus(statusEl.title + ' La bozza è diventata un documento: non è più tra le Bozze.', 'ok');
       persist(); renderFields(); renderPreview();
     } catch (err) {
       var code = err && err.code;
@@ -3178,6 +3371,11 @@ body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
     ['sigs', 'inis'].forEach(function(k){ var seen = {}; out[k] = (base[k] || []).concat(other[k] || []).filter(function(x){ if (!x || seen[x.id] || gone[x.id]) return false; seen[x.id] = 1; return true; }); });
     out.edits = {};
     [other.edits || {}, base.edits || {}].forEach(function(e){ Object.keys(e).forEach(function(d){ out.edits[d] = Object.assign(out.edits[d] || {}, e[d]); }); });
+    var drs = {};
+    (other.drafts || []).concat(base.drafts || []).forEach(function(x){ if (!x || !x.id) return; var cur = drs[x.id]; if (!cur || String(x.at || '') >= String(cur.at || '')) drs[x.id] = x; });
+    out.drafts = Object.keys(drs).map(function(k){ return drs[k]; }).filter(function(x){ return !gone[x.id]; })
+      .sort(function(x, y){ return String(x.created || '').localeCompare(String(y.created || '')); });
+    if (!out.drafts.some(function(x){ return x.id === out.draftId; })) out.draftId = '';
     out.seqStart = Object.assign({}, other.seqStart || {}, base.seqStart || {});
     Object.keys(other.seqStart || {}).forEach(function(y){ out.seqStart[y] = Math.max(+other.seqStart[y] || 0, +out.seqStart[y] || 0); });
     return out;

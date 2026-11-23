@@ -45,7 +45,7 @@ La colonna **PRESET** a sinistra è organizzata **per cartelle, per genere e sti
 
 1. **Cartella** (menu arancione): scegli il genere.
 2. **Preset** (menu sotto): scegli il suono, si carica subito.
-3. **PREV / NEXT**: scorri i preset della cartella al volo.
+3. **◀ / ▶**: carica il preset precedente o successivo della cartella (ricomincia dall'inizio in fondo alla lista).
 
 | Cartella | Preset | Nomi |
 |---|---|---|
@@ -274,4 +274,6 @@ Il test `torture` porta tutti i parametri al massimo e verifica che l'uscita res
 interruttori. `python3 test/random_tour.py` rende un giro di Randomize. `python3 test/presets_tour.py` rende i
 preset di fabbrica con centroide spettrale e loudness; con `--calibrate` riscrive `src/preset_levels.json` per
 livellarli. `python3 test/gen_presets.py` rigenera i preset generati, `python3 test/validate_patch.py` controlla
-la patch (collegamenti, parametri, send/receive delle sezioni).
+la patch (collegamenti, parametri, send/receive delle sezioni). `python3 test/test_logic.py` simula la logica
+della patch (`test/maxsim.py`) e clicca preset, frecce, lucchetti, Reset, Randomize, RANDOM, SAVE e compressione,
+controllando cosa arriva al motore audio.

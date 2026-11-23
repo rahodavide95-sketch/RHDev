@@ -2119,14 +2119,18 @@ def build_patcher(code):
         pt.connect(tc, 1, cpak, c)
         sel1 = pt.obj("sel 1", cx, 680, ninl=2, nout=2)
         pt.connect(tc, 0, sel1, 0)
+        # the check runs after the whole current event: a preset or Reset that sets all 8 steps never trips it,
+        # a click on a 5th step (or a Randomize that turned on too many) is switched back off
+        dl = pt.obj("deferlow", cx, 695, ninl=1, nout=1)
+        pt.connect(sel1, 0, dl, 0)
         held = pt.obj("i", cx, 710, ninl=2, nout=1, outtype=["int"])
         pt.connect(csum, 0, held, 1)
-        pt.connect(sel1, 0, held, 0)
+        pt.connect(dl, 0, held, 0)
         over = pt.obj("> %d" % MAXON, cx, 740, ninl=2, nout=1)
         pt.connect(held, 0, over, 0)
         sel2 = pt.obj("sel 1", cx, 770, ninl=2, nout=2)
         pt.connect(over, 0, sel2, 0)
-        zero = pt.msg("0", cx, 800)
+        zero = pt.msg("0", cx, 810)
         pt.connect(sel2, 0, zero, 0)
         pt.connect(zero, 0, on_ui, 0)
         # a step that is off greys out its note knob and accent button
@@ -2304,19 +2308,20 @@ def build_patcher(code):
                     arrow=1, annotation="Scegli un preset della cartella: si carica subito.",
                     annotation_name="Preset")
 
-    def small_btn(text, rect, ann, accent=C_AMBER):
+    def small_btn(text, rect, ann, accent=C_AMBER, name=None, size=8.5):
+        name = name or text.title()
         return pt.add("live.text", [3200 + rect[0], 700 + rect[1], rect[2], rect[3]], ninl=1, nout=2,
                       outtype=["", ""], mode=0, text=text, texton=text, parameter_enable=1, presentation=1,
                       presentation_rect=[float(v) for v in rect],
                       saved_attribute_attributes={"valueof": {
-                          "parameter_longname": "Preset " + text.title(), "parameter_shortname": text.title(),
+                          "parameter_longname": "Preset " + name, "parameter_shortname": name,
                           "parameter_type": 2, "parameter_mmin": 0.0, "parameter_mmax": 1.0,
                           "parameter_enum": ["off", "on"], "parameter_initial_enable": 1, "parameter_initial": [0],
                           "parameter_invisible": 1}},
                       activebgcolor=C_MENU, activebgoncolor=accent, bgcolor=C_MENU, bgoncolor=accent,
                       textcolor=C_MID, textoncolor=C_BG, activetextcolor=C_MID, activetextoncolor=C_BG,
-                      bordercolor=C_LINE, focusbordercolor=accent, fontname=F_HEAD, fontsize=8.5,
-                      annotation=ann, annotation_name="Preset " + text.title())
+                      bordercolor=C_LINE, focusbordercolor=accent, fontname=F_HEAD, fontsize=size,
+                      annotation=ann, annotation_name="Preset " + name)
 
     def on_click(btn, x, y):
         rb_ = pt.obj("route bang 1", x, y, ninl=2, nout=3)
@@ -2326,8 +2331,10 @@ def build_patcher(code):
         pt.connect(rb_, 1, t_, 0)
         return t_
 
-    prev_b = small_btn("PREV", [px0, 61, 50, 15], "Preset precedente nella cartella.")
-    next_b = small_btn("NEXT", [px0 + 54, 61, 50, 15], "Preset successivo nella cartella.")
+    prev_b = small_btn("\u25c0", [px0, 61, 50, 15], "Preset precedente nella cartella (si carica subito).",
+                       name="Prev", size=9.0)
+    next_b = small_btn("\u25b6", [px0 + 54, 61, 50, 15], "Preset successivo nella cartella (si carica subito).",
+                       name="Next", size=9.0)
     save_b = small_btn("SAVE", [px0, 84, 62, 15], "Salva il suono attuale nello slot User scelto qui accanto. "
                                                   "I preset User restano salvati nel progetto di Live.")
     slot = pt.add("live.numbox", [3400, 760, 38, 15], ninl=1, nout=2, outtype=["", "float"], parameter_enable=1,
@@ -2361,7 +2368,18 @@ def build_patcher(code):
     fsel = pt.obj("sel " + " ".join(str(i) for i in range(len(fnames))), 3200, 640, ninl=2, nout=len(fnames) + 1)
     pt.connect(fmenu, 0, fsel, 0)
     padd = pt.obj("+ 0", 3500, 640, ninl=2, nout=1)
-    pt.connect(pumenu, 0, padd, 0)
+    # position of the current preset in the folder, one copy per arrow (both always in sync)
+    cur_prev = pt.obj("i", 3800, 640, ninl=2, nout=1, outtype=["int"])
+    cur_next = pt.obj("i", 3900, 640, ninl=2, nout=1, outtype=["int"])
+    tpick = pt.obj("t i i i", 3500, 610, ninl=1, nout=3, outtype=["int", "int", "int"])
+    pt.connect(pumenu, 0, tpick, 0)
+    pt.connect(tpick, 2, cur_prev, 1)
+    pt.connect(tpick, 1, cur_next, 1)
+    pt.connect(tpick, 0, padd, 0)
+    step_prev = pt.obj("expr ($f1 + max($f2, 1) - 1) % max($f2, 1)", 3800, 690, ninl=2, nout=1)
+    step_next = pt.obj("expr ($f1 + 1) % max($f2, 1)", 3900, 690, ninl=2, nout=1)
+    pt.connect(cur_prev, 0, step_prev, 0)
+    pt.connect(cur_next, 0, step_next, 0)
     first = 0
     for fi, fname in enumerate(fnames):
         items = [n for n, _ in FOLDERS[fi][1]] if fi < len(FOLDERS) else ["User %d" % (i + 1) for i in range(NUSER)]
@@ -2371,6 +2389,14 @@ def build_patcher(code):
         off = pt.msg(str(first if fi < len(FOLDERS) else 1000), 3200 + fi * 120, 700)
         pt.connect(fsel, fi, off, 0)
         pt.connect(off, 0, padd, 1)
+        size = pt.msg(str(len(items)), 3250 + fi * 120, 700)
+        pt.connect(fsel, fi, size, 0)
+        pt.connect(size, 0, step_next, 1)
+        pt.connect(size, 0, step_prev, 1)
+        zero = pt.msg("0", 3300 + fi * 120, 700)
+        pt.connect(fsel, fi, zero, 0)
+        pt.connect(zero, 0, cur_prev, 1)
+        pt.connect(zero, 0, cur_next, 1)
         a_first, a_count = FOLDER_ARCH[fname]
         am1 = pt.msg(str(a_first), 3200 + fi * 120, 730)
         am2 = pt.msg(str(a_count), 3250 + fi * 120, 730)
@@ -2391,12 +2417,19 @@ def build_patcher(code):
     usub = pt.obj("- 999", 3700, 730, ninl=2, nout=1)
     pt.connect(puser, 0, usub, 0)
     pt.connect(usub, 0, store, 0)
-    # prev / next inside the folder
-    for btn, msgtxt, x in ((prev_b, "prev", 3800), (next_b, "next", 3900)):
-        tb_ = on_click(btn, x, 600)
-        mm = pt.msg(msgtxt, x, 660)
-        pt.connect(tb_, 0, mm, 0)
-        pt.connect(mm, 0, pumenu, 0)
+    # arrows: compute the neighbouring preset, load it, and move the menu's display to it
+    for btn, curx, x in ((prev_b, cur_prev, 3800), (next_b, cur_next, 3900)):
+        tb_ = on_click(btn, x, 560)
+        pt.connect(tb_, 0, curx, 0)
+    tstep = pt.obj("t i i i i", 3850, 720, ninl=1, nout=4, outtype=["int", "int", "int", "int"])
+    pt.connect(step_prev, 0, tstep, 0)
+    pt.connect(step_next, 0, tstep, 0)
+    pt.connect(tstep, 3, cur_prev, 1)
+    pt.connect(tstep, 2, cur_next, 1)
+    pshow = pt.obj("prepend set", 3950, 750)
+    pt.connect(tstep, 1, pshow, 0)
+    pt.connect(pshow, 0, pumenu, 0)
+    pt.connect(tstep, 0, padd, 0)
     # save -> store N, open the USER folder and show "User N" there (without recalling it)
     tsave = on_click(save_b, 4000, 600)
     sslot = pt.obj("i 1", 4000, 660, ninl=2, nout=1, outtype=["int"])
@@ -2415,6 +2448,8 @@ def build_patcher(code):
     sset = pt.obj("prepend set", 4200, 750)
     pt.connect(sdec, 0, sset, 0)
     pt.connect(sset, 0, pumenu, 0)
+    pt.connect(sdec, 0, cur_prev, 1)
+    pt.connect(sdec, 0, cur_next, 1)
     for btn, msgtxt, x in ((exp_b, "write", 4300), (imp_b, "read", 4400)):
         tb_ = on_click(btn, x, 600)
         mm = pt.msg(msgtxt, x, 660)
@@ -2430,24 +2465,24 @@ def build_patcher(code):
         mb = pt.msg(" ".join(vals), 5000 + (fi % 4) * 600, 1000 + (fi // 4) * 25)
         pt.connect(fpick, fi, mb, 0)
         pt.connect(mb, 0, plist, 0)
-    rest = plist
+    rest = (plist, 0)  # where the not-yet-used part of the list comes out
     for gi, ((lk, secs), members) in enumerate(zip(groups, gmembers)):
         gx = 3200 + gi * 260
         if gi < len(groups) - 1:
             sl = pt.obj("zl slice %d" % len(members), gx, 1190, ninl=2, nout=2)
-            pt.connect(rest, 0, sl, 0)
-            part, rest = (sl, 0), sl
+            pt.connect(rest[0], rest[1], sl, 0)
+            part, rest = (sl, 0), (sl, 1)  # left: this group's values, right: everything after them
         else:
-            part = (rest, 1)
+            part = rest
         if lk is not None:
             inv = pt.obj("== 0", gx, 1220, ninl=2, nout=1)
             pt.connect(lk, 0, inv, 0)
             dest = pt.obj("gate 1 1", gx, 1250, ninl=2, nout=1)
             pt.connect(inv, 0, dest, 0)
-            pt.connect(part[0], part[1] if gi == len(groups) - 1 else 0, dest, 1)
+            pt.connect(part[0], part[1], dest, 1)
         else:
             dest = pt.obj("t l", gx, 1250, ninl=1, nout=1)
-            pt.connect(part[0], part[1] if gi == len(groups) - 1 else 0, dest, 0)
+            pt.connect(part[0], part[1], dest, 0)
         unp = pt.obj("unpack " + " ".join(["0."] * len(members)), gx, 1300, ninl=1, nout=len(members),
                      outtype=["float"] * len(members), w=240)
         pt.connect(dest, 0, unp, 0)

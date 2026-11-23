@@ -145,13 +145,16 @@ function fammin(i) {
 function fammaj(i) {
 	return ((i < 0.5) ? 10 : ((i < 1.5) ? 11 : ((i < 2.5) ? 12 : ((i < 3.5) ? 13 : ((i < 4.5) ? 7 : ((i < 5.5) ? 8 : ((i < 6.5) ? 6 : 15)))))));
 }
-const P = {in1: 0, p_seqmode: 0, p_seqrate: 2, p_seqlen: 4, p_sgate: 50, p_soff: 50, p_swing: 0, p_schance: 100, p_son1: 1, p_snote1: 57, p_svel1: 100, p_son2: 1, p_snote2: 57, p_svel2: 88, p_son3: 1, p_snote3: 57, p_svel3: 112, p_son4: 1, p_snote4: 57, p_svel4: 94, p_harm: 0, p_chord: 1, p_key: 9, p_voicing: 6, p_notes: 5, p_oct: 0, p_strum: 6, p_glide: 0, p_human: 30, p_bendr: 2, p_shape: 25, p_pw: 42, p_pwm: 25, p_pwmrate: 0.6, p_osc2: 70, p_detune: 7, p_sub: 0, p_air: 10, p_drift: 35, p_driftrate: 0.5, p_age: 40, p_sag: 35, p_cutoff: 600, p_reso: 30, p_drive: 30, p_slope: 0, p_fenv: 45, p_ktrk: 35, p_mwcut: 60, p_lforate: 0.15, p_lfoamt: 15, p_lfowave: 0, p_fa: 2, p_fd: 280, p_fs: 0, p_fr: 350, p_aa: 3, p_ad: 450, p_as: 0, p_ar: 350, p_velsens: 40, p_velfilt: 50, p_etime: 3, p_efb: 62, p_emix: 45, p_elocut: 90, p_ehicut: 2600, p_edrive: 35, p_wow: 30, p_flutter: 20, p_espread: 75, p_rdecay: 4500, p_rsize: 100, p_rmix: 32, p_tune: 50, p_sdecay: 3500, p_damp: 45, p_rlocut: 150, p_diff: 80, p_rmod: 35, p_chorus: 30, p_crate: 0.5, p_cdepth: 50, p_width: 60, p_vol: -3, p_cchance: 0, p_cdice: 2, p_root: 60, p_vel: 100, p_gate: 0, p_trig: 0, p_bend: 64, p_modw: 0, p_bpm: 120, p_playing: 0, p_songbeat: 0};
+const P = {in1: 0, p_seqon: 0, p_seqmode: 0, p_seqrate: 2, p_seqlen: 4, p_sgate: 50, p_soff: 50, p_swing: 0, p_schance: 100, p_son1: 1, p_snote1: 57, p_svel1: 100, p_son2: 1, p_snote2: 57, p_svel2: 88, p_son3: 1, p_snote3: 57, p_svel3: 112, p_son4: 1, p_snote4: 57, p_svel4: 94, p_harm: 0, p_chord: 1, p_key: 9, p_voicing: 6, p_notes: 5, p_oct: 0, p_strum: 6, p_glide: 0, p_human: 30, p_bendr: 2, p_shape: 25, p_pw: 42, p_pwm: 25, p_pwmrate: 0.6, p_osc2: 70, p_detune: 7, p_sub: 0, p_air: 10, p_drift: 35, p_driftrate: 0.5, p_age: 40, p_sag: 35, p_cutoff: 600, p_reso: 30, p_drive: 30, p_slope: 0, p_fenv: 45, p_ktrk: 35, p_mwcut: 60, p_lforate: 0.15, p_lfoamt: 15, p_lfowave: 0, p_fa: 2, p_fd: 280, p_fs: 0, p_fr: 350, p_aa: 3, p_ad: 450, p_as: 0, p_ar: 350, p_velsens: 40, p_velfilt: 50, p_etime: 3, p_efb: 62, p_emix: 45, p_elocut: 90, p_ehicut: 2600, p_edrive: 35, p_wow: 30, p_flutter: 20, p_espread: 75, p_rdecay: 4500, p_rsize: 100, p_rmix: 32, p_tune: 50, p_sdecay: 3500, p_damp: 45, p_rlocut: 150, p_diff: 80, p_rmod: 35, p_chorus: 30, p_crate: 0.5, p_cdepth: 50, p_width: 60, p_vol: -3, p_cchance: 0, p_cdice: 2, p_diceon: 1, p_chordon: 1, p_analogon: 1, p_filton: 1, p_echoon: 1, p_spaceon: 1, p_choron: 1, p_root: 60, p_vel: 100, p_gate: 0, p_trig: 0, p_bend: 64, p_modw: 0, p_bpm: 120, p_playing: 0, p_songbeat: 0};
 let h_s_cut = 9.2288187;
 let h_s_res = 0.3;
 let h_s_drv = 0.3;
 let h_s_efb = 0.62;
 let h_s_emix = 0.45;
 let h_s_rmix = 0.32;
+let h_s_eon = 1;
+let h_s_son = 1;
+let h_s_flt = 1;
 let h_s_tune = 0.5;
 let h_s_chor = 0.3;
 let h_s_wid = 0.6;
@@ -370,7 +373,7 @@ const fd6 = new GDelay(32768);
 const fd7 = new GDelay(32768);
 let out1 = 0, out2 = 0;
 function perform() {
-	let B_0, B_1, B_2, B_3, B_4, B_5, G_0, G_1, G_2, G_3, G_4, G_5, S_0, S_1, S_2, S_3, S_4, S_5, a0, a0h, a1, a1h, a2, a2h, a3, a3h, a4, a4h, a5, a5h, a6h, a7h, act_0, act_1, act_2, act_3, act_4, act_5, ae_0, ae_1, ae_2, ae_3, ae_4, ae_5, age, air, alast, apg, apla, aplb, aplv, aplw, aply, apra, aprb, aprv, aprw, apry, as_0, as_1, as_2, as_3, as_4, as_5, asum, asus, b0h, b1h, b2h, b3h, b4h, b5h, b6h, b7h, base, bendst, best, bint, bph, bpm, c0, c1, c2, c3, c4, c5, caa, cad, car, cb, cbb, cbl, cbot, cbr, cc, cdp, cfa, cfd, cfr, chg, chgo, cid, cm, cmean, cmo, cph, ct, ctop, ctr, cts_0, cts_1, cts_2, cts_3, cts_4, cts_5, cvalid, cwl, cwr, d1_0, d1_1, d1_2, d1_3, d1_4, d1_5, d2_0, d2_1, d2_2, d2_3, d2_4, d2_5, d3, dcol, deg, det, detd, detu, difl, difr, dl0, dl1, dl2, dl3, dl4, dl5, dl6, dl7, dmd, dp_0, dp_1, dp_2, dp_3, dp_4, dp_5, dr_0, dr_1, dr_2, dr_3, dr_4, dr_5, drift, drm, dsm, dv_0, dv_1, dv_2, dv_3, dv_4, dv_5, dvoi, dwild, dyl, dyr, dz, edg, ehc, ehl, ehr, ein, el1, el2, elc, en, en3, eol, eor, er1, er2, etg, etl, etr, ets, f1_0, f1_1, f1_2, f1_3, f1_4, f1_5, famt, fc_0, fc_1, fc_2, fc_3, fc_4, fc_5, fco_0, fco_1, fco_2, fco_3, fco_4, fco_5, fe_0, fe_1, fe_2, fe_3, fe_4, fe_5, fenv, fl0, fl1, fl2, fl3, fl4, fl5, fl6, fl7, fph, fr0, fr1, fr2, fr3, fr4, fr5, fr6, fr7, fs_0, fs_1, fs_2, fs_3, fs_4, fs_5, fsus, g_0, g_1, g_2, g_3, g_4, g_5, gd, gdp, gdt, gdv, gin, glc, go_0, go_1, go_2, go_3, go_4, go_5, gon, harm, hil, hir, hum, hz_0, hz_1, hz_2, hz_3, hz_4, hz_5, isr, jj, k_0, k_1, k_2, k_3, k_4, k_5, kk, ktrk, lastk, lfo1, lfoamt, lfr, lfw, low, lph, lsh, lsm, lv2, mgate, ml, mph, mr, mt, mtrig, n, nn, nreq, oo, out3, out4, out5, out6, out7, out8, out9, p1_0, p1_1, p1_2, p1_3, p1_4, p1_5, p2_0, p2_1, p2_2, p2_3, p2_4, p2_5, p3, pc, pd_0, pd_1, pd_2, pd_3, pd_4, pd_5, pl_0, pl_1, pl_2, pl_3, pl_4, pl_5, pn_0, pn_1, pn_2, pn_3, pn_4, pn_5, pp, pph, pq3, pq_0, pq_1, pq_2, pq_3, pq_4, pq_5, pv_0, pv_1, pv_2, pv_3, pv_4, pv_5, pw_0, pw_1, pw_2, pw_3, pw_4, pw_5, pwb, pwmd, q0, q1, q2, q3, q4, q5, rbot, rc, rdc, rinl, rinr, rk0, rk1, rk2, rk3, rk4, rk5, rmean, rmod, ro, root, rootin, rq0, rq1, rq2, rq3, rq4, rq5, rt, rtop, rv, rvL, rvR, rvalid, s2_0, s2_1, s2_2, s2_3, s2_4, s2_5, sP_0, sP_1, sP_2, sP_3, sP_4, sP_5, s_chor, s_cut, s_drv, s_efb, s_emix, s_mw, s_res, s_rmix, s_size, s_tune, s_vol, s_wid, sa, sagg, sagk, sagv, sb, sbpm, scnt, sdamp, sdl, sdn, semi, sex, sf_0, sf_1, sf_2, sf_3, sf_4, sf_5, sfr, sg_0, sg_1, sg_2, sg_3, sg_4, sg_5, sgl, sgt, shc, shl, shp, shr, sid, sil, sir, sl_0, sl_1, sl_2, sl_3, sl_4, sl_5, slb, slen, sm, smode, snote, sodd, sp_0, sp_1, sp_2, sp_3, sp_4, sp_5, sr, src, sready, srt, srun, st, stL, stR, stau, stp, strig, strum_s, su, subl, svel, sw_0, sw_1, sw_2, sw_3, sw_4, sw_5, sy_0, sy_1, sy_2, sy_3, sy_4, sy_5, ti_0, ti_1, ti_2, ti_3, ti_4, ti_5, tp_0, tp_1, tp_2, tp_3, tp_4, tp_5, trig, u_0, u_1, u_2, u_3, u_4, u_5, v1_0, v1_1, v1_2, v1_3, v1_4, v1_5, v2_0, v2_1, v2_2, v2_3, v2_4, v2_5, v3_0, v3_1, v3_2, v3_3, v3_4, v3_5, v4_0, v4_1, v4_2, v4_3, v4_4, v4_5, vA_0, vA_1, vA_2, vA_3, vA_4, vA_5, vF_0, vF_1, vF_2, vF_3, vF_4, vF_5, vL, vR, velin, vfs, vin_0, vin_1, vin_2, vin_3, vin_4, vin_5, vl_0, vl_1, vl_2, vl_3, vl_4, vl_5, vm, vo_0, vo_1, vo_2, vo_3, vo_4, vo_5, vsens, wamt, wm, wph, xL, xR, y1_0, y1_1, y1_2, y1_3, y1_4, y1_5, y2_0, y2_1, y2_2, y2_3, y2_4, y2_5, y3_0, y3_1, y3_2, y3_3, y3_4, y3_5, y4_0, y4_1, y4_2, y4_3, y4_4, y4_5, z0, z1, z2, z3, z4, z5, z6, z7;
+	let B_0, B_1, B_2, B_3, B_4, B_5, G_0, G_1, G_2, G_3, G_4, G_5, S_0, S_1, S_2, S_3, S_4, S_5, a0, a0h, a1, a1h, a2, a2h, a3, a3h, a4, a4h, a5, a5h, a6h, a7h, act_0, act_1, act_2, act_3, act_4, act_5, ae_0, ae_1, ae_2, ae_3, ae_4, ae_5, age, air, alast, anon, apg, apla, aplb, aplv, aplw, aply, apra, aprb, aprv, aprw, apry, as_0, as_1, as_2, as_3, as_4, as_5, asum, asus, b0h, b1h, b2h, b3h, b4h, b5h, b6h, b7h, base, bendst, best, bint, bph, bpm, c0, c1, c2, c3, c4, c5, caa, cad, car, cb, cbb, cbl, cbot, cbr, cc, cdp, cfa, cfd, cfr, chg, chgo, cid, cm, cmean, cmo, cph, ct, ctop, ctr, cts_0, cts_1, cts_2, cts_3, cts_4, cts_5, cvalid, cwl, cwr, d1_0, d1_1, d1_2, d1_3, d1_4, d1_5, d2_0, d2_1, d2_2, d2_3, d2_4, d2_5, d3, dcol, deg, det, detd, detu, difl, difr, dl0, dl1, dl2, dl3, dl4, dl5, dl6, dl7, dmd, dp_0, dp_1, dp_2, dp_3, dp_4, dp_5, dr_0, dr_1, dr_2, dr_3, dr_4, dr_5, drift, drm, dsm, dv_0, dv_1, dv_2, dv_3, dv_4, dv_5, dvoi, dwild, dyl, dyr, dz, edg, ehc, ehl, ehr, ein, el1, el2, elc, en, en3, eol, eor, er1, er2, etg, etl, etr, ets, f1_0, f1_1, f1_2, f1_3, f1_4, f1_5, famt, fc_0, fc_1, fc_2, fc_3, fc_4, fc_5, fco_0, fco_1, fco_2, fco_3, fco_4, fco_5, fe_0, fe_1, fe_2, fe_3, fe_4, fe_5, fenv, fl0, fl1, fl2, fl3, fl4, fl5, fl6, fl7, fph, fr0, fr1, fr2, fr3, fr4, fr5, fr6, fr7, fs_0, fs_1, fs_2, fs_3, fs_4, fs_5, fsus, g_0, g_1, g_2, g_3, g_4, g_5, gd, gdp, gdt, gdv, gin, glc, go_0, go_1, go_2, go_3, go_4, go_5, gon, harm, hil, hir, hum, hz_0, hz_1, hz_2, hz_3, hz_4, hz_5, isr, jj, k_0, k_1, k_2, k_3, k_4, k_5, kk, ktrk, lastk, lfo1, lfoamt, lfr, lfw, low, lph, lsh, lsm, lv2, mgate, ml, mph, mr, mt, mtrig, n, nn, nreq, oo, out3, out4, out5, out6, out7, out8, out9, p1_0, p1_1, p1_2, p1_3, p1_4, p1_5, p2_0, p2_1, p2_2, p2_3, p2_4, p2_5, p3, pc, pd_0, pd_1, pd_2, pd_3, pd_4, pd_5, pl_0, pl_1, pl_2, pl_3, pl_4, pl_5, pn_0, pn_1, pn_2, pn_3, pn_4, pn_5, pp, pph, pq3, pq_0, pq_1, pq_2, pq_3, pq_4, pq_5, pv_0, pv_1, pv_2, pv_3, pv_4, pv_5, pw_0, pw_1, pw_2, pw_3, pw_4, pw_5, pwb, pwmd, q0, q1, q2, q3, q4, q5, rbot, rc, rdc, rinl, rinr, rk0, rk1, rk2, rk3, rk4, rk5, rmean, rmod, ro, root, rootin, rq0, rq1, rq2, rq3, rq4, rq5, rt, rtop, rv, rvL, rvR, rvalid, s2_0, s2_1, s2_2, s2_3, s2_4, s2_5, sP_0, sP_1, sP_2, sP_3, sP_4, sP_5, s_chor, s_cut, s_drv, s_efb, s_emix, s_eon, s_flt, s_mw, s_res, s_rmix, s_size, s_son, s_tune, s_vol, s_wid, sa, sagg, sagk, sagv, sb, sbpm, scnt, sdamp, sdl, sdn, semi, sex, sf_0, sf_1, sf_2, sf_3, sf_4, sf_5, sfr, sg_0, sg_1, sg_2, sg_3, sg_4, sg_5, sgl, sgt, shc, shl, shp, shr, sid, sil, sir, sl_0, sl_1, sl_2, sl_3, sl_4, sl_5, slb, slen, sm, smode, snote, sodd, sp_0, sp_1, sp_2, sp_3, sp_4, sp_5, sr, src, sready, srt, srun, st, stL, stR, stau, stp, strig, strum_s, su, subl, svel, sw_0, sw_1, sw_2, sw_3, sw_4, sw_5, sy_0, sy_1, sy_2, sy_3, sy_4, sy_5, ti_0, ti_1, ti_2, ti_3, ti_4, ti_5, tp_0, tp_1, tp_2, tp_3, tp_4, tp_5, trig, u_0, u_1, u_2, u_3, u_4, u_5, v1_0, v1_1, v1_2, v1_3, v1_4, v1_5, v2_0, v2_1, v2_2, v2_3, v2_4, v2_5, v3_0, v3_1, v3_2, v3_3, v3_4, v3_5, v4_0, v4_1, v4_2, v4_3, v4_4, v4_5, vA_0, vA_1, vA_2, vA_3, vA_4, vA_5, vF_0, vF_1, vF_2, vF_3, vF_4, vF_5, vL, vR, velin, vfs, vin_0, vin_1, vin_2, vin_3, vin_4, vin_5, vl_0, vl_1, vl_2, vl_3, vl_4, vl_5, vm, vo_0, vo_1, vo_2, vo_3, vo_4, vo_5, vsens, wamt, wm, wph, xL, xR, y1_0, y1_1, y1_2, y1_3, y1_4, y1_5, y2_0, y2_1, y2_2, y2_3, y2_4, y2_5, y3_0, y3_1, y3_2, y3_3, y3_4, y3_5, y4_0, y4_1, y4_2, y4_3, y4_4, y4_5, z0, z1, z2, z3, z4, z5, z6, z7;
 // ================= setup =================
 sr = samplerate;
 isr = 1 / sr;
@@ -379,10 +382,13 @@ s_cut = h_s_cut + ((log(clamp(P.p_cutoff, 20, 20000)) * 1.442695) - h_s_cut) * s
 s_res = h_s_res + ((clamp(P.p_reso, 0, 100) * 0.01) - h_s_res) * sm;
 s_drv = h_s_drv + ((clamp(P.p_drive, 0, 100) * 0.01) - h_s_drv) * sm;
 s_efb = h_s_efb + ((clamp(P.p_efb, 0, 110) * 0.01) - h_s_efb) * sm;
-s_emix = h_s_emix + ((clamp(P.p_emix, 0, 100) * 0.01) - h_s_emix) * sm;
-s_rmix = h_s_rmix + ((clamp(P.p_rmix, 0, 100) * 0.01) - h_s_rmix) * sm;
+s_emix = h_s_emix + ((clamp(P.p_emix, 0, 100) * 0.01 * (P.p_echoon > 0.5)) - h_s_emix) * sm;
+s_rmix = h_s_rmix + ((clamp(P.p_rmix, 0, 100) * 0.01 * (P.p_spaceon > 0.5)) - h_s_rmix) * sm;
+s_eon = h_s_eon + ((P.p_echoon > 0.5) - h_s_eon) * sm;
+s_son = h_s_son + ((P.p_spaceon > 0.5) - h_s_son) * sm;
+s_flt = h_s_flt + ((P.p_filton > 0.5) - h_s_flt) * sm;
 s_tune = h_s_tune + ((clamp(P.p_tune, 0, 100) * 0.01) - h_s_tune) * sm;
-s_chor = h_s_chor + ((clamp(P.p_chorus, 0, 100) * 0.01) - h_s_chor) * sm;
+s_chor = h_s_chor + ((clamp(P.p_chorus, 0, 100) * 0.01 * (P.p_choron > 0.5)) - h_s_chor) * sm;
 s_wid = h_s_wid + ((clamp(P.p_width, 0, 100) * 0.01) - h_s_wid) * sm;
 s_vol = h_s_vol + ((exp(clamp(P.p_vol, -70, 6) * 0.1151293)) - h_s_vol) * sm;
 s_mw = h_s_mw + ((clamp(P.p_modw, 0, 127) / 127 * clamp(P.p_mwcut, 0, 100) * 0.05) - h_s_mw) * sm;
@@ -399,13 +405,14 @@ detu = exp(det * 0.000577623);
 detd = 1 / detu;
 subl = clamp(P.p_sub, 0, 100) * 0.01;
 air = clamp(P.p_air, 0, 100) * 0.008;
-drift = clamp(P.p_drift, 0, 100) * 0.01;
-age = clamp(P.p_age, 0, 100) * 0.01;
+anon = P.p_analogon > 0.5;
+drift = clamp(P.p_drift, 0, 100) * 0.01 * anon;
+age = clamp(P.p_age, 0, 100) * 0.01 * anon;
 fenv = clamp(P.p_fenv, -100, 100) * 0.06;
 ktrk = clamp(P.p_ktrk, 0, 100) * 0.01 * 0.0833333;
 lfoamt = clamp(P.p_lfoamt, 0, 100) * 0.02;
 vsens = clamp(P.p_velsens, 0, 100) * 0.01;
-sagk = clamp(P.p_sag, 0, 100) * 0.01;
+sagk = clamp(P.p_sag, 0, 100) * 0.01 * anon;
 fsus = clamp(P.p_fs, 0, 100) * 0.01;
 asus = clamp(P.p_as, 0, 100) * 0.01;
 cfa = 1 - exp(-1.466 / (max(P.p_fa, 0.3) * 0.001 * sr));
@@ -445,7 +452,7 @@ gdv = h_gdv + (gdt - h_gdv) * (1 - exp(-0.45 / sr));
 
 // ================= trigger & chord brain =================
 // ---- 4-step sequencer, locked to Live's beat (P.in1 carries plugphasor~)
-smode = floor(P.p_seqmode + 0.5);
+smode = (P.p_seqon > 0.5) * (1 + floor(P.p_seqmode + 0.5));
 mtrig = P.p_trig != h_trig;
 mgate = P.p_gate > 0.5;
 bph = clamp(P.in1, 0, 1);
@@ -537,7 +544,7 @@ if (trig + chg > 0) {
 	}
 	dz = 0;
 	if (trig > 0) {
-		dz = (noise() * 0.5 + 0.5) < clamp(P.p_cchance, 0, 100) * 0.01;
+		dz = ((noise() * 0.5 + 0.5) < clamp(P.p_cchance, 0, 100) * 0.01) * (P.p_diceon > 0.5) * (P.p_chordon > 0.5);
 	}
 	dmd = floor(P.p_cdice + 0.5);
 	dcol = dz * (dmd != 1);
@@ -599,6 +606,10 @@ if (trig + chg > 0) {
 	vm = clamp(floor(P.p_voicing + 0.5), 0, 7);
 	if (dvoi > 0) {
 		vm = min(floor(rv * 6), 5);
+	}
+	if (P.p_chordon < 0.5) {
+		n = 1;
+		vm = 0;
 	}
 	jj = 0;
 	oo = 0;
@@ -898,7 +909,7 @@ if (trig + chg > 0) {
 	q3 = (n > 3) ? ((n > 0) * (rq0 == 3) * c0 + (n > 1) * (rq1 == 3) * c1 + (n > 2) * (rq2 == 3) * c2 + (n > 3) * (rq3 == 3) * c3 + (n > 4) * (rq4 == 3) * c4 + (n > 5) * (rq5 == 3) * c5) : (pick6(3 - n * floor(3 / n), q0, q1, q2, q3, q4, q5) + 12 * floor(3 / n));
 	q4 = (n > 4) ? ((n > 0) * (rq0 == 4) * c0 + (n > 1) * (rq1 == 4) * c1 + (n > 2) * (rq2 == 4) * c2 + (n > 3) * (rq3 == 4) * c3 + (n > 4) * (rq4 == 4) * c4 + (n > 5) * (rq5 == 4) * c5) : (pick6(4 - n * floor(4 / n), q0, q1, q2, q3, q4, q5) + 12 * floor(4 / n));
 	q5 = (n > 5) ? ((n > 0) * (rq0 == 5) * c0 + (n > 1) * (rq1 == 5) * c1 + (n > 2) * (rq2 == 5) * c2 + (n > 3) * (rq3 == 5) * c3 + (n > 4) * (rq4 == 5) * c4 + (n > 5) * (rq5 == 5) * c5) : (pick6(5 - n * floor(5 / n), q0, q1, q2, q3, q4, q5) + 12 * floor(5 / n));
-	cmean = (q0 + q1 + q2 * (n > 2) + q3 * (n > 3) + q4 * (n > 4) + q5 * (n > 5)) / n;
+	cmean = (q0 + q1 * (n > 1) + q2 * (n > 2) + q3 * (n > 3) + q4 * (n > 4) + q5 * (n > 5)) / n;
 	ctop = pick6(n - 1, q0, q1, q2, q3, q4, q5);
 	cbot = q0;
 	if (trig > 0) {
@@ -1036,7 +1047,7 @@ v3_0 = (y2_0 - h_l3_0) * G_0;
 y3_0 = v3_0 + h_l3_0;
 v4_0 = (y3_0 - h_l4_0) * G_0;
 y4_0 = v4_0 + h_l4_0;
-vo_0 = ((P.p_slope < 0.5) ? y4_0 : y2_0) * ae_0 * vA_0 * sagg;
+vo_0 = (((P.p_slope < 0.5) ? y4_0 : y2_0) * s_flt + vin_0 / (1 + s_drv * 4) * (1 - s_flt)) * ae_0 * vA_0 * sagg;
 vo_0 = vo_0 * (1 + age * 0.0252071);
 pn_0 = s_wid * (-1) * min(0 / max(nn - 1, 1), 1);
 vL = vL + vo_0 * sqrt(0.5 - 0.5 * pn_0);
@@ -1162,7 +1173,7 @@ v3_1 = (y2_1 - h_l3_1) * G_1;
 y3_1 = v3_1 + h_l3_1;
 v4_1 = (y3_1 - h_l4_1) * G_1;
 y4_1 = v4_1 + h_l4_1;
-vo_1 = ((P.p_slope < 0.5) ? y4_1 : y2_1) * ae_1 * vA_1 * sagg;
+vo_1 = (((P.p_slope < 0.5) ? y4_1 : y2_1) * s_flt + vin_1 / (1 + s_drv * 4) * (1 - s_flt)) * ae_1 * vA_1 * sagg;
 vo_1 = vo_1 * (1 + age * 0.021923);
 pn_1 = s_wid * 1 * min(1 / max(nn - 1, 1), 1);
 vL = vL + vo_1 * sqrt(0.5 - 0.5 * pn_1);
@@ -1288,7 +1299,7 @@ v3_2 = (y2_2 - h_l3_2) * G_2;
 y3_2 = v3_2 + h_l3_2;
 v4_2 = (y3_2 - h_l4_2) * G_2;
 y4_2 = v4_2 + h_l4_2;
-vo_2 = ((P.p_slope < 0.5) ? y4_2 : y2_2) * ae_2 * vA_2 * sagg;
+vo_2 = (((P.p_slope < 0.5) ? y4_2 : y2_2) * s_flt + vin_2 / (1 + s_drv * 4) * (1 - s_flt)) * ae_2 * vA_2 * sagg;
 vo_2 = vo_2 * (1 + age * 0.0649822);
 pn_2 = s_wid * (-1) * min(2 / max(nn - 1, 1), 1);
 vL = vL + vo_2 * sqrt(0.5 - 0.5 * pn_2);
@@ -1414,7 +1425,7 @@ v3_3 = (y2_3 - h_l3_3) * G_3;
 y3_3 = v3_3 + h_l3_3;
 v4_3 = (y3_3 - h_l4_3) * G_3;
 y4_3 = v4_3 + h_l4_3;
-vo_3 = ((P.p_slope < 0.5) ? y4_3 : y2_3) * ae_3 * vA_3 * sagg;
+vo_3 = (((P.p_slope < 0.5) ? y4_3 : y2_3) * s_flt + vin_3 / (1 + s_drv * 4) * (1 - s_flt)) * ae_3 * vA_3 * sagg;
 vo_3 = vo_3 * (1 + age * (-0.0430653));
 pn_3 = s_wid * 1 * min(3 / max(nn - 1, 1), 1);
 vL = vL + vo_3 * sqrt(0.5 - 0.5 * pn_3);
@@ -1540,7 +1551,7 @@ v3_4 = (y2_4 - h_l3_4) * G_4;
 y3_4 = v3_4 + h_l3_4;
 v4_4 = (y3_4 - h_l4_4) * G_4;
 y4_4 = v4_4 + h_l4_4;
-vo_4 = ((P.p_slope < 0.5) ? y4_4 : y2_4) * ae_4 * vA_4 * sagg;
+vo_4 = (((P.p_slope < 0.5) ? y4_4 : y2_4) * s_flt + vin_4 / (1 + s_drv * 4) * (1 - s_flt)) * ae_4 * vA_4 * sagg;
 vo_4 = vo_4 * (1 + age * 0.0550411);
 pn_4 = s_wid * (-1) * min(4 / max(nn - 1, 1), 1);
 vL = vL + vo_4 * sqrt(0.5 - 0.5 * pn_4);
@@ -1666,7 +1677,7 @@ v3_5 = (y2_5 - h_l3_5) * G_5;
 y3_5 = v3_5 + h_l3_5;
 v4_5 = (y3_5 - h_l4_5) * G_5;
 y4_5 = v4_5 + h_l4_5;
-vo_5 = ((P.p_slope < 0.5) ? y4_5 : y2_5) * ae_5 * vA_5 * sagg;
+vo_5 = (((P.p_slope < 0.5) ? y4_5 : y2_5) * s_flt + vin_5 / (1 + s_drv * 4) * (1 - s_flt)) * ae_5 * vA_5 * sagg;
 vo_5 = vo_5 * (1 + age * (-0.0503668));
 pn_5 = s_wid * 1 * min(5 / max(nn - 1, 1), 1);
 vL = vL + vo_5 * sqrt(0.5 - 0.5 * pn_5);
@@ -1717,8 +1728,8 @@ edg = 0.3 + clamp(P.p_edrive, 0, 100) * 0.03;
 etl = tanh(el2 * edg) / edg;
 etr = tanh(er2 * edg) / edg;
 ein = (xL + xR) * 0.5;
-edL.write(ein + s_efb * (etl * (1 - pp) + etr * pp));
-edR.write(ein * (1 - pp) + s_efb * (etr * (1 - pp) + etl * pp));
+edL.write((ein + s_efb * (etl * (1 - pp) + etr * pp)) * s_eon);
+edR.write((ein * (1 - pp) + s_efb * (etr * (1 - pp) + etl * pp)) * s_eon);
 
 // ================= space: sympathetic strings tuned to the chord =================
 sil = xL + el2 * s_emix;
@@ -1733,7 +1744,7 @@ sa = 0.85 - 0.55 * sdamp;
 stau = (1 - sa) / sa;
 rt = clamp(P.p_rdecay, 100, 30000) * 0.001;
 srt = clamp(P.p_sdecay, 100, 30000) * 0.001;
-sex = (hil + hir) * 0.5 * s_tune;
+sex = (hil + hir) * 0.5 * s_tune * s_son;
 stL = 0;
 stR = 0;
 sf_0 = 440 * exp((h_sp_0 - 69) * 0.057762265);
@@ -1781,8 +1792,8 @@ stR = stR + sl_5;
 
 // ================= space: 8-line feedback delay network =================
 apg = clamp(P.p_diff, 0, 100) * 0.0075;
-rinl = hil * (1 - 0.7 * s_tune) + stL * s_tune * 0.3;
-rinr = hir * (1 - 0.7 * s_tune) + stR * s_tune * 0.3;
+rinl = (hil * (1 - 0.7 * s_tune) + stL * s_tune * 0.3) * s_son;
+rinr = (hir * (1 - 0.7 * s_tune) + stR * s_tune * 0.3) * s_son;
 apla = apl1.read(4.3 * 0.001 * sr);
 aplw = rinl + apg * apla;
 apl1.write(aplw);
@@ -1884,6 +1895,9 @@ h_s_drv = s_drv;
 h_s_efb = s_efb;
 h_s_emix = s_emix;
 h_s_rmix = s_rmix;
+h_s_eon = s_eon;
+h_s_son = s_son;
+h_s_flt = s_flt;
 h_s_tune = s_tune;
 h_s_chor = s_chor;
 h_s_wid = s_wid;

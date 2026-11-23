@@ -64,15 +64,19 @@ P = []
 
 
 def param(name, long, short, kind, lo, hi, default, unit=5, exp=1.0, sec=None, col=0, row=0, enum=None,
-          rect=None, lrect=None):
+          rect=None, lrect=None, label=("OFF", "ON"), dims=None):
     P.append(dict(name=name, long=long, short=short, kind=kind, lo=lo, hi=hi, default=default,
-                  unit=unit, exp=exp, sec=sec, col=col, row=row, enum=enum, rect=rect, lrect=lrect))
+                  unit=unit, exp=exp, sec=sec, col=col, row=row, enum=enum, rect=rect, lrect=lrect,
+                  label=label, dims=dims))
 
 
 # SEQ: 4-step sequencer synced to Live (3 control columns + 4 step columns)
 SEQ_RATES = [("1/16", 0.25), ("1/8", 0.5), ("1/4", 1.0), ("1/2", 2.0), ("1 Bar", 4.0), ("2 Bar", 8.0)]
 NSTEP = 4
-param("p_seqmode", "Seq Mode", "Mode", "menu", 0, 2, 0, sec="SEQ", col=0, row=0, enum=["Off", "Play", "Trans"])
+SEQ_X = 10
+STEP_X = SEQ_X + 148  # first step column of the SEQ section
+param("p_seqon", "Seq On", "Seq On", "power", 0, 1, 0, sec="SEQ")
+param("p_seqmode", "Seq Mode", "Mode", "menu", 0, 1, 0, sec="SEQ", col=0, row=0, enum=["Play", "Trans"])
 param("p_seqrate", "Seq Rate", "Rate", "menu", 0, len(SEQ_RATES) - 1, 2, sec="SEQ", col=1, row=0,
       enum=[r[0] for r in SEQ_RATES])
 param("p_seqlen", "Seq Steps", "Steps", "int", 1, NSTEP, NSTEP, unit=0, sec="SEQ", col=2, row=0)
@@ -82,11 +86,13 @@ param("p_swing", "Seq Swing", "Swing", "dial", 0, 100, 0, sec="SEQ", col=2, row=
 param("p_schance", "Seq Chance", "Chance", "dial", 0, 100, 100, sec="SEQ", col=0, row=2)
 SEQ_DEF_VEL = [100, 88, 112, 94]
 for i in range(NSTEP):
-    param("p_son%d" % (i + 1), "Step %d On" % (i + 1), "%d" % (i + 1), "toggle", 0, 1, 1, sec="SEQ", col=3 + i, row=0)
-    param("p_snote%d" % (i + 1), "Step %d Note" % (i + 1), "Note %d" % (i + 1), "note", 0, 127, 57, unit=8,
-          sec="SEQ", col=3 + i, row=1)
+    sx = STEP_X + i * 46
+    param("p_son%d" % (i + 1), "Step %d On" % (i + 1), "%d" % (i + 1), "toggle", 0, 1, 1, sec="SEQ",
+          rect=[sx, 33, 44, 16])
+    param("p_snote%d" % (i + 1), "Step %d Note" % (i + 1), "Note", "int", 36, 84, 57, unit=8, sec="SEQ",
+          rect=[sx, 54, 44, 48])
     param("p_svel%d" % (i + 1), "Step %d Velocity" % (i + 1), "Vel", "dial", 1, 127, SEQ_DEF_VEL[i], unit=0,
-          sec="SEQ", col=3 + i, row=2)
+          sec="SEQ", rect=[sx, 108, 44, 48])
 
 # CHORD (4 stacked menus + 2 dial columns)
 param("p_harm", "Harmony", "Harmony", "menu", 0, 7, 0, sec="CHORD", col=0, row=0,
@@ -166,7 +172,6 @@ param("p_width", "Width", "Width", "dial", 0, 100, 60, sec="OUT", col=1, row=1)
 param("p_vol", "Volume", "Volume", "dial", -60, 6, -3, unit=4, sec="OUT", col=0, row=2)
 
 # DICE (gen side; the Randomize button, Amount and locks live in Max only)
-SEQ_X = 10
 CHORD_X = 356
 DICE_X = CHORD_X + 234
 param("p_cchance", "Chord Chance", "Chance", "dial", 0, 100, 0, sec="DICE",
@@ -174,6 +179,19 @@ param("p_cchance", "Chord Chance", "Chance", "dial", 0, 100, 0, sec="DICE",
 param("p_cdice", "Chord Dice", "Chord Dice", "menu", 0, 3, 2, sec="DICE",
       enum=["Color", "Voicing", "Both", "Wild"], rect=[DICE_X + 50, 136, 86, 15],
       lrect=[DICE_X + 50, 121, 86, 13])
+
+param("p_diceon", "Dice On", "Dice On", "power", 0, 1, 1, sec="DICE", dims=["p_cchance", "p_cdice"])
+
+# Section switches (header buttons). dims = controls greyed out when the switch is off (None = whole section)
+param("p_chordon", "Chord On", "Chord On", "power", 0, 1, 1, sec="CHORD",
+      dims=["p_harm", "p_chord", "p_key", "p_voicing", "p_notes", "p_strum"])
+param("p_analogon", "Analog", "Analog", "power", 0, 1, 1, sec="VOICE", label=("ANALOG", "ANALOG"),
+      dims=["p_drift", "p_driftrate", "p_age", "p_sag"])
+param("p_filton", "Filter On", "Filter On", "power", 0, 1, 1, sec="FILTER")
+param("p_echoon", "Echo On", "Echo On", "power", 0, 1, 1, sec="ECHO")
+param("p_spaceon", "Space On", "Space On", "power", 0, 1, 1, sec="SPACE")
+param("p_choron", "Chorus On", "Chorus On", "power", 0, 1, 1, sec="OUT", label=("CHORUS", "CHORUS"),
+      dims=["p_chorus", "p_crate", "p_cdepth"])
 
 # Params driven by MIDI (not UI)
 MIDI_PARAMS = [("p_root", 60), ("p_vel", 100), ("p_gate", 0), ("p_trig", 0),
@@ -338,10 +356,13 @@ def build_body():
     smooth("s_res", "clamp(p_reso, 0, 100) * 0.01", PDEF["p_reso"] / 100)
     smooth("s_drv", "clamp(p_drive, 0, 100) * 0.01", PDEF["p_drive"] / 100)
     smooth("s_efb", "clamp(p_efb, 0, 110) * 0.01", PDEF["p_efb"] / 100)
-    smooth("s_emix", "clamp(p_emix, 0, 100) * 0.01", PDEF["p_emix"] / 100)
-    smooth("s_rmix", "clamp(p_rmix, 0, 100) * 0.01", PDEF["p_rmix"] / 100)
+    smooth("s_emix", "clamp(p_emix, 0, 100) * 0.01 * (p_echoon > 0.5)", PDEF["p_emix"] / 100)
+    smooth("s_rmix", "clamp(p_rmix, 0, 100) * 0.01 * (p_spaceon > 0.5)", PDEF["p_rmix"] / 100)
+    smooth("s_eon", "p_echoon > 0.5", 1.0)
+    smooth("s_son", "p_spaceon > 0.5", 1.0)
+    smooth("s_flt", "p_filton > 0.5", 1.0)
     smooth("s_tune", "clamp(p_tune, 0, 100) * 0.01", PDEF["p_tune"] / 100)
-    smooth("s_chor", "clamp(p_chorus, 0, 100) * 0.01", PDEF["p_chorus"] / 100)
+    smooth("s_chor", "clamp(p_chorus, 0, 100) * 0.01 * (p_choron > 0.5)", PDEF["p_chorus"] / 100)
     smooth("s_wid", "clamp(p_width, 0, 100) * 0.01", PDEF["p_width"] / 100)
     smooth("s_vol", "exp(clamp(p_vol, -70, 6) * 0.1151293)", 10 ** (PDEF["p_vol"] / 20))
     smooth("s_mw", "clamp(p_modw, 0, 127) / 127 * clamp(p_mwcut, 0, 100) * 0.05", 0.0)
@@ -358,13 +379,14 @@ def build_body():
     w("detd = 1 / detu;")
     w("subl = clamp(p_sub, 0, 100) * 0.01;")
     w("air = clamp(p_air, 0, 100) * 0.008;")
-    w("drift = clamp(p_drift, 0, 100) * 0.01;")
-    w("age = clamp(p_age, 0, 100) * 0.01;")
+    w("anon = p_analogon > 0.5;")
+    w("drift = clamp(p_drift, 0, 100) * 0.01 * anon;")
+    w("age = clamp(p_age, 0, 100) * 0.01 * anon;")
     w("fenv = clamp(p_fenv, -100, 100) * 0.06;")
     w("ktrk = clamp(p_ktrk, 0, 100) * 0.01 * 0.0833333;")
     w("lfoamt = clamp(p_lfoamt, 0, 100) * 0.02;")
     w("vsens = clamp(p_velsens, 0, 100) * 0.01;")
-    w("sagk = clamp(p_sag, 0, 100) * 0.01;")
+    w("sagk = clamp(p_sag, 0, 100) * 0.01 * anon;")
     w("fsus = clamp(p_fs, 0, 100) * 0.01;")
     w("asus = clamp(p_as, 0, 100) * 0.01;")
     w("cfa = 1 - exp(-1.466 / (max(p_fa, 0.3) * 0.001 * sr));")
@@ -416,7 +438,7 @@ def build_body():
     for hn, iv in [("h_bph", 0.0), ("h_bint", 0.0), ("h_sbeat", 0.0), ("h_lastk", -1.0), ("h_scnt", 0.0),
                    ("h_sgt", 0.0), ("h_src", 0.0), ("h_rootin", 60.0), ("h_velin", 100.0)]:
         H(hn, iv)
-    w("smode = floor(p_seqmode + 0.5);")
+    w("smode = (p_seqon > 0.5) * (1 + floor(p_seqmode + 0.5));")
     w("mtrig = p_trig != h_trig;")
     w("mgate = p_gate > 0.5;")
     w("bph = clamp(in1, 0, 1);")
@@ -514,7 +536,7 @@ def build_body():
     w("\t}")
     w("\tdz = 0;")
     w("\tif (trig > 0) {")
-    w("\t\tdz = (noise() * 0.5 + 0.5) < clamp(p_cchance, 0, 100) * 0.01;")
+    w("\t\tdz = ((noise() * 0.5 + 0.5) < clamp(p_cchance, 0, 100) * 0.01) * (p_diceon > 0.5) * (p_chordon > 0.5);")
     w("\t}")
     w("\tdmd = floor(p_cdice + 0.5);")
     w("\tdcol = dz * (dmd != 1);")
@@ -565,6 +587,10 @@ def build_body():
     w("\tvm = clamp(floor(p_voicing + 0.5), 0, 7);")
     w("\tif (dvoi > 0) {")
     w("\t\tvm = min(floor(rv * 6), 5);")
+    w("\t}")
+    w("\tif (p_chordon < 0.5) {")
+    w("\t\tn = 1;")
+    w("\t\tvm = 0;")
     w("\t}")
     w("\tjj = 0;")
     w("\too = 0;")
@@ -657,7 +683,7 @@ def build_body():
         else:
             w("\tq%d = (n > %d) ? (%s) : (pick6(%d - n * floor(%d / n), q0, q1, q2, q3, q4, q5) + 12 * floor(%d / n));"
               % (s, s, terms, s, s, s))
-    w("\tcmean = (%s) / n;" % " + ".join(["q0", "q1"] + ["q%d * (n > %d)" % (s, s) for s in range(2, NV)]))
+    w("\tcmean = (%s) / n;" % " + ".join(["q0"] + ["q%d * (n > %d)" % (s, s) for s in range(1, NV)]))
     w("\tctop = pick6(n - 1, q0, q1, q2, q3, q4, q5);")
     w("\tcbot = q0;")
     w("\tif (trig > 0) {")
@@ -807,7 +833,7 @@ def build_body():
         w(V("y3_# = v3_# + h_l3_#;"))
         w(V("v4_# = (y3_# - h_l4_#) * G_#;"))
         w(V("y4_# = v4_# + h_l4_#;"))
-        w(V("vo_# = ((p_slope < 0.5) ? y4_# : y2_#) * ae_# * vA_# * sagg;"))
+        w(V("vo_# = (((p_slope < 0.5) ? y4_# : y2_#) * s_flt + vin_# / (1 + s_drv * 4) * (1 - s_flt)) * ae_# * vA_# * sagg;"))
         w(V("vo_# = vo_# * (1 + age * %s);" % fnum(t["g"])))
         sign = "-1" if s % 2 == 0 else "1"
         w(V("pn_# = s_wid * %s * min(# / max(nn - 1, 1), 1);" % sign))
@@ -877,8 +903,8 @@ def build_body():
     w("etl = tanh(el2 * edg) / edg;")
     w("etr = tanh(er2 * edg) / edg;")
     w("ein = (xL + xR) * 0.5;")
-    w("edL.write(ein + s_efb * (etl * (1 - pp) + etr * pp));")
-    w("edR.write(ein * (1 - pp) + s_efb * (etr * (1 - pp) + etl * pp));")
+    w("edL.write((ein + s_efb * (etl * (1 - pp) + etr * pp)) * s_eon);")
+    w("edR.write((ein * (1 - pp) + s_efb * (etr * (1 - pp) + etl * pp)) * s_eon);")
     for hn in ["ets", "wph", "fph", "ehl", "el1", "el2", "ehr", "er1", "er2"]:
         U("h_" + hn, hn)
 
@@ -899,7 +925,7 @@ def build_body():
     w("stau = (1 - sa) / sa;")
     w("rt = clamp(p_rdecay, 100, 30000) * 0.001;")
     w("srt = clamp(p_sdecay, 100, 30000) * 0.001;")
-    w("sex = (hil + hir) * 0.5 * s_tune;")
+    w("sex = (hil + hir) * 0.5 * s_tune * s_son;")
     w("stL = 0;")
     w("stR = 0;")
     for s in range(NV):
@@ -919,8 +945,8 @@ def build_body():
     for nm, ms in [("apl1", 4.3), ("apl2", 6.9), ("apr1", 5.1), ("apr2", 7.7)]:
         D(nm, 4096)
     w("apg = clamp(p_diff, 0, 100) * 0.0075;")
-    w("rinl = hil * (1 - 0.7 * s_tune) + stL * s_tune * %s;" % fnum(STR_IN))
-    w("rinr = hir * (1 - 0.7 * s_tune) + stR * s_tune * %s;" % fnum(STR_IN))
+    w("rinl = (hil * (1 - 0.7 * s_tune) + stL * s_tune * %s) * s_son;" % fnum(STR_IN))
+    w("rinr = (hir * (1 - 0.7 * s_tune) + stR * s_tune * %s) * s_son;" % fnum(STR_IN))
     for ch, (n1, n2, m1, m2) in [("l", ("apl1", "apl2", 4.3, 6.9)), ("r", ("apr1", "apr2", 5.1, 7.7))]:
         w("ap%sa = %s.read(%s * 0.001 * sr);" % (ch, n1, fnum(m1)))
         w("ap%sw = rin%s + apg * ap%sa;" % (ch, ch, ch))
@@ -1326,7 +1352,15 @@ ANNOT = {
     "p_vol": "Volume d'uscita.",
     "p_cchance": "Probabilità che ogni nota tiri il dado sull'accordo (vedi Chord Dice). 0 = mai.",
     "p_cdice": "Cosa cambia il dado. Color: un altro accordo della stessa famiglia. Voicing: rivolto e ottava. Both: entrambi. Wild: qualsiasi accordo.",
-    "p_seqmode": "Off: suona il MIDI di Live (piano roll, tastiera). Play: il sequencer suona quando premi Play in Live. Trans: il sequencer suona mentre tieni un tasto, trasposto da quel tasto (C3 = come scritto).",
+    "p_seqon": "Accende il sequencer interno. Spento: NEBBIA suona solo il MIDI di Live (piano roll, tastiera).",
+    "p_seqmode": "Play: il sequencer suona quando premi Play in Live. Trans: suona solo mentre tieni un tasto, trasposto da quel tasto (C3 = come scritto).",
+    "p_chordon": "Spento: niente accordi, ogni nota suona da sola (bassi, lead). Restano Octave, Glide, Humanize e Bend.",
+    "p_diceon": "Spento: il dado sugli accordi è fermo. Randomize, Reset e i lucchetti funzionano comunque.",
+    "p_analogon": "Comportamento analogico (Drift, Age, Sag). Spento: suono digitale pulito e identico su ogni voce.",
+    "p_filton": "Spento: il filtro è escluso e passa l'oscillatore pieno.",
+    "p_echoon": "Accende o spegne l'eco.",
+    "p_spaceon": "Accende o spegne lo spazio (riverbero e corde simpatiche).",
+    "p_choron": "Accende o spegne il chorus.",
     "p_seqrate": "Durata di ogni step. 1/4 con Offset 50% = stab in levare. 1 Bar = un accordo per battuta.",
     "p_seqlen": "Quanti step usare (1-4).",
     "p_sgate": "Durata della nota di ogni step, in percentuale dello step.",
@@ -1336,8 +1370,8 @@ ANNOT = {
 }
 for _i in range(NSTEP):
     ANNOT["p_son%d" % (_i + 1)] = "Accende o spegne lo step %d." % (_i + 1)
-    ANNOT["p_snote%d" % (_i + 1)] = ("Nota dello step %d: è la fondamentale dell'accordo (in modalità scala "
-                                     "viene portata sulla scala)." % (_i + 1))
+    ANNOT["p_snote%d" % (_i + 1)] = ("Nota dello step %d, un semitono per scatto: è la fondamentale dell'accordo "
+                                     "(in modalità scala viene portata sulla scala)." % (_i + 1))
     ANNOT["p_svel%d" % (_i + 1)] = "Velocity dello step %d." % (_i + 1)
 
 
@@ -1465,7 +1499,7 @@ def build_patcher(code):
         vo = {
             "parameter_longname": p["long"],
             "parameter_shortname": p["short"],
-            "parameter_type": 2 if p["kind"] in ("menu", "toggle") else (1 if p["kind"] in ("int", "note") else 0),
+            "parameter_type": 2 if p["kind"] in ("menu", "toggle", "power") else (1 if p["kind"] in ("int", "note") else 0),
             "parameter_mmin": float(p["lo"]),
             "parameter_mmax": float(p["hi"]),
             "parameter_initial_enable": 1,
@@ -1489,9 +1523,20 @@ def build_patcher(code):
             ui = pt.add("live.menu", [px, py, rect[2], 15], ninl=1, nout=3, outtype=["", "", "float"],
                         parameter_enable=1, presentation=1, presentation_rect=[float(v) for v in rect],
                         varname=p["long"], saved_attribute_attributes={"valueof": vo}, **st, **extra)
+        elif p["kind"] == "power":
+            vo["parameter_enum"] = ["off", "on"]
+            wdt = 26 if p["label"] == ("OFF", "ON") else 46
+            rect = [secinfo[sec][2] - wdt, 4, wdt, 12]
+            ui = pt.add("live.text", [px, py, wdt, 12], ninl=1, nout=2, outtype=["", ""], mode=1,
+                        text=p["label"][0], texton=p["label"][1], parameter_enable=1, presentation=1,
+                        presentation_rect=[float(v) for v in rect], varname=p["long"],
+                        saved_attribute_attributes={"valueof": vo}, activebgcolor=C_MENU,
+                        activebgoncolor=accent, bgcolor=C_MENU, bgoncolor=accent, textcolor=C_LOW,
+                        textoncolor=C_BG, activetextcolor=C_LOW, activetextoncolor=C_BG, bordercolor=C_LINE,
+                        focusbordercolor=accent, fontname=F_HEAD, fontsize=7.5, **extra)
         elif p["kind"] == "toggle":
             vo["parameter_enum"] = ["off", "on"]
-            rect = [slot_x(sec, x0, p["col"]), 38, 44, 18]
+            rect = p["rect"] or [slot_x(sec, x0, p["col"]), 38, 44, 18]
             ui = pt.add("live.text", [px, py, 44, 18], ninl=1, nout=2, outtype=["", ""], mode=1,
                         text=p["short"], texton=p["short"], parameter_enable=1, presentation=1,
                         presentation_rect=[float(v) for v in rect], varname=p["long"],
@@ -1530,7 +1575,16 @@ def build_patcher(code):
         pre = pt.obj("prepend %s" % p["name"], px, py + 62)
         pt.connect(ui, 0, pre, 0)
         pt.connect(pre, 0, gen, 0)
-        pt.connect(thisdev, 0, ui, 0)
+        if p["kind"] not in ("toggle", "power"):  # a bang would flip a toggle: those restore on their own
+            pt.connect(thisdev, 0, ui, 0)
+
+    # section switches grey out their controls ("active 0") when off
+    for ai, p in enumerate([q for q in P if q["kind"] == "power"]):
+        targets = p["dims"] or [q["name"] for q in P if q["sec"] == p["sec"] and q["name"] != p["name"]]
+        act = pt.msg("active $1", 2600 + ai * 90, 1300)
+        pt.connect(ui_of[p["name"]], 0, act, 0)
+        for t in targets:
+            pt.connect(act, 0, ui_of[t], 0)
 
     # ------------------------------------------------ CHORD NOW: keyboard readout of the chord
     comment("CHORD NOW", [CHORD_DIAL_X + 1, 118, 120, 13], size=8.5, color=C_LOW)
@@ -1588,7 +1642,49 @@ def build_patcher(code):
                      offcolor=C_ARC_OFF, ignoreclick=1, annotation="Step che sta suonando.",
                      annotation_name="Playhead")
         pt.connect(eqs, 0, led, 0)
-    comment("follows Live ▶", [SEQ_X + 48, 132, 92, 13], size=8.0, color=C_LOW)
+    comment("follows Live \u25b6", [SEQ_X + 47, 146, 92, 13], size=8.0, color=C_LOW)
+    seq_rnd = pt.add("live.text", [2200, 600, 88, 20], ninl=1, nout=2, outtype=["", ""], mode=0,
+                     text="RANDOM", texton="RANDOM", parameter_enable=1, presentation=1,
+                     presentation_rect=[float(SEQ_X + 47), 124.0, 88.0, 20.0], varname="Seq Random",
+                     saved_attribute_attributes={"valueof": {
+                         "parameter_longname": "Seq Random", "parameter_shortname": "Seq Random",
+                         "parameter_type": 2, "parameter_mmin": 0.0, "parameter_mmax": 1.0,
+                         "parameter_enum": ["off", "on"], "parameter_initial_enable": 1, "parameter_initial": [0]}},
+                     activebgcolor=rgb("#3A2E1C"), activebgoncolor=C_AMBER, bgcolor=C_MENU, bgoncolor=C_AMBER,
+                     textcolor=C_TEXT, textoncolor=C_BG, activetextcolor=C_TEXT, activetextoncolor=C_BG,
+                     bordercolor=C_AMBER, focusbordercolor=C_AMBER, fontname=F_HEAD, fontsize=9.0,
+                     annotation="Nuovo pattern: step accesi, note nella tua Key e velocity. Il suono non cambia.",
+                     annotation_name="Seq Random")
+    srb = pt.obj("route bang 1", 2200, 640, ninl=2, nout=3)
+    pt.connect(seq_rnd, 0, srb, 0)
+    stb = pt.obj("t b", 2200, 670, ninl=1, nout=1, outtype=["bang"])
+    pt.connect(srb, 0, stb, 0)
+    pt.connect(srb, 1, stb, 0)
+    seq_targets = []
+    for i in range(NSTEP):
+        seq_targets += [("p_son%d" % (i + 1), "expr $f1 < 7500."),
+                        ("p_snote%d" % (i + 1), "expr 48. + $f2 + ($f1 >= 5000.) * (0. - 2.) + ($f1 >= 6000.) * 5. "
+                                                "+ ($f1 >= 7000.) * 2. + ($f1 >= 8000.) * 2. + ($f1 >= 9000.) * (0. - 12.)"),
+                        ("p_svel%d" % (i + 1), "expr int(70. + 50. * $f1 / 10000.)")]
+    suzi = pt.obj("uzi %d" % len(seq_targets), 2200, 700, ninl=2, nout=3, outtype=["bang", "bang", "int"])
+    pt.connect(stb, 0, suzi, 0)
+    stbi = pt.obj("t b i", 2200, 730, ninl=1, nout=2, outtype=["bang", "int"])
+    pt.connect(suzi, 2, stbi, 0)
+    srnd = pt.obj("random 10001", 2300, 760, ninl=2, nout=1, outtype=["int"])
+    pt.connect(stbi, 0, srnd, 0)
+    sgrp = pt.obj("zl group 2", 2200, 790, ninl=2, nout=2)
+    pt.connect(stbi, 1, sgrp, 0)
+    pt.connect(srnd, 0, sgrp, 0)
+    sroute = pt.obj("route " + " ".join(str(i + 1) for i in range(len(seq_targets))), 2200, 820, ninl=2,
+                    nout=len(seq_targets) + 1)
+    pt.connect(sgrp, 0, sroute, 0)
+    for i, (nm, e) in enumerate(seq_targets):
+        ex = pt.add("newobj", [2200 + (i % 6) * 150, 860 + (i // 6) * 40, 140, 22], text=e,
+                    ninl=2 if "$f2" in e else 1, nout=1, outtype=[""])
+        pt.connect(sroute, i, ex, 0)
+        if "$f2" in e:
+            pt.connect(ui_of["p_key"], 0, ex, 1)
+        pt.connect(ex, 0, ui_of[nm], 0)
 
     # ------------------------------------------------ DICE: randomize button, amount, locks
     def maxonly_vo(long, short, ptype, lo, hi, default, enum=None, unit=None):

@@ -53,7 +53,10 @@ for x in d["boxes"]:
         els.append('<line x1="%s" y1="%s" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="1.5"/>'
                    % (cx, cy, nx, ny, col(b["activeneedlecolor"])))
         unit = {2: " ms", 3: " Hz", 4: " dB", 5: " %"}.get(vo.get("parameter_unitstyle"), "")
-        for yy, txt in [(Y + 9, vo["parameter_shortname"]), (Y + 47, ("%g" % round(v, 2)) + unit)]:
+        val = ("%g" % round(v, 2)) + unit
+        if vo.get("parameter_unitstyle") == 8:
+            val = "%s%d" % (NAMES[int(v) % 12], int(v) // 12 - 2)
+        for yy, txt in [(Y + 9, vo["parameter_shortname"]), (Y + 47, val)]:
             els.append('<text x="%s" y="%s" font-size="8.5" text-anchor="middle" fill="%s" '
                        'font-family="Inter,Arial">%s</text>' % (cx, yy, col(b["textcolor"]), txt))
     elif mc == "live.menu":
@@ -69,7 +72,8 @@ for x in d["boxes"]:
         els.append('<rect x="%s" y="%s" width="%s" height="%s" rx="2" fill="%s" stroke="%s"/>'
                    % (X, Y, w, h, col(bg), col(b["bordercolor"])))
         els.append('<text x="%s" y="%s" font-size="%s" text-anchor="middle" fill="%s" font-family="Inter,Arial" '
-                   'font-weight="600">%s</text>' % (X + w / 2, Y + h / 2 + 3.5, b["fontsize"], col(tc), b["text"]))
+                   'font-weight="600">%s</text>' % (X + w / 2, Y + h / 2 + 3.5, b["fontsize"], col(tc),
+                                                    b["texton"] if on else b["text"]))
     elif mc == "live.numbox":
         v = int(vo["parameter_initial"][0])
         els.append('<rect x="%s" y="%s" width="%s" height="%s" rx="2" fill="%s"/>'

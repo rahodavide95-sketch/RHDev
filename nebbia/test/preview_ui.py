@@ -1,5 +1,6 @@
 """Draws an approximate SVG/HTML preview of the device panel from Nebbia.maxpat (presentation view).
-Usage: python3 test/preview_ui.py out.html   (then screenshot it with any browser)"""
+Usage: python3 test/preview_ui.py out.html [FOLDED,SECTIONS]   (then screenshot it with any browser)
+The optional second argument replays the fold engine: those sections are drawn as narrow strips."""
 import json
 import math
 import os
@@ -8,6 +9,29 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 d = json.load(open(os.path.join(HERE, "..", "Nebbia.maxpat")))["patcher"]
 W, H = int(d["devicewidth"]), 169
+folded = set(sys.argv[2].split(",")) if len(sys.argv) > 2 and sys.argv[2] else set()
+# replay the fold engine: section bpatchers in order, folded ones replaced by their strip
+bps = {b["box"]["varname"]: b["box"] for b in d["boxes"] if b["box"]["maxclass"] == "bpatcher"}
+order = sorted((b for n, b in bps.items() if not n.startswith("nb_STRIP_")), key=lambda b: b["presentation_rect"][0])
+layout, x = [], order[0]["presentation_rect"][0]
+for b in order:
+    name = b["varname"][3:]
+    if name in folded:
+        layout.append((bps["nb_STRIP_" + name], x))
+        x += bps["nb_STRIP_" + name]["presentation_rect"][2] + 4
+    else:
+        layout.append((b, x))
+        x += b["presentation_rect"][2] + 4
+W = int(x) if folded else W
+flat = [bb for bb in d["boxes"] if bb["box"]["maxclass"] != "bpatcher"]
+for b, x0 in layout:
+    for bb in b["patcher"]["boxes"]:
+        bx = dict(bb["box"])
+        if bx.get("presentation"):
+            r = bx["presentation_rect"]
+            bx["presentation_rect"] = [r[0] + x0, r[1], r[2], r[3]]
+        flat.append({"box": bx})
+all_boxes = flat
 NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
 
@@ -16,7 +40,7 @@ def col(c):
 
 
 els = []
-for x in d["boxes"]:
+for x in all_boxes:
     b = x["box"]
     if not b.get("presentation"):
         continue
@@ -26,6 +50,10 @@ for x in d["boxes"]:
     if mc == "panel":
         els.append('<rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="%s"/>'
                    % (X, Y, w, h, b.get("rounded", 0), col(b["bgcolor"])))
+    elif mc == "comment" and b["text"] and b.get("textjustification") == 1:  # vertical strip label
+        for li, ch in enumerate(b["text"].split()):
+            els.append('<text x="%s" y="%s" font-size="9" font-weight="700" text-anchor="middle" fill="%s" '
+                       'font-family="Inter,Arial">%s</text>' % (X + w / 2, Y + 10 + li * 11, col(b["textcolor"]), ch))
     elif mc == "live.comment":
         bold = "Bold" in b["fontname"]
         els.append('<text x="%s" y="%s" font-size="%s" font-weight="%s" fill="%s" font-family="Inter,Arial" '
@@ -64,7 +92,7 @@ for x in d["boxes"]:
                        'font-family="Inter,Arial">%s</text>' % (cx, yy, col(b["textcolor"]), txt))
     elif mc == "umenu":
         first = None
-        for bb in d["boxes"]:
+        for bb in all_boxes:
             t = bb["box"].get("text", "")
             if bb["box"]["maxclass"] == "message" and t.startswith("clear, append "):
                 first = t.split(", ")[1][len("append "):]

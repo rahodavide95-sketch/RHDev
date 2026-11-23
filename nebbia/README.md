@@ -47,18 +47,22 @@ La colonna **PRESET** a sinistra è organizzata **per cartelle, per genere e sti
 2. **Preset** (menu sotto): scegli il suono, si carica subito.
 3. **PREV / NEXT**: scorri i preset della cartella al volo.
 
-| Cartella | Preset |
-|---|---|
-| **DUB TECHNO** | Fog Stab, Concrete Dub, Echo Throw, Submerged, Tape Ghost, Strings In Fog, Basement Chord, Rain On Steel |
-| **DEEP / MINIMAL** | Deep Minimal Stab, Velvet Chord, Late Night Keys, Pulse Chord, Smoke Organ, Shuffle Stab |
-| **AMBIENT** | Soft Horizon, Breathing Pad, Glass Haze, Slow Tide, Warm Blanket, Cloud Choir, Distant Lights |
-| **INTRO / SOFT** | First Light, Soft Pulse Intro, Morning Fog, Tape Lullaby, Gentle Swell, Low Hum Intro |
-| **DRONE** | Night Drone, Deep Ocean, Cathedral Low, Static Field, Endless Fifths |
-| **EXPERIMENTAL** | Broken Machine, Metal Strings, Runaway Echo, Random Colors, Self Oscillate, Glitch Strum, Phase Haunt |
-| **USER** | User 1–8: i tuoi |
+| Cartella | Preset | Nomi |
+|---|---|---|
+| **DUB TECHNO** | 22 | Fog Stab, Concrete Dub, Echo Throw, Submerged, Tape Ghost, Strings In Fog, Basement Chord, Rain On Steel, Underground Wave, Industrial Harbour, Iron Drop, Wet Bunker, Hollow Vapour, Smoked Pulse, Rusted Tower, Damp Pressure, Echoing Stab, Faded Siren, Midnight Signal, Tunnel Dub, Muted Rail, Foggy Delay |
+| **DEEP / MINIMAL** | 22 | Deep Minimal Stab, Velvet Chord, Late Night Keys, Pulse Chord, Smoke Organ, Shuffle Stab, Inner Room, Hazy Signal, Liquid Pulse, Dusky Hours, Blue Tones, Small Keys, Muted Club, Subtle Steps, Smoky Chord, Dark Touch, Sunken Lounge, Quiet Stab, Late Motion, Deep Swing, Night Tide, Velvet Loop |
+| **AMBIENT** | 22 | Soft Horizon, Breathing Pad, Glass Haze, Slow Tide, Warm Blanket, Cloud Choir, Distant Lights, Weightless Dawn, Quiet Shore, Evening Garden, Open Memory, Faded Waves, Floating Tide, Vast Mist, Pale Sky, Drifting Rain, Hidden Breath, Still Air, Silent Haze, Morning Clouds, Soft Lake, Glass Light |
+| **INTRO / SOFT** | 22 | First Light, Soft Pulse Intro, Morning Fog, Tape Lullaby, Gentle Swell, Low Hum Intro, Tender Arrival, Opening Room, Faint Glow, Hushed Thread, Rising Ember, Early Swell, Small Murmur, Waking Path, Quiet Light, Shy Breath, Silver Signal, Patient Pulse, Calm Promise, Slow Door, Gentle Hum, Low Steps |
+| **DRONE** | 22 | Night Drone, Deep Ocean, Cathedral Low, Static Field, Endless Fifths, Sunken Tone, Iron Engine, Infinite Tide, Grey Depth, Black Void, Heavy Haze, Frozen Bed, Dark Current, Vast Organ, Ancient Monolith, Cold Floor, Buried Drone, Low Pressure, Ocean Horizon, Endless Choir, Cathedral Hall, Deep Hum |
+| **EXPERIMENTAL** | 22 | Broken Machine, Metal Strings, Runaway Echo, Random Colors, Self Oscillate, Glitch Strum, Phase Haunt, Unstable Noise, Melted Spiral, Strange Colors, Bent Bloom, Haunted Organism, Corrupt Echo, Mutant Voltage, Glitched Radio, Erratic Glass, Wild Code, Feral Swarm, Shattered Ghost, Fractured Engine, Twisted Logic, Sick Metal |
+| **USER** | 8 | User 1–8: i tuoi |
 
-Ogni preset ha anche il suo pattern per il sequencer ed è **livellato in volume**: passando da uno all'altro non
-hai salti di livello.
+In tutto sono **132 preset di fabbrica, 22 per cartella**. Ogni preset ha anche il suo pattern per il sequencer ed è
+**livellato in volume**: passando da uno all'altro non hai salti di livello.
+
+I primi di ogni cartella sono fatti a mano. Gli altri li ha generati `test/gen_presets.py` nello stile della
+cartella (caratteri, accordi, pattern e progressioni di quel genere): ogni candidato è stato suonato offline e
+tenuto solo se passava i controlli (nessun errore, volume giusto, abbastanza scuro dove la cartella è scura).
 
 - **SAVE**: salva il suono attuale nello slot User scelto nel numerino accanto (1–8) e apre la cartella USER.
   I preset User restano salvati **dentro il progetto di Live**.
@@ -71,6 +75,18 @@ hai salti di livello.
 
 Puoi usare anche il salvataggio di Live (icona del dischetto nel titolo del device): salva tutto come preset
 di Live nella tua User Library.
+
+---
+
+## Comprimere le sezioni
+
+Ogni sezione ha un pulsante **–** in alto a sinistra. Se non la usi, cliccalo: la sezione si chiude in una
+striscia sottile con il nome in verticale, le sezioni a destra scivolano a sinistra e **il device si stringe**.
+Il **+** sulla striscia la riapre. Il suono non cambia: comprimere è solo una questione di spazio.
+
+Lo stato aperto o chiuso di ogni sezione si salva con il progetto.
+
+![Sezioni Preset, Dice, Echo, Space e Out compresse](demo/ui_preview_folded.png)
 
 ---
 
@@ -229,7 +245,7 @@ In `demo/` ci sono i render offline dello stesso DSP:
 | File | Cosa senti |
 |---|---|
 | `dub_stabs.mp3` | Il suono di default, stab in levare |
-| `presets_tour.mp3` | Tutti i 39 preset di fabbrica, cartella per cartella, ognuno col suo pattern |
+| `presets_dub_techno.mp3`, `presets_deep_minimal.mp3`, `presets_ambient.mp3`, `presets_intro_soft.mp3`, `presets_drone.mp3`, `presets_experimental.mp3` | Una cartella per file: i primi 3 secondi di ogni preset, col suo pattern |
 | `randomize_tour.mp3` | Una pressione di RANDOMIZE per ognuno dei 14 caratteri |
 | `seq_progression.mp3` | Il sequencer interno: D Dorian, un accordo per battuta |
 | `dice_stabs.mp3` | Lo stesso stab con il dado al 100%: ogni colpo cambia colore e rivolto |
@@ -256,4 +272,5 @@ Il test `torture` porta tutti i parametri al massimo e verifica che l'uscita res
 `seq_play`, `seq_bars`, `seq_pos`, `seq_trans`, `dice`, `all_off` ed `echo_kill` verificano sequencer, dado e
 interruttori. `python3 test/random_tour.py` rende un giro di Randomize. `python3 test/presets_tour.py` rende i
 preset di fabbrica con centroide spettrale e loudness; con `--calibrate` riscrive `src/preset_levels.json` per
-livellarli.
+livellarli. `python3 test/gen_presets.py` rigenera i preset generati, `python3 test/validate_patch.py` controlla
+la patch (collegamenti, parametri, send/receive delle sezioni).

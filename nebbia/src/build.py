@@ -1535,6 +1535,12 @@ FOLDERS = [
                            p_tune=70, p_rmod=100, seq=_seq((1, 3), notes={3: -1}, rate=3, length=4))),
     ]),
 ]
+# hand-made presets above; the rest of every folder comes from test/gen_presets.py (rendered and filtered)
+HAND_FOLDERS = [(f, list(lst)) for f, lst in FOLDERS]
+_gen_path = os.path.join(HERE, "presets_generated.json")
+if os.path.exists(_gen_path):
+    _gen = json.load(open(_gen_path))
+    FOLDERS = [(f, lst + [(n, ov) for n, ov in _gen.get(f, [])]) for f, lst in FOLDERS]
 FACTORY = [(n, ov) for _, lst in FOLDERS for n, ov in lst]
 NUSER = 8
 # which Randomize characters each folder offers: (first, count)
@@ -1644,6 +1650,111 @@ for _c in range(NCELL):
 # --------------------------------------------------------------------------
 # Max patcher
 # --------------------------------------------------------------------------
+FOLDW, GAP = 22, 4  # folded strip width, gap between sections
+
+
+def sub_patcher(boxes, lines, width):
+    return {
+        "fileversion": 1, "appversion": APPVERSION, "classnamespace": "box", "rect": [100.0, 100.0, 640.0, 480.0],
+        "bglocked": 0, "openinpresentation": 1, "default_fontsize": 10.0, "default_fontface": 0,
+        "default_fontname": "Arial Bold", "gridonopen": 1, "gridsize": [8.0, 8.0], "gridsnaponopen": 1,
+        "objectsnaponopen": 0, "statusbarvisible": 2, "toolbarvisible": 1, "boxanimatetime": 500,
+        "enablehscroll": 0, "enablevscroll": 0, "bgcolor": C_BG, "editing_bgcolor": C_BG, "devicewidth": 0.0,
+        "description": "", "digest": "", "tags": "", "style": "", "subpatcher_template": "",
+        "assistshowspatchername": 0, "boxes": boxes, "lines": lines,
+    }
+
+
+def split_into_bpatchers(pt, groups):
+    """Moves every presentation object into a bpatcher per section (by x position, or by its _grp tag).
+    Patch cords that cross a bpatcher border become send/receive pairs named ---o<id>_<outlet> /
+    ---i<id>_<inlet> (--- makes the names unique per device instance)."""
+    boxes = [b["box"] for b in pt.boxes]
+    assign = {}
+    for b in boxes:
+        g = b.pop("_grp", None)
+        if g:
+            assign[b["id"]] = g
+            continue
+        if b.get("presentation"):
+            x, y, w, h = b["presentation_rect"]
+            for gname, gx0, gx1 in groups:
+                if gx0 - 0.01 <= x and x + w <= gx1 + 0.01:
+                    assign[b["id"]] = gname
+                    b["presentation_rect"] = [x - gx0, y, w, h]
+                    break
+            else:
+                assert w >= DEVICE_W - 1, ("presentation object outside every section", b.get("maxclass"),
+                                           b.get("text"), b["presentation_rect"])
+    gnames = sorted(set(assign.values()))
+    sub = {g: {"boxes": [], "lines": []} for g in gnames}
+    main_boxes = []
+    for b in boxes:
+        g = assign.get(b["id"])
+        (sub[g]["boxes"] if g else main_boxes).append({"box": b})
+
+    def new_box(where, text, ninl, nout, x, y):
+        pt.n += 1
+        oid = "obj-%d" % pt.n
+        bb = {"box": {"id": oid, "maxclass": "newobj", "text": text, "numinlets": ninl, "numoutlets": nout,
+                      "outlettype": [""] * nout, "patching_rect": [float(x), float(y), 120.0, 22.0]}}
+        (sub[where]["boxes"] if where else main_boxes).append(bb)
+        return oid
+
+    def cord(s, so, d, di):
+        return {"patchline": {"source": [s, so], "destination": [d, di]}}
+
+    main_lines, seen = [], set()
+    out_proxy, in_proxy = {}, {}
+    for ln in pt.lines:
+        (s, so), (d, di) = ln["patchline"]["source"], ln["patchline"]["destination"]
+        gs, gd = assign.get(s), assign.get(d)
+        if gs == gd:
+            (sub[gs]["lines"] if gs else main_lines).append(ln)
+            continue
+        if gs:
+            if (s, so) not in out_proxy:
+                nm = "---o%s_%d" % (s.split("-")[1], so)
+                snd = new_box(gs, "s " + nm, 1, 0, 2000 + len(out_proxy) % 20 * 130, 3000 + len(out_proxy) // 20 * 30)
+                sub[gs]["lines"].append(cord(s, so, snd, 0))
+                out_proxy[(s, so)] = new_box(None, "r " + nm, 1, 1, 6000 + len(out_proxy) % 20 * 130,
+                                             3000 + len(out_proxy) // 20 * 30)
+            src_ep = (out_proxy[(s, so)], 0)
+        else:
+            src_ep = (s, so)
+        if gd:
+            if (d, di) not in in_proxy:
+                nm = "---i%s_%d" % (d.split("-")[1], di)
+                rcv = new_box(gd, "r " + nm, 1, 1, 2000 + len(in_proxy) % 20 * 130, 3500 + len(in_proxy) // 20 * 30)
+                sub[gd]["lines"].append(cord(rcv, 0, d, di))
+                in_proxy[(d, di)] = new_box(None, "s " + nm, 1, 0, 6000 + len(in_proxy) % 20 * 130,
+                                            3500 + len(in_proxy) // 20 * 30)
+            dst_ep = (in_proxy[(d, di)], 0)
+        else:
+            dst_ep = (d, di)
+        key = (src_ep, dst_ep)
+        if key not in seen:
+            seen.add(key)
+            main_lines.append(cord(src_ep[0], src_ep[1], dst_ep[0], dst_ep[1]))
+    gx = {g: (x0, x1) for g, x0, x1 in groups}
+    for gi, g in enumerate(gnames):
+        strip = g.startswith("STRIP_")
+        base = g[len("STRIP_"):] if strip else g
+        x0, x1 = gx[base]
+        width = FOLDW if strip else x1 - x0
+        if not strip:  # exposes the section's parameters to pattrstorage (user presets)
+            new_box(g, "autopattr", 1, 4, 20, 3200)
+        pt.n += 1
+        main_boxes.append({"box": {
+            "id": "obj-%d" % pt.n, "maxclass": "bpatcher", "embed": 1, "numinlets": 0, "numoutlets": 0,
+            "patcher": sub_patcher(sub[g]["boxes"], sub[g]["lines"], width), "offset": [0.0, 0.0],
+            "bgmode": 0, "border": 0, "clickthrough": 0, "enablehscroll": 0, "enablevscroll": 0,
+            "lockeddragscroll": 0, "viewvisibility": 1, "varname": "nb_" + g, "presentation": 1,
+            "presentation_rect": [float(x0), 0.0, float(width), 169.0], "hidden": 1 if strip else 0,
+            "patching_rect": [7000.0 + gi * 40, 40.0 + gi * 30, float(width), 169.0]}})
+    return main_boxes, main_lines
+
+
 def ff(x):
     """float literal for expr (always with a decimal point)"""
     s = "%.6g" % x
@@ -1664,7 +1775,7 @@ def build_patcher(code):
     panel([0, 0, DEVICE_W, 169], C_BG)
     for name, x, right, accent in SECTIONS:
         panel([x - 6, 2, right - x + 12, 165], C_CARD_DICE if name == "DICE" else C_CARD, rounded=7)
-        panel([x, 6, 3, 9], accent, rounded=2)
+        panel([x + 12, 6, 3, 9], accent, rounded=2)
 
     def comment(text, rect, size=9.0, bold=False, color=C_MID, prect=None):
         return pt.add("live.comment", prect or [1500 + rect[0], 1100 + rect[1], rect[2], rect[3]], text=text,
@@ -1673,7 +1784,39 @@ def build_patcher(code):
                       textjustification=0)
 
     for name, x, right, accent in SECTIONS:
-        comment(name, [x + 5, 2, 90, 15], size=10.0, bold=True, color=C_TEXT)
+        comment(name, [x + 17, 2, 9 * len(name) + 6, 15], size=10.0, bold=True, color=C_TEXT)
+
+    # fold buttons (one per section) and the narrow strips shown when a section is folded
+    fold_tg, strip_btn = {}, {}
+    for si, (name, x, right, accent) in enumerate(SECTIONS):
+        fold_tg[name] = pt.add("live.text", [4400 + si * 60, 40, 12, 12], ninl=1, nout=2, outtype=["", ""], mode=1,
+                               text="-", texton="+", parameter_enable=1, presentation=1,
+                               presentation_rect=[float(x - 2), 4.0, 12.0, 12.0],
+                               saved_attribute_attributes={"valueof": {
+                                   "parameter_longname": "Fold " + name.title(), "parameter_shortname": "Fold",
+                                   "parameter_type": 2, "parameter_mmin": 0.0, "parameter_mmax": 1.0,
+                                   "parameter_enum": ["open", "folded"], "parameter_initial_enable": 1,
+                                   "parameter_initial": [0], "parameter_invisible": 1}},
+                               activebgcolor=C_MENU, activebgoncolor=accent, bgcolor=C_MENU, bgoncolor=accent,
+                               textcolor=C_MID, textoncolor=C_BG, activetextcolor=C_MID, activetextoncolor=C_BG,
+                               bordercolor=C_LINE, focusbordercolor=accent, fontname=F_HEAD, fontsize=9.0,
+                               annotation="Chiude la sezione %s in una striscia sottile: il device si stringe. "
+                                          "Il suono non cambia." % name, annotation_name="Fold " + name.title())
+        g = "STRIP_" + name
+        pt.add("panel", [4400 + si * 60, 80, 20, 165], ninl=1, nout=0, presentation=1,
+               presentation_rect=[0.0, 2.0, float(FOLDW - 2), 165.0], background=1, bgcolor=C_CARD,
+               bgfillcolor_type="color", bgfillcolor_color=C_CARD, border=0, rounded=7, mode=0, ignoreclick=1,
+               _grp=g)
+        strip_btn[name] = pt.add("live.text", [4400 + si * 60, 260, 16, 14], ninl=1, nout=2, outtype=["", ""],
+                                 mode=0, text="+", texton="+", parameter_enable=0, presentation=1,
+                                 presentation_rect=[2.0, 4.0, float(FOLDW - 6), 14.0], activebgcolor=accent,
+                                 activebgoncolor=C_TEXT, bgcolor=accent, bgoncolor=C_TEXT, textcolor=C_BG,
+                                 textoncolor=C_BG, activetextcolor=C_BG, activetextoncolor=C_BG, bordercolor=accent,
+                                 fontname=F_HEAD, fontsize=10.0, _grp=g,
+                                 annotation="Riapre la sezione %s." % name, annotation_name="Open " + name.title())
+        pt.add("comment", [4400 + si * 60, 290, 16, 140], text=" ".join(name), ninl=1, nout=0, presentation=1,
+               presentation_rect=[2.0, 24.0, float(FOLDW - 6), 140.0], textcolor=C_MID, fontname=F_HEAD,
+               fontsize=9.0, textjustification=1, _grp=g)
 
     # ------------------------------------------------ core objects
     gen = pt.add("newobj", [40, 1180, 400, 22], text="gen~", ninl=1, nout=3 + NV,
@@ -2061,7 +2204,7 @@ def build_patcher(code):
     pt.connect(arr, 0, arnd, 0)
     # the character's name, shown in the DICE header
     aname = pt.add("comment", [2100, 900, 70, 15], text="", ninl=1, nout=0, presentation=1,
-                   presentation_rect=[float(DICE_X + 40), 3.0, 66.0, 13.0], textcolor=C_TEAL, fontname=F_HEAD,
+                   presentation_rect=[float(DICE_X + 50), 3.0, 58.0, 13.0], textcolor=C_TEAL, fontname=F_HEAD,
                    fontsize=8.5, textjustification=0)
     asel = pt.obj("sel %s" % " ".join(str(i) for i in range(len(ARCHETYPES))), 2100, 840, ninl=2,
                   nout=len(ARCHETYPES) + 1)
@@ -2269,30 +2412,38 @@ def build_patcher(code):
         pt.connect(tb_, 0, mm, 0)
         pt.connect(mm, 0, store, 0)
 
-    # factory presets: one list per lock group, through that group's lock, then unpacked to the controls
+    # factory presets: one list per preset, sliced per lock group, through that group's lock, unpacked to controls
     groups = [(lk, secs) for lk, secs in lock_list] + [(None, ["DICE"])]
-    for gi, (lk, secs) in enumerate(groups):
-        members = [q for q in P if q["sec"] in secs and q["name"] not in PRESET_SKIP]
+    gmembers = [[q for q in P if q["sec"] in secs and q["name"] not in PRESET_SKIP] for _, secs in groups]
+    plist = pt.obj("t l", 3200, 1160, ninl=1, nout=1)
+    for fi, (fname_, ov) in enumerate(FACTORY):
+        vals = [fnum(ov.get(q["name"], q["default"])) for mem in gmembers for q in mem]
+        mb = pt.msg(" ".join(vals), 5000 + (fi % 4) * 600, 1000 + (fi // 4) * 25)
+        pt.connect(fpick, fi, mb, 0)
+        pt.connect(mb, 0, plist, 0)
+    rest = plist
+    for gi, ((lk, secs), members) in enumerate(zip(groups, gmembers)):
         gx = 3200 + gi * 260
-        if lk is not None:
-            inv = pt.obj("== 0", gx, 1200, ninl=2, nout=1)
-            pt.connect(lk, 0, inv, 0)
-            dest = pt.obj("gate 1 1", gx, 1230, ninl=2, nout=1)
-            pt.connect(inv, 0, dest, 0)
-            din = 1
+        if gi < len(groups) - 1:
+            sl = pt.obj("zl slice %d" % len(members), gx, 1190, ninl=2, nout=2)
+            pt.connect(rest, 0, sl, 0)
+            part, rest = (sl, 0), sl
         else:
-            dest = pt.obj("t l", gx, 1230, ninl=1, nout=1)
-            din = 0
-        unp = pt.obj("unpack " + " ".join(["0."] * len(members)), gx, 1900, ninl=1, nout=len(members),
+            part = (rest, 1)
+        if lk is not None:
+            inv = pt.obj("== 0", gx, 1220, ninl=2, nout=1)
+            pt.connect(lk, 0, inv, 0)
+            dest = pt.obj("gate 1 1", gx, 1250, ninl=2, nout=1)
+            pt.connect(inv, 0, dest, 0)
+            pt.connect(part[0], part[1] if gi == len(groups) - 1 else 0, dest, 1)
+        else:
+            dest = pt.obj("t l", gx, 1250, ninl=1, nout=1)
+            pt.connect(part[0], part[1] if gi == len(groups) - 1 else 0, dest, 0)
+        unp = pt.obj("unpack " + " ".join(["0."] * len(members)), gx, 1300, ninl=1, nout=len(members),
                      outtype=["float"] * len(members), w=240)
         pt.connect(dest, 0, unp, 0)
         for j, q in enumerate(members):
             pt.connect(unp, j, ui_of[q["name"]], 0)
-        for fi, (fname_, ov) in enumerate(FACTORY):
-            vals = [fnum(ov.get(q["name"], q["default"])) for q in members]
-            mb = pt.msg(" ".join(vals), gx, 1270 + fi * 15)
-            pt.connect(fpick, fi, mb, 0)
-            pt.connect(mb, 0, dest, din)
 
     # reset engine: button -> one gate per lock group -> default value of every parameter in that group
     rrb = pt.obj("route bang 1", 2300, 760, ninl=2, nout=3)
@@ -2320,6 +2471,67 @@ def build_patcher(code):
     pt.connect(rtb, 0, mb, 0)
     pt.connect(mb, 0, amount, 0)
 
+    # ------------------------------------------------ fold engine
+    # every section is a bpatcher (nb_NAME) with a narrow twin (nb_STRIP_NAME). Folding hides the section, shows
+    # the strip, slides the sections on its right to the left and shrinks the device (live.thisdevice setwidth).
+    names = [s[0] for s in SECTIONS]
+    gw = {n: r - x + 12 for n, x, r, _ in SECTIONS}
+    ns = len(names)
+    tp = pt.obj("thispatcher", 4400, 900, ninl=1, nout=2)
+    fpak = pt.obj("pak " + " ".join(["0"] * ns), 4400, 400, ninl=ns, nout=1, w=200)
+    for si, n in enumerate(names):
+        pt.connect(fold_tg[n], 0, fpak, si)
+        tbs = pt.obj("t b", 4400 + si * 60, 300, ninl=1, nout=1, outtype=["bang"])
+        pt.connect(strip_btn[n], 0, tbs, 0)
+        z = pt.msg("0", 4400 + si * 60, 330)
+        pt.connect(tbs, 0, z, 0)
+        pt.connect(z, 0, fold_tg[n], 0)
+    funp = pt.obj("unpack " + " ".join(["0"] * ns), 4400, 440, ninl=1, nout=ns, w=200)
+    pt.connect(fpak, 0, funp, 0)
+    x_of = {}
+    for si, n in enumerate(names):
+        bx = 4400 + si * 160
+        gate = pt.obj("gate 2", bx, 560, ninl=2, nout=2)
+        ctl = pt.obj("+ 1", bx, 530, ninl=2, nout=1)
+        pt.connect(ctl, 0, gate, 0)
+        if si == 0:
+            t0 = pt.obj("t b f", bx, 480, ninl=1, nout=2, outtype=["bang", "float"])
+            pt.connect(funp, 0, t0, 0)
+            pt.connect(t0, 1, ctl, 0)
+            x0 = pt.msg(str(SECTIONS[0][1] - 6), bx, 505)
+            pt.connect(t0, 0, x0, 0)
+            pt.connect(x0, 0, gate, 1)
+        else:
+            pt.connect(funp, si, ctl, 0)
+            terms = " + ".join("(%d - $f%d * %d)" % (gw[names[j]] + GAP, j + 1, gw[names[j]] - FOLDW)
+                               for j in range(si))
+            ex = pt.obj("expr %d + %s" % (SECTIONS[0][1] - 6, terms), bx, 505, ninl=si, nout=1, w=150)
+            for j in range(si):
+                pt.connect(funp, j, ex, j)
+            pt.connect(ex, 0, gate, 1)
+            x_of[n] = ex
+        op = pt.msg("script hide nb_STRIP_%s, script show nb_%s, script sendbox nb_%s presentation_rect $1 0 %d 169"
+                    % (n, n, n, gw[n]), bx, 600)
+        fo = pt.msg("script hide nb_%s, script show nb_STRIP_%s, script sendbox nb_STRIP_%s presentation_rect "
+                    "$1 0 %d 169" % (n, n, n, FOLDW), bx, 630)
+        pt.connect(gate, 0, op, 0)
+        pt.connect(gate, 1, fo, 0)
+        pt.connect(op, 0, tp, 0)
+        pt.connect(fo, 0, tp, 0)
+    last = names[-1]
+    tot = pt.obj("expr $f1 + $f2 * %d + (1 - $f2) * %d + %d" % (FOLDW, gw[last], GAP), 4400, 700, ninl=2, nout=1)
+    pt.connect(x_of[last], 0, tot, 0)
+    pt.connect(funp, ns - 1, tot, 1)
+    sw = pt.obj("prepend setwidth", 4400, 730)
+    pt.connect(tot, 0, sw, 0)
+    pt.connect(sw, 0, thisdev, 0)
+    rdel = pt.obj("delay 300", 4600, 400, ninl=2, nout=1, outtype=["bang"])
+    pt.connect(thisdev, 0, rdel, 0)
+    pt.connect(rdel, 0, fpak, 0)
+
+    groups_x = [(n, x - 6, r + 6) for n, x, r, _ in SECTIONS]
+    main_boxes, main_lines = split_into_bpatchers(pt, groups_x)
+
     patcher = {
         "fileversion": 1, "appversion": APPVERSION, "classnamespace": "box",
         "rect": [60.0, 80.0, 1600.0, 1300.0], "openrect": [0.0, 0.0, 0.0, 169.0], "bglocked": 0,
@@ -2332,7 +2544,7 @@ def build_patcher(code):
         "description": "NEBBIA - living chord engine: one key, a voice-led chord, analog-behaving voices, "
                        "dub tape echo and a space that retunes to the chord.",
         "digest": "Living chord engine for dub techno", "tags": "", "style": "", "subpatcher_template": "",
-        "assistshowspatchername": 0, "boxes": pt.boxes, "lines": pt.lines, "dependency_cache": [],
+        "assistshowspatchername": 0, "boxes": main_boxes, "lines": main_lines, "dependency_cache": [],
         "latency": 0, "is_mpe": 0, "minimum_live_version": "", "minimum_max_version": "",
         "platform_compatibility": 0, "autosave": 0,
     }

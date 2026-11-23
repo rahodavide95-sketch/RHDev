@@ -31,7 +31,7 @@ def tone_ratio(x, sr, chord_pcs):
 
 
 am9 = [9, 0, 4, 7, 11]  # A C E G B
-for name in ["space_tune0", "space_tune100"]:
+for name in ["space_tune0", "space_tune100", "space_rev_off"]:
     x, sr = load(name)
     r, lvl = tone_ratio(x, sr, am9)
     print("%-14s tail energy on Am9 chord tones (+-20 cents): %4.1f %%   tail level %.1f dB" % (name, 100 * r, lvl))

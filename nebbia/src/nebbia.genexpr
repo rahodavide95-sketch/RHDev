@@ -246,6 +246,7 @@ Param p_analogon(1);
 Param p_filton(1);
 Param p_echoon(1);
 Param p_spaceon(1);
+Param p_reverbon(1);
 Param p_choron(1);
 Param p_root(60);
 Param p_vel(100);
@@ -264,6 +265,7 @@ History h_s_emix(0.45);
 History h_s_rmix(0.32);
 History h_s_eon(1);
 History h_s_son(1);
+History h_s_rev(1);
 History h_s_flt(1);
 History h_s_tune(0.5);
 History h_s_chor(0.3);
@@ -494,6 +496,7 @@ s_emix = h_s_emix + ((clamp(p_emix, 0, 100) * 0.01 * (p_echoon > 0.5)) - h_s_emi
 s_rmix = h_s_rmix + ((clamp(p_rmix, 0, 100) * 0.01 * (p_spaceon > 0.5)) - h_s_rmix) * sm;
 s_eon = h_s_eon + ((p_echoon > 0.5) - h_s_eon) * sm;
 s_son = h_s_son + ((p_spaceon > 0.5) - h_s_son) * sm;
+s_rev = h_s_rev + ((p_reverbon > 0.5) - h_s_rev) * sm;
 s_flt = h_s_flt + ((p_filton > 0.5) - h_s_flt) * sm;
 s_tune = h_s_tune + ((clamp(p_tune, 0, 100) * 0.01) - h_s_tune) * sm;
 s_chor = h_s_chor + ((clamp(p_chorus, 0, 100) * 0.01 * (p_choron > 0.5)) - h_s_chor) * sm;
@@ -1900,8 +1903,8 @@ stR = stR + sl_5;
 
 // ================= space: 8-line feedback delay network =================
 apg = clamp(p_diff, 0, 100) * 0.0075;
-rinl = (hil * (1 - 0.7 * s_tune) + stL * s_tune * 0.3) * s_son;
-rinr = (hir * (1 - 0.7 * s_tune) + stR * s_tune * 0.3) * s_son;
+rinl = (hil * (1 - 0.7 * s_tune) + stL * s_tune * 0.3) * s_son * s_rev;
+rinr = (hir * (1 - 0.7 * s_tune) + stR * s_tune * 0.3) * s_son * s_rev;
 apla = apl1.read(4.3 * 0.001 * sr);
 aplw = rinl + apg * apla;
 apl1.write(aplw);
@@ -1982,8 +1985,9 @@ rvL = (dl0 - dl2 + dl4 + dl6) * 0.5;
 rvR = (dl1 + dl3 - dl5 + dl7) * 0.5;
 
 // ================= output =================
-ml = xL + el2 * s_emix + (rvL + stL * s_tune * 0.25) * s_rmix;
-mr = xR + er2 * s_emix + (rvR + stR * s_tune * 0.25) * s_rmix;
+sgo = 0.25 + 0.55 * (1 - s_rev);
+ml = xL + el2 * s_emix + (rvL * s_rev + stL * s_tune * sgo) * s_rmix;
+mr = xR + er2 * s_emix + (rvR * s_rev + stR * s_tune * sgo) * s_rmix;
 dyl = ml - h_dxl + 0.9993 * h_dyl;
 dyr = mr - h_dxr + 0.9993 * h_dyr;
 out1 = sclip(dyl * s_vol);
@@ -2005,6 +2009,7 @@ h_s_emix = s_emix;
 h_s_rmix = s_rmix;
 h_s_eon = s_eon;
 h_s_son = s_son;
+h_s_rev = s_rev;
 h_s_flt = s_flt;
 h_s_tune = s_tune;
 h_s_chor = s_chor;

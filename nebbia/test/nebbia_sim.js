@@ -148,7 +148,7 @@ function fammaj(i) {
 function famdark(i) {
 	return ((i < 0.5) ? 0 : ((i < 1.5) ? 1 : ((i < 2.5) ? 2 : ((i < 3.5) ? 3 : ((i < 4.5) ? 4 : ((i < 5.5) ? 5 : ((i < 6.5) ? 6 : ((i < 7.5) ? 7 : ((i < 8.5) ? 8 : ((i < 9.5) ? 9 : ((i < 10.5) ? 14 : 15)))))))))));
 }
-const P = {in1: 0, p_seqon: 0, p_seqmode: 0, p_seqrate: 1, p_seqlen: 8, p_sgate: 50, p_swing: 0, p_schance: 100, p_son1: 0, p_snote1: 0, p_sacc1: 0, p_son2: 1, p_snote2: 0, p_sacc2: 0, p_son3: 0, p_snote3: 0, p_sacc3: 0, p_son4: 1, p_snote4: 0, p_sacc4: 0, p_son5: 0, p_snote5: 0, p_sacc5: 0, p_son6: 1, p_snote6: 0, p_sacc6: 0, p_son7: 0, p_snote7: 0, p_sacc7: 0, p_son8: 1, p_snote8: 0, p_sacc8: 0, p_harm: 0, p_chord: 1, p_key: 9, p_voicing: 6, p_notes: 5, p_oct: 0, p_strum: 6, p_glide: 0, p_human: 30, p_bendr: 2, p_shape: 25, p_pw: 42, p_pwm: 25, p_pwmrate: 0.6, p_osc2: 70, p_detune: 7, p_sub: 0, p_air: 10, p_drift: 35, p_driftrate: 0.5, p_age: 40, p_sag: 35, p_cutoff: 600, p_reso: 30, p_drive: 30, p_slope: 0, p_fenv: 45, p_ktrk: 35, p_mwcut: 60, p_lforate: 0.15, p_lfoamt: 15, p_lfowave: 0, p_fa: 2, p_fd: 280, p_fs: 0, p_fr: 350, p_aa: 3, p_ad: 450, p_as: 0, p_ar: 350, p_velsens: 40, p_velfilt: 50, p_etime: 3, p_efb: 62, p_emix: 45, p_elocut: 90, p_ehicut: 2600, p_edrive: 35, p_wow: 30, p_flutter: 20, p_espread: 75, p_rdecay: 4500, p_rsize: 100, p_rmix: 32, p_tune: 50, p_sdecay: 3500, p_damp: 45, p_rlocut: 150, p_diff: 80, p_rmod: 35, p_chorus: 30, p_crate: 0.5, p_cdepth: 50, p_width: 60, p_vol: -3, p_cchance: 0, p_cdice: 2, p_diceon: 1, p_chordon: 1, p_analogon: 1, p_filton: 1, p_echoon: 1, p_spaceon: 1, p_choron: 1, p_root: 60, p_vel: 100, p_gate: 0, p_trig: 0, p_bend: 64, p_modw: 0, p_bpm: 120, p_playing: 0, p_songbeat: 0};
+const P = {in1: 0, p_seqon: 0, p_seqmode: 0, p_seqrate: 1, p_seqlen: 8, p_sgate: 50, p_swing: 0, p_schance: 100, p_son1: 0, p_snote1: 0, p_sacc1: 0, p_son2: 1, p_snote2: 0, p_sacc2: 0, p_son3: 0, p_snote3: 0, p_sacc3: 0, p_son4: 1, p_snote4: 0, p_sacc4: 0, p_son5: 0, p_snote5: 0, p_sacc5: 0, p_son6: 1, p_snote6: 0, p_sacc6: 0, p_son7: 0, p_snote7: 0, p_sacc7: 0, p_son8: 1, p_snote8: 0, p_sacc8: 0, p_harm: 0, p_chord: 1, p_key: 9, p_voicing: 6, p_notes: 5, p_oct: 0, p_strum: 6, p_glide: 0, p_human: 30, p_bendr: 2, p_shape: 25, p_pw: 42, p_pwm: 25, p_pwmrate: 0.6, p_osc2: 70, p_detune: 7, p_sub: 0, p_air: 10, p_drift: 35, p_driftrate: 0.5, p_age: 40, p_sag: 35, p_cutoff: 600, p_reso: 30, p_drive: 30, p_slope: 0, p_fenv: 45, p_ktrk: 35, p_mwcut: 60, p_lforate: 0.15, p_lfoamt: 15, p_lfowave: 0, p_fa: 2, p_fd: 280, p_fs: 0, p_fr: 350, p_aa: 3, p_ad: 450, p_as: 0, p_ar: 350, p_velsens: 40, p_velfilt: 50, p_etime: 3, p_efb: 62, p_emix: 45, p_elocut: 90, p_ehicut: 2600, p_edrive: 35, p_wow: 30, p_flutter: 20, p_espread: 75, p_rdecay: 4500, p_rsize: 100, p_rmix: 32, p_tune: 50, p_sdecay: 3500, p_damp: 45, p_rlocut: 150, p_diff: 80, p_rmod: 35, p_chorus: 30, p_crate: 0.5, p_cdepth: 50, p_width: 60, p_vol: -3, p_cchance: 0, p_cdice: 2, p_diceon: 1, p_chordon: 1, p_analogon: 1, p_filton: 1, p_echoon: 1, p_spaceon: 1, p_reverbon: 1, p_choron: 1, p_root: 60, p_vel: 100, p_gate: 0, p_trig: 0, p_bend: 64, p_modw: 0, p_bpm: 120, p_playing: 0, p_songbeat: 0};
 let h_s_cut = 9.2288187;
 let h_s_res = 0.3;
 let h_s_drv = 0.3;
@@ -157,6 +157,7 @@ let h_s_emix = 0.45;
 let h_s_rmix = 0.32;
 let h_s_eon = 1;
 let h_s_son = 1;
+let h_s_rev = 1;
 let h_s_flt = 1;
 let h_s_tune = 0.5;
 let h_s_chor = 0.3;
@@ -376,7 +377,7 @@ const fd6 = new GDelay(32768);
 const fd7 = new GDelay(32768);
 let out1 = 0, out2 = 0;
 function perform() {
-	let B_0, B_1, B_2, B_3, B_4, B_5, G_0, G_1, G_2, G_3, G_4, G_5, S_0, S_1, S_2, S_3, S_4, S_5, a0, a0h, a1, a1h, a2, a2h, a3, a3h, a4, a4h, a5, a5h, a6h, a7h, act_0, act_1, act_2, act_3, act_4, act_5, ae_0, ae_1, ae_2, ae_3, ae_4, ae_5, age, air, alast, anon, apg, apla, aplb, aplv, aplw, aply, apra, aprb, aprv, aprw, apry, as_0, as_1, as_2, as_3, as_4, as_5, asum, asus, b0h, b1h, b2h, b3h, b4h, b5h, b6h, b7h, base, bendst, best, bint, bph, bpm, c0, c1, c2, c3, c4, c5, caa, cad, car, cb, cbb, cbl, cbot, cbr, cc, cdp, cfa, cfd, cfr, chg, chgo, cid, cm, cmean, cmo, cph, ct, ctop, ctr, cts_0, cts_1, cts_2, cts_3, cts_4, cts_5, cvalid, cwl, cwr, d1_0, d1_1, d1_2, d1_3, d1_4, d1_5, d2_0, d2_1, d2_2, d2_3, d2_4, d2_5, d3, dcol, deg, det, detd, detu, difl, difr, dl0, dl1, dl2, dl3, dl4, dl5, dl6, dl7, dmd, dp_0, dp_1, dp_2, dp_3, dp_4, dp_5, dr_0, dr_1, dr_2, dr_3, dr_4, dr_5, drift, drm, dsm, dv_0, dv_1, dv_2, dv_3, dv_4, dv_5, dvoi, dwild, dyl, dyr, dz, edg, ehc, ehl, ehr, ein, el1, el2, elc, en, en3, eol, eor, er1, er2, etg, etl, etr, ets, f1_0, f1_1, f1_2, f1_3, f1_4, f1_5, famt, fc_0, fc_1, fc_2, fc_3, fc_4, fc_5, fco_0, fco_1, fco_2, fco_3, fco_4, fco_5, fe_0, fe_1, fe_2, fe_3, fe_4, fe_5, fenv, fl0, fl1, fl2, fl3, fl4, fl5, fl6, fl7, fph, fr0, fr1, fr2, fr3, fr4, fr5, fr6, fr7, fs_0, fs_1, fs_2, fs_3, fs_4, fs_5, fsus, g_0, g_1, g_2, g_3, g_4, g_5, gd, gdp, gdt, gdv, gin, glc, go_0, go_1, go_2, go_3, go_4, go_5, gon, harm, hil, hir, hum, hz_0, hz_1, hz_2, hz_3, hz_4, hz_5, isr, jj, k_0, k_1, k_2, k_3, k_4, k_5, kk, ktrk, lastk, lfo1, lfoamt, lfr, lfw, low, lph, lsh, lsm, lv2, mgate, ml, mph, mr, mt, mtrig, n, nn, nreq, oo, out3, out4, out5, out6, out7, out8, out9, p1_0, p1_1, p1_2, p1_3, p1_4, p1_5, p2_0, p2_1, p2_2, p2_3, p2_4, p2_5, p3, pc, pd_0, pd_1, pd_2, pd_3, pd_4, pd_5, pl_0, pl_1, pl_2, pl_3, pl_4, pl_5, pn_0, pn_1, pn_2, pn_3, pn_4, pn_5, pp, pph, pq3, pq_0, pq_1, pq_2, pq_3, pq_4, pq_5, pv_0, pv_1, pv_2, pv_3, pv_4, pv_5, pw_0, pw_1, pw_2, pw_3, pw_4, pw_5, pwb, pwmd, q0, q1, q2, q3, q4, q5, rbot, rc, rdc, rinl, rinr, rk0, rk1, rk2, rk3, rk4, rk5, rmean, rmod, ro, root, rootin, rq0, rq1, rq2, rq3, rq4, rq5, rt, rtop, rv, rvL, rvR, rvalid, s2_0, s2_1, s2_2, s2_3, s2_4, s2_5, sP_0, sP_1, sP_2, sP_3, sP_4, sP_5, s_chor, s_cut, s_drv, s_efb, s_emix, s_eon, s_flt, s_mw, s_res, s_rmix, s_size, s_son, s_tune, s_vol, s_wid, sa, sagg, sagk, sagv, sb, sbpm, scnt, sdamp, sdl, sdn, semi, sex, sf_0, sf_1, sf_2, sf_3, sf_4, sf_5, sfr, sg_0, sg_1, sg_2, sg_3, sg_4, sg_5, sgl, sgt, shc, shl, shp, shr, sid, sil, sir, sl_0, sl_1, sl_2, sl_3, sl_4, sl_5, slb, slen, sm, smode, snote, sodd, sp_0, sp_1, sp_2, sp_3, sp_4, sp_5, sr, src, sready, srt, srun, st, stL, stR, stau, stp, strig, strum_s, su, subl, svel, sw_0, sw_1, sw_2, sw_3, sw_4, sw_5, sy_0, sy_1, sy_2, sy_3, sy_4, sy_5, ti_0, ti_1, ti_2, ti_3, ti_4, ti_5, tp_0, tp_1, tp_2, tp_3, tp_4, tp_5, trig, u_0, u_1, u_2, u_3, u_4, u_5, v1_0, v1_1, v1_2, v1_3, v1_4, v1_5, v2_0, v2_1, v2_2, v2_3, v2_4, v2_5, v3_0, v3_1, v3_2, v3_3, v3_4, v3_5, v4_0, v4_1, v4_2, v4_3, v4_4, v4_5, vA_0, vA_1, vA_2, vA_3, vA_4, vA_5, vF_0, vF_1, vF_2, vF_3, vF_4, vF_5, vL, vR, velin, vfs, vin_0, vin_1, vin_2, vin_3, vin_4, vin_5, vl_0, vl_1, vl_2, vl_3, vl_4, vl_5, vm, vo_0, vo_1, vo_2, vo_3, vo_4, vo_5, vsens, wamt, wm, wph, xL, xR, y1_0, y1_1, y1_2, y1_3, y1_4, y1_5, y2_0, y2_1, y2_2, y2_3, y2_4, y2_5, y3_0, y3_1, y3_2, y3_3, y3_4, y3_5, y4_0, y4_1, y4_2, y4_3, y4_4, y4_5, z0, z1, z2, z3, z4, z5, z6, z7;
+	let B_0, B_1, B_2, B_3, B_4, B_5, G_0, G_1, G_2, G_3, G_4, G_5, S_0, S_1, S_2, S_3, S_4, S_5, a0, a0h, a1, a1h, a2, a2h, a3, a3h, a4, a4h, a5, a5h, a6h, a7h, act_0, act_1, act_2, act_3, act_4, act_5, ae_0, ae_1, ae_2, ae_3, ae_4, ae_5, age, air, alast, anon, apg, apla, aplb, aplv, aplw, aply, apra, aprb, aprv, aprw, apry, as_0, as_1, as_2, as_3, as_4, as_5, asum, asus, b0h, b1h, b2h, b3h, b4h, b5h, b6h, b7h, base, bendst, best, bint, bph, bpm, c0, c1, c2, c3, c4, c5, caa, cad, car, cb, cbb, cbl, cbot, cbr, cc, cdp, cfa, cfd, cfr, chg, chgo, cid, cm, cmean, cmo, cph, ct, ctop, ctr, cts_0, cts_1, cts_2, cts_3, cts_4, cts_5, cvalid, cwl, cwr, d1_0, d1_1, d1_2, d1_3, d1_4, d1_5, d2_0, d2_1, d2_2, d2_3, d2_4, d2_5, d3, dcol, deg, det, detd, detu, difl, difr, dl0, dl1, dl2, dl3, dl4, dl5, dl6, dl7, dmd, dp_0, dp_1, dp_2, dp_3, dp_4, dp_5, dr_0, dr_1, dr_2, dr_3, dr_4, dr_5, drift, drm, dsm, dv_0, dv_1, dv_2, dv_3, dv_4, dv_5, dvoi, dwild, dyl, dyr, dz, edg, ehc, ehl, ehr, ein, el1, el2, elc, en, en3, eol, eor, er1, er2, etg, etl, etr, ets, f1_0, f1_1, f1_2, f1_3, f1_4, f1_5, famt, fc_0, fc_1, fc_2, fc_3, fc_4, fc_5, fco_0, fco_1, fco_2, fco_3, fco_4, fco_5, fe_0, fe_1, fe_2, fe_3, fe_4, fe_5, fenv, fl0, fl1, fl2, fl3, fl4, fl5, fl6, fl7, fph, fr0, fr1, fr2, fr3, fr4, fr5, fr6, fr7, fs_0, fs_1, fs_2, fs_3, fs_4, fs_5, fsus, g_0, g_1, g_2, g_3, g_4, g_5, gd, gdp, gdt, gdv, gin, glc, go_0, go_1, go_2, go_3, go_4, go_5, gon, harm, hil, hir, hum, hz_0, hz_1, hz_2, hz_3, hz_4, hz_5, isr, jj, k_0, k_1, k_2, k_3, k_4, k_5, kk, ktrk, lastk, lfo1, lfoamt, lfr, lfw, low, lph, lsh, lsm, lv2, mgate, ml, mph, mr, mt, mtrig, n, nn, nreq, oo, out3, out4, out5, out6, out7, out8, out9, p1_0, p1_1, p1_2, p1_3, p1_4, p1_5, p2_0, p2_1, p2_2, p2_3, p2_4, p2_5, p3, pc, pd_0, pd_1, pd_2, pd_3, pd_4, pd_5, pl_0, pl_1, pl_2, pl_3, pl_4, pl_5, pn_0, pn_1, pn_2, pn_3, pn_4, pn_5, pp, pph, pq3, pq_0, pq_1, pq_2, pq_3, pq_4, pq_5, pv_0, pv_1, pv_2, pv_3, pv_4, pv_5, pw_0, pw_1, pw_2, pw_3, pw_4, pw_5, pwb, pwmd, q0, q1, q2, q3, q4, q5, rbot, rc, rdc, rinl, rinr, rk0, rk1, rk2, rk3, rk4, rk5, rmean, rmod, ro, root, rootin, rq0, rq1, rq2, rq3, rq4, rq5, rt, rtop, rv, rvL, rvR, rvalid, s2_0, s2_1, s2_2, s2_3, s2_4, s2_5, sP_0, sP_1, sP_2, sP_3, sP_4, sP_5, s_chor, s_cut, s_drv, s_efb, s_emix, s_eon, s_flt, s_mw, s_res, s_rev, s_rmix, s_size, s_son, s_tune, s_vol, s_wid, sa, sagg, sagk, sagv, sb, sbpm, scnt, sdamp, sdl, sdn, semi, sex, sf_0, sf_1, sf_2, sf_3, sf_4, sf_5, sfr, sg_0, sg_1, sg_2, sg_3, sg_4, sg_5, sgl, sgo, sgt, shc, shl, shp, shr, sid, sil, sir, sl_0, sl_1, sl_2, sl_3, sl_4, sl_5, slb, slen, sm, smode, snote, sodd, sp_0, sp_1, sp_2, sp_3, sp_4, sp_5, sr, src, sready, srt, srun, st, stL, stR, stau, stp, strig, strum_s, su, subl, svel, sw_0, sw_1, sw_2, sw_3, sw_4, sw_5, sy_0, sy_1, sy_2, sy_3, sy_4, sy_5, ti_0, ti_1, ti_2, ti_3, ti_4, ti_5, tp_0, tp_1, tp_2, tp_3, tp_4, tp_5, trig, u_0, u_1, u_2, u_3, u_4, u_5, v1_0, v1_1, v1_2, v1_3, v1_4, v1_5, v2_0, v2_1, v2_2, v2_3, v2_4, v2_5, v3_0, v3_1, v3_2, v3_3, v3_4, v3_5, v4_0, v4_1, v4_2, v4_3, v4_4, v4_5, vA_0, vA_1, vA_2, vA_3, vA_4, vA_5, vF_0, vF_1, vF_2, vF_3, vF_4, vF_5, vL, vR, velin, vfs, vin_0, vin_1, vin_2, vin_3, vin_4, vin_5, vl_0, vl_1, vl_2, vl_3, vl_4, vl_5, vm, vo_0, vo_1, vo_2, vo_3, vo_4, vo_5, vsens, wamt, wm, wph, xL, xR, y1_0, y1_1, y1_2, y1_3, y1_4, y1_5, y2_0, y2_1, y2_2, y2_3, y2_4, y2_5, y3_0, y3_1, y3_2, y3_3, y3_4, y3_5, y4_0, y4_1, y4_2, y4_3, y4_4, y4_5, z0, z1, z2, z3, z4, z5, z6, z7;
 // ================= setup =================
 sr = samplerate;
 isr = 1 / sr;
@@ -389,6 +390,7 @@ s_emix = h_s_emix + ((clamp(P.p_emix, 0, 100) * 0.01 * (P.p_echoon > 0.5)) - h_s
 s_rmix = h_s_rmix + ((clamp(P.p_rmix, 0, 100) * 0.01 * (P.p_spaceon > 0.5)) - h_s_rmix) * sm;
 s_eon = h_s_eon + ((P.p_echoon > 0.5) - h_s_eon) * sm;
 s_son = h_s_son + ((P.p_spaceon > 0.5) - h_s_son) * sm;
+s_rev = h_s_rev + ((P.p_reverbon > 0.5) - h_s_rev) * sm;
 s_flt = h_s_flt + ((P.p_filton > 0.5) - h_s_flt) * sm;
 s_tune = h_s_tune + ((clamp(P.p_tune, 0, 100) * 0.01) - h_s_tune) * sm;
 s_chor = h_s_chor + ((clamp(P.p_chorus, 0, 100) * 0.01 * (P.p_choron > 0.5)) - h_s_chor) * sm;
@@ -1795,8 +1797,8 @@ stR = stR + sl_5;
 
 // ================= space: 8-line feedback delay network =================
 apg = clamp(P.p_diff, 0, 100) * 0.0075;
-rinl = (hil * (1 - 0.7 * s_tune) + stL * s_tune * 0.3) * s_son;
-rinr = (hir * (1 - 0.7 * s_tune) + stR * s_tune * 0.3) * s_son;
+rinl = (hil * (1 - 0.7 * s_tune) + stL * s_tune * 0.3) * s_son * s_rev;
+rinr = (hir * (1 - 0.7 * s_tune) + stR * s_tune * 0.3) * s_son * s_rev;
 apla = apl1.read(4.3 * 0.001 * sr);
 aplw = rinl + apg * apla;
 apl1.write(aplw);
@@ -1877,8 +1879,9 @@ rvL = (dl0 - dl2 + dl4 + dl6) * 0.5;
 rvR = (dl1 + dl3 - dl5 + dl7) * 0.5;
 
 // ================= output =================
-ml = xL + el2 * s_emix + (rvL + stL * s_tune * 0.25) * s_rmix;
-mr = xR + er2 * s_emix + (rvR + stR * s_tune * 0.25) * s_rmix;
+sgo = 0.25 + 0.55 * (1 - s_rev);
+ml = xL + el2 * s_emix + (rvL * s_rev + stL * s_tune * sgo) * s_rmix;
+mr = xR + er2 * s_emix + (rvR * s_rev + stR * s_tune * sgo) * s_rmix;
 dyl = ml - h_dxl + 0.9993 * h_dyl;
 dyr = mr - h_dxr + 0.9993 * h_dyr;
 out1 = sclip(dyl * s_vol);
@@ -1900,6 +1903,7 @@ h_s_emix = s_emix;
 h_s_rmix = s_rmix;
 h_s_eon = s_eon;
 h_s_son = s_son;
+h_s_rev = s_rev;
 h_s_flt = s_flt;
 h_s_tune = s_tune;
 h_s_chor = s_chor;

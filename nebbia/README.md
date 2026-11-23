@@ -118,6 +118,7 @@ Ogni sezione ha un interruttore nell'intestazione. Quando è spenta, le sue mano
 | FILTER | Filtro escluso, passa l'oscillatore pieno |
 | ECHO | Eco spento (la coda si chiude subito) |
 | SPACE | Spazio e corde simpatiche spenti |
+| SPACE · REV | Solo il riverbero interno spento: le corde simpatiche continuano. Per usare il tuo riverbero dopo NEBBIA. Preset e Reset non lo toccano |
 | OUT · CHORUS | Chorus spento |
 
 ---
@@ -218,7 +219,7 @@ Sotto, una sola riga di controlli:
 | FILTER | On, Cutoff, Reso, Drive, Slope, Env Amt, Key Trk, MW>Cut, LFO Rate, LFO Amt, LFO Wave |
 | ENV | F Attack/Decay/Sustain/Release, Attack/Decay/Sustain/Release, Vel>Amp, Vel>Filt |
 | ECHO | On, Time, Feedback, Mix, Low Cut, High Cut, Drive, Wow, Flutter, Spread |
-| SPACE | On, Decay, Size, Mix, Tune, Strings, Damp, Low Cut, Diffusion, Mod |
+| SPACE | On, Rev, Decay, Size, Mix, Tune, Strings, Damp, Low Cut, Diffusion, Mod |
 | OUT | Chorus on, Chorus, Ch Rate, Ch Depth, Width, Volume |
 
 Chord disponibili: Min7, Min9, Min11, m7 Open, m11 Open, So What, Quartal, Sus2, 7sus4, Minor, Major,

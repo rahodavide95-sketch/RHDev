@@ -189,6 +189,12 @@ if (process.env.NEBBIA_SCENARIOS) {
   Object.assign(SCENARIOS, JSON.parse(fs.readFileSync(process.env.NEBBIA_SCENARIOS, 'utf8')));
 }
 
+// internal reverb off, strings on: the tail must still sing the chord
+SCENARIOS.space_rev_off = {
+  seconds: 5, params: { p_emix: 0, p_rmix: 100, p_tune: 100, p_rdecay: 6000, p_sdecay: 6000, p_reverbon: 0 },
+  events: [{ t: 0.05, type: 'on', note: 57, vel: 110 }, { t: 0.2, type: 'off', note: 57 }],
+};
+
 const want = process.argv.slice(2);
 const outDir = path.join(__dirname, '..', 'demo');
 fs.mkdirSync(outDir, { recursive: true });

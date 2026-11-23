@@ -194,6 +194,8 @@ param("p_analogon", "Analog", "Analog", "power", 0, 1, 1, sec="VOICE", label=("A
 param("p_filton", "Filter On", "Filter On", "power", 0, 1, 1, sec="FILTER")
 param("p_echoon", "Echo On", "Echo On", "power", 0, 1, 1, sec="ECHO")
 param("p_spaceon", "Space On", "Space On", "power", 0, 1, 1, sec="SPACE")
+param("p_reverbon", "Reverb On", "Reverb On", "power", 0, 1, 1, sec="SPACE", label=("REV", "REV"),
+      dims=["p_rdecay", "p_rsize", "p_diff", "p_rmod"])
 param("p_choron", "Chorus On", "Chorus On", "power", 0, 1, 1, sec="OUT", label=("CHORUS", "CHORUS"),
       dims=["p_chorus", "p_crate", "p_cdepth"])
 
@@ -367,6 +369,7 @@ def build_body():
     smooth("s_rmix", "clamp(p_rmix, 0, 100) * 0.01 * (p_spaceon > 0.5)", PDEF["p_rmix"] / 100)
     smooth("s_eon", "p_echoon > 0.5", 1.0)
     smooth("s_son", "p_spaceon > 0.5", 1.0)
+    smooth("s_rev", "p_reverbon > 0.5", 1.0)
     smooth("s_flt", "p_filton > 0.5", 1.0)
     smooth("s_tune", "clamp(p_tune, 0, 100) * 0.01", PDEF["p_tune"] / 100)
     smooth("s_chor", "clamp(p_chorus, 0, 100) * 0.01 * (p_choron > 0.5)", PDEF["p_chorus"] / 100)
@@ -952,8 +955,8 @@ def build_body():
     for nm, ms in [("apl1", 4.3), ("apl2", 6.9), ("apr1", 5.1), ("apr2", 7.7)]:
         D(nm, 4096)
     w("apg = clamp(p_diff, 0, 100) * 0.0075;")
-    w("rinl = (hil * (1 - 0.7 * s_tune) + stL * s_tune * %s) * s_son;" % fnum(STR_IN))
-    w("rinr = (hir * (1 - 0.7 * s_tune) + stR * s_tune * %s) * s_son;" % fnum(STR_IN))
+    w("rinl = (hil * (1 - 0.7 * s_tune) + stL * s_tune * %s) * s_son * s_rev;" % fnum(STR_IN))
+    w("rinr = (hir * (1 - 0.7 * s_tune) + stR * s_tune * %s) * s_son * s_rev;" % fnum(STR_IN))
     for ch, (n1, n2, m1, m2) in [("l", ("apl1", "apl2", 4.3, 6.9)), ("r", ("apr1", "apr2", 5.1, 7.7))]:
         w("ap%sa = %s.read(%s * 0.001 * sr);" % (ch, n1, fnum(m1)))
         w("ap%sw = rin%s + apg * ap%sa;" % (ch, ch, ch))
@@ -1000,8 +1003,10 @@ def build_body():
     w("// ================= output =================")
     for hn in ["dxl", "dyl", "dxr", "dyr"]:
         H("h_" + hn, 0.0)
-    w("ml = xL + el2 * s_emix + (rvL + stL * s_tune * %s) * s_rmix;" % fnum(STR_OUT))
-    w("mr = xR + er2 * s_emix + (rvR + stR * s_tune * %s) * s_rmix;" % fnum(STR_OUT))
+    # with the internal reverb off the strings come out on their own, louder (they no longer feed the reverb)
+    w("sgo = %s + 0.55 * (1 - s_rev);" % fnum(STR_OUT))
+    w("ml = xL + el2 * s_emix + (rvL * s_rev + stL * s_tune * sgo) * s_rmix;")
+    w("mr = xR + er2 * s_emix + (rvR * s_rev + stR * s_tune * sgo) * s_rmix;")
     w("dyl = ml - h_dxl + 0.9993 * h_dyl;")
     w("dyr = mr - h_dxr + 0.9993 * h_dyr;")
     U("h_dxl", "ml"); U("h_dyl", "dyl"); U("h_dxr", "mr"); U("h_dyr", "dyr")
@@ -1376,7 +1381,7 @@ for _sw in ("p_echoon", "p_spaceon", "p_choron", "p_analogon"):
 # ---------------------------------------------------------------- factory presets, by folder (genre / style)
 # Missing parameters use the defaults. Key and SEQ on/mode are never changed by a preset (they belong to your
 # track). Volume is level-matched per preset (src/preset_levels.json, written by test/presets_tour.py).
-PRESET_SKIP = ("p_key", "p_seqon", "p_seqmode")
+PRESET_SKIP = ("p_key", "p_seqon", "p_seqmode", "p_reverbon")
 
 
 def _seq(on=(2, 4, 6, 8), notes=None, acc=(), rate=1, length=8, gate=50, swing=0, chance=100):
@@ -1632,7 +1637,9 @@ ANNOT = {
     "p_analogon": "Comportamento analogico (Drift, Age, Sag). Spento: suono digitale pulito e identico su ogni voce.",
     "p_filton": "Spento: il filtro è escluso e passa l'oscillatore pieno.",
     "p_echoon": "Accende o spegne l'eco.",
-    "p_spaceon": "Accende o spegne lo spazio (riverbero e corde simpatiche).",
+    "p_spaceon": "Accende o spegne tutto lo spazio (riverbero e corde simpatiche).",
+    "p_reverbon": "Accende o spegne solo il riverbero interno: le corde simpatiche (Tune) continuano a suonare, "
+                  "così puoi usare il tuo riverbero dopo NEBBIA. Preset e Reset non lo cambiano.",
     "p_choron": "Accende o spegne il chorus.",
     "p_seqrate": "Durata di ogni step. 1/8 = gli 8 step fanno una battuta. 1 Bar = uno step per battuta.",
     "p_seqlen": "Quanti step usa la sequenza (1-8).",
@@ -1934,8 +1941,10 @@ def build_patcher(code):
                         varname=p["name"], saved_attribute_attributes={"valueof": vo}, **st, **extra)
         elif p["kind"] == "power":
             vo["parameter_enum"] = ["off", "on"]
-            wdt = 26 if p["label"] == ("OFF", "ON") else 46
+            wdt = 26 if p["label"] == ("OFF", "ON") else max(30, 7 * len(p["label"][1]) + 4)
             rect = [secinfo[sec][2] - wdt, 4, wdt, 12]
+            if p["name"] == "p_reverbon":
+                rect = [secinfo[sec][2] - 26 - 4 - wdt, 4, wdt, 12]
             ui = pt.add("live.text", [px, py, wdt, 12], ninl=1, nout=2, outtype=["", ""], mode=1,
                         text=p["label"][0], texton=p["label"][1], parameter_enable=1, presentation=1,
                         presentation_rect=[float(v) for v in rect], varname=p["name"],
@@ -2458,7 +2467,7 @@ def build_patcher(code):
         gt = pt.obj("gate 1 1", 40 + gi * 220, gy + 30, ninl=2, nout=1)
         pt.connect(inv, 0, gt, 0)
         pt.connect(rtb, 0, gt, 1)
-        members = [q for q in P if q["sec"] in secs and q["name"] != "p_key"]
+        members = [q for q in P if q["sec"] in secs and q["name"] not in ("p_key", "p_reverbon")]
         for j, q in enumerate(members):
             mb = pt.msg(fnum(q["default"]), 40 + gi * 220 + (j % 3) * 70, gy + 70 + (j // 3) * 30)
             pt.connect(gt, 0, mb, 0)

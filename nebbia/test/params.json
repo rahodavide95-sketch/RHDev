@@ -2678,6 +2678,34 @@
   "ui": {}
  },
  {
+  "name": "p_reverbon",
+  "long": "Reverb On",
+  "short": "Reverb On",
+  "kind": "power",
+  "lo": 0,
+  "hi": 1,
+  "default": 1,
+  "unit": 5,
+  "exp": 1.0,
+  "sec": "SPACE",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": null,
+  "lrect": null,
+  "label": [
+   "REV",
+   "REV"
+  ],
+  "dims": [
+   "p_rdecay",
+   "p_rsize",
+   "p_diff",
+   "p_rmod"
+  ],
+  "ui": {}
+ },
+ {
   "name": "p_choron",
   "long": "Chorus On",
   "short": "Chorus On",

@@ -1,0 +1,423 @@
+<title>Nebbia Player</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+  /* Layout: an instrument face in the device's own colours — preset browser on the left, play surface and
+     sound controls on the right; one column on phones. Deliberately dark only, like the device in Live. */
+  :root {
+    --bg: #121417; --panel: #1b1e22; --panel-2: #23272c; --line: #31363c;
+    --text: #e7e9ec; --muted: #9aa1aa; --faint: #6d747d;
+    --amber: #f2a03d; --amber-deep: #3a2e1c; --teal: #58c9c2; --teal-deep: #1b3433; --warn: #e2725b;
+    --font-ui: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+    --font-text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--font-text); font-size: 15px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 16px 28px; -webkit-tap-highlight-color: transparent;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 14px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand h1 { font-family: var(--font-ui); font-weight: 700; font-size: 30px; letter-spacing: .22em; margin: 0; }
+  .brand span { color: var(--muted); font-family: var(--font-ui); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; }
+  .status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .chip { font-family: var(--font-ui); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
+  .chip.on { color: var(--bg); background: var(--teal); border-color: var(--teal); }
+  .chip.hot { color: var(--bg); background: var(--warn); border-color: var(--warn); }
+  select, button { font: inherit; color: inherit; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 14px; align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--panel); border-radius: 12px; padding: 14px; display: grid; gap: 12px; min-width: 0; }
+  .card h2 { font-family: var(--font-ui); font-size: 15px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+    margin: 0; display: flex; align-items: center; gap: 8px; }
+  .card h2::before { content: ""; width: 3px; height: 12px; border-radius: 2px; background: var(--amber); }
+  .card h2.teal::before { background: var(--teal); }
+  .start { display: grid; place-items: center; gap: 10px; text-align: center; padding: 26px 14px; border: 1px dashed var(--line); border-radius: 12px; }
+  .start p { margin: 0; color: var(--muted); max-width: 52ch; line-height: 1.5; }
+  .btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; min-height: 44px; padding: 0 14px;
+    font-family: var(--font-ui); font-weight: 600; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+  .btn:focus-visible, .pad:focus-visible, .preset:focus-visible, .folder:focus-visible, .tog:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .btn.primary { background: var(--amber); color: var(--bg); border-color: var(--amber); }
+  .btn.teal { background: var(--teal-deep); border-color: var(--teal); color: var(--text); }
+  .btn.active { background: var(--amber); color: var(--bg); border-color: var(--amber); }
+  .folders { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+  .folder { flex: none; background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; min-height: 38px;
+    font-family: var(--font-ui); font-weight: 600; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); cursor: pointer; }
+  .folder.sel { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+  .now { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; gap: 8px; align-items: center; }
+  .now .name { text-align: center; font-family: var(--font-ui); font-size: 22px; font-weight: 600; letter-spacing: .03em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .now .name small { display: block; font-size: 12px; color: var(--faint); letter-spacing: .14em; text-transform: uppercase; }
+  .presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; max-height: 360px; overflow-y: auto; padding-right: 2px; }
+  .preset { text-align: left; background: var(--panel-2); border: 1px solid transparent; border-radius: 8px; padding: 9px 10px; min-height: 40px;
+    font-size: 14px; color: var(--text); cursor: pointer; }
+  .preset.sel { border-color: var(--amber); background: var(--amber-deep); }
+  .rand { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .rand .who { color: var(--teal); font-family: var(--font-ui); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+  .transport { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .leds { display: flex; gap: 6px; }
+  .led { width: 12px; height: 12px; border-radius: 50%; background: var(--line); transition: background .05s; }
+  .led.on { background: var(--amber); }
+  .field { display: grid; gap: 4px; min-width: 0; }
+  .field label, .lbl { font-family: var(--font-ui); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .field output { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--text); }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  input[type=range] { width: 100%; accent-color: var(--amber); height: 32px; }
+  select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; min-height: 40px; padding: 0 10px; }
+  .pads { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 5px; touch-action: none; user-select: none; -webkit-user-select: none; }
+  @media (max-width: 560px) { .pads { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  .pad { height: 72px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); display: grid; place-items: end center;
+    padding-bottom: 6px; font-family: var(--font-ui); font-size: 13px; color: var(--muted); cursor: pointer; touch-action: none; }
+  .pad.black { background: #15181b; }
+  .pad.down { background: var(--amber); color: var(--bg); border-color: var(--amber); }
+  .chordnow { display: flex; gap: 6px; flex-wrap: wrap; min-height: 30px; align-items: center; }
+  .note { font-family: var(--font-ui); font-weight: 600; font-size: 15px; padding: 4px 9px; border-radius: 6px; background: var(--amber-deep); color: var(--amber); }
+  .knobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 16px; }
+  .toggles { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tog { background: transparent; border: 1px solid var(--line); border-radius: 8px; min-height: 40px; padding: 0 12px; cursor: pointer;
+    font-family: var(--font-ui); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .tog.on { background: var(--teal-deep); border-color: var(--teal); color: var(--text); }
+  footer { color: var(--faint); font-size: 13px; line-height: 1.55; max-width: 80ch; }
+  footer b { color: var(--muted); font-weight: 600; }
+  .octave { display: flex; gap: 6px; align-items: center; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><h1>NEBBIA</h1><span>player</span></div>
+    <div class="status">
+      <span class="chip" id="st">Audio spento</span>
+      <span class="chip" id="cpu" hidden>CPU –</span>
+      <label class="lbl" for="quality">Qualità</label>
+      <select id="quality">
+        <option value="0">Alta (del dispositivo)</option>
+        <option value="32000">Media · 32 kHz</option>
+        <option value="24000">Leggera · 24 kHz</option>
+      </select>
+    </div>
+  </header>
+
+  <section class="start" id="startBox">
+    <button class="btn primary" id="startBtn">Accendi l'audio</button>
+    <p>Lo stesso motore audio del device NEBBIA, qui nel browser. Tocca per accendere, poi scegli un preset e suona i pad o premi Play. Su iPad, se non senti nulla, togli la modalità silenziosa.</p>
+  </section>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="h-presets">
+      <h2 id="h-presets">Preset</h2>
+      <div class="folders" id="folders" role="tablist"></div>
+      <div class="now">
+        <button class="btn" id="prev" aria-label="Preset precedente">&#9664;</button>
+        <div class="name" id="pname">–<small id="pfolder"></small></div>
+        <button class="btn" id="next" aria-label="Preset successivo">&#9654;</button>
+      </div>
+      <div class="presets" id="presets"></div>
+      <div class="rand">
+        <button class="btn teal" id="randBtn">Randomize</button>
+        <span class="who" id="randWho"></span>
+      </div>
+    </section>
+
+    <div class="wrap" style="gap:14px">
+      <section class="card" aria-labelledby="h-play">
+        <h2 id="h-play">Suona</h2>
+        <div class="transport">
+          <button class="btn" id="playBtn">&#9654; Play sequencer</button>
+          <div class="leds" id="leds" aria-hidden="true"></div>
+          <div class="field" style="flex:1;min-width:160px">
+            <div class="row"><label for="bpm">Tempo</label><output id="bpmOut">120 BPM</output></div>
+            <input type="range" id="bpm" min="70" max="150" step="1" value="120">
+          </div>
+        </div>
+        <div class="transport">
+          <div class="field"><label for="key">Key</label><select id="key"></select></div>
+          <div class="field"><span class="lbl">Ottava pad</span>
+            <div class="octave"><button class="btn" id="octDown" aria-label="Ottava giù">−</button><output id="octOut">C2</output><button class="btn" id="octUp" aria-label="Ottava su">+</button></div>
+          </div>
+        </div>
+        <div class="pads" id="pads"></div>
+        <div class="row"><span class="lbl">Chord now</span></div>
+        <div class="chordnow" id="chordNow"><span class="lbl" style="text-transform:none;letter-spacing:0">Tocca un pad o premi Play</span></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-sound">
+        <h2 id="h-sound" class="teal">Suono</h2>
+        <div class="knobs" id="knobs"></div>
+        <div class="toggles" id="toggles"></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    <b>Cosa stai ascoltando.</b> Il motore audio di NEBBIA (accordi, 6 voci analogiche, eco, spazio con corde simpatiche) è lo
+    stesso del device Max for Live, tradotto in JavaScript: suona uguale, campione per campione. Qui ci sono i preset, il
+    sequencer e i controlli principali. Il device completo, con tutte le manopole, gira in Ableton Live su Mac o Windows.
+    Se il suono scatta, scegli una qualità più leggera.
+  </footer>
+</div>
+
+<script>
+(() => {
+  const NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const noteName = (n) => NAMES[((n % 12) + 12) % 12] + (Math.floor(n / 12) - 2);
+  const $ = (id) => document.getElementById(id);
+  let data = null, pmap = {}, values = {}, ctx = null, node = null, playing = false;
+  let folderIdx = 0, presetIdx = 0, octave = 48;
+
+  // ---------------------------------------------------------------- controls shown on the page
+  const KNOBS = [
+    ["p_cutoff", "Cutoff"], ["p_reso", "Resonance"], ["p_fenv", "Env amount"], ["p_ad", "Decay"],
+    ["p_efb", "Echo feedback"], ["p_emix", "Echo mix"], ["p_rmix", "Space mix"], ["p_tune", "Tune (corde)"],
+    ["p_chorus", "Chorus"], ["p_vol", "Volume"],
+  ];
+  const TOGGLES = [["p_echoon", "Echo"], ["p_spaceon", "Space"], ["p_reverbon", "Rev"], ["p_choron", "Chorus"],
+                   ["p_analogon", "Analog"], ["p_chordon", "Accordi"]];
+
+  function unitText(p, v) {
+    const u = { 2: (x) => x >= 1000 ? (x / 1000).toFixed(2) + " s" : Math.round(x) + " ms", 3: (x) => x >= 1000 ? (x / 1000).toFixed(1) + " kHz" : Math.round(x) + " Hz",
+                4: (x) => x.toFixed(1) + " dB", 5: (x) => Math.round(x) + " %" }[p.unit];
+    return u ? u(v) : String(Math.round(v * 100) / 100);
+  }
+  // sliders run 0..1000; parameters with an exponent (times, Hz) are spread like the device's dials
+  const toSlider = (p, v) => Math.round(1000 * Math.pow((v - p.lo) / (p.hi - p.lo), 1 / (p.exp || 1)));
+  const fromSlider = (p, s) => p.lo + (p.hi - p.lo) * Math.pow(s / 1000, p.exp || 1);
+
+  function send(msg) { if (node) node.port.postMessage(msg); }
+  function setParams(vals) {
+    Object.assign(values, vals);
+    send({ params: vals });
+    refreshControls();
+  }
+
+  // ---------------------------------------------------------------- presets
+  function presetValues(pr) {
+    const v = {};
+    for (const p of data.params) if (!data.skip.includes(p.name)) v[p.name] = p.default;
+    for (const [k, x] of Object.entries(pr.values)) if (!data.skip.includes(k)) v[k] = x;
+    return v;
+  }
+  function loadPreset(fi, pi) {
+    folderIdx = fi; presetIdx = pi;
+    const f = data.folders[fi], pr = f.presets[pi];
+    setParams(presetValues(pr));
+    $("pname").firstChild.nodeValue = pr.name;
+    $("pfolder").textContent = f.name + " · " + (pi + 1) + "/" + f.presets.length;
+    $("randWho").textContent = "";
+    renderPresets();
+  }
+  function renderFolders() {
+    const box = $("folders");
+    box.innerHTML = "";
+    data.folders.forEach((f, i) => {
+      const b = document.createElement("button");
+      b.className = "folder" + (i === folderIdx ? " sel" : "");
+      b.textContent = f.name;
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", i === folderIdx);
+      b.onclick = () => { folderIdx = i; renderFolders(); renderPresets(); };
+      box.appendChild(b);
+    });
+  }
+  let shownFolder = -1;
+  function renderPresets() {
+    const box = $("presets");
+    if (shownFolder !== folderIdx) {
+      box.innerHTML = "";
+      data.folders[folderIdx].presets.forEach((pr, i) => {
+        const b = document.createElement("button");
+        b.className = "preset";
+        b.textContent = pr.name;
+        b.onclick = () => loadPreset(folderIdx, i);
+        box.appendChild(b);
+      });
+      shownFolder = folderIdx;
+    }
+    [...box.children].forEach((b, i) => b.classList.toggle("sel", i === presetIdx && folderIdx === currentFolder()));
+  }
+  let loadedFolder = 0;
+  const currentFolder = () => loadedFolder;
+  const _load = loadPreset;
+  loadPreset = (fi, pi) => { loadedFolder = fi; _load(fi, pi); renderFolders(); };
+  function step(d) {
+    const fi = loadedFolder, n = data.folders[fi].presets.length;
+    loadPreset(fi, (presetIdx + d + n) % n);
+  }
+
+  // ---------------------------------------------------------------- randomize: same rules as the device
+  function randomize() {
+    const fname = data.folders[folderIdx].name;
+    const [first, count] = data.folderArch[fname] || [0, data.archetypes.length];
+    const arch = data.archetypes[first + Math.floor(Math.random() * count)];
+    const inArch = new Set(data.archetypes.flatMap((a) => Object.keys(a.ranges)));
+    const out = {};
+    for (const [nm, [lo, hi, curve]] of Object.entries(data.rand)) {
+      const r = Math.floor(Math.random() * 10001), p = pmap[nm];
+      let v;
+      if (curve === "coin") v = r < (arch.on[nm] ?? 0.5) * 10000 ? 1 : 0;
+      else if (curve === "gate") v = r < data.sonDens[+nm.slice(5) - 1] ? 1 : 0;
+      else if (curve === "acc") v = r < 3000 ? 1 : 0;
+      else if (curve === "semis") v = (r >= 5000) * -2 + (r >= 6000) * 5 + (r >= 7000) * 2 + (r >= 8000) * 2 + (r >= 9000) * -12;
+      else if (curve === "darkchord") { const i = Math.floor(r / 10001 * data.darkChords.length); v = i + (i >= 10 ? 4 : 0); }
+      else if (curve === "darkharm") { const i = Math.floor(r / 10001 * 6); v = (i >= 2) * (i - 1) + (i >= 5) * 3; }
+      else if (inArch.has(nm)) {
+        const [alo, ahi] = arch.ranges[nm] || [lo, hi];
+        v = alo + (ahi - alo) * Math.pow(r / 10000, curve !== 1 && curve !== 1.5 ? 1.7 : 1);
+      } else if (p.kind === "menu") v = Math.floor(lo + r / 10001 * (hi - lo + 1));
+      else if (p.kind === "int") v = Math.round(lo + (hi - lo) * r / 10000);
+      else v = lo + (hi - lo) * Math.pow(r / 10000, curve);
+      out[nm] = v;
+    }
+    let on = 0;
+    for (let c = 1; c <= 8; c++) { if (out["p_son" + c]) { on++; if (on > data.maxOn) out["p_son" + c] = 0; } }
+    setParams(out);
+    $("randWho").textContent = arch.name;
+    $("pname").firstChild.nodeValue = "Random";
+    $("pfolder").textContent = arch.name.toLowerCase() + " · " + fname;
+    [...$("presets").children].forEach((b) => b.classList.remove("sel"));
+  }
+
+  // ---------------------------------------------------------------- sound controls
+  function buildControls() {
+    const kb = $("knobs");
+    for (const [nm, label] of KNOBS) {
+      const p = pmap[nm];
+      const f = document.createElement("div");
+      f.className = "field";
+      f.innerHTML = '<div class="row"><label for="k_' + nm + '">' + label + '</label><output id="o_' + nm + '"></output></div>' +
+                    '<input type="range" id="k_' + nm + '" min="0" max="1000" step="1">';
+      kb.appendChild(f);
+      f.querySelector("input").addEventListener("input", (e) => {
+        const v = fromSlider(p, +e.target.value);
+        values[nm] = v; send({ params: { [nm]: v } });
+        $("o_" + nm).textContent = unitText(p, v);
+      });
+    }
+    const tg = $("toggles");
+    for (const [nm, label] of TOGGLES) {
+      const b = document.createElement("button");
+      b.className = "tog"; b.id = "t_" + nm; b.textContent = label;
+      b.setAttribute("aria-pressed", "false");
+      b.onclick = () => setParams({ [nm]: values[nm] > 0.5 ? 0 : 1 });
+      tg.appendChild(b);
+    }
+  }
+  function refreshControls() {
+    for (const [nm] of KNOBS) {
+      const p = pmap[nm], v = values[nm];
+      $("k_" + nm).value = toSlider(p, v);
+      $("o_" + nm).textContent = unitText(p, v);
+    }
+    for (const [nm] of TOGGLES) {
+      const on = values[nm] > 0.5;
+      $("t_" + nm).classList.toggle("on", on);
+      $("t_" + nm).setAttribute("aria-pressed", on);
+    }
+    $("key").value = String(values.p_key ?? 9);
+  }
+
+  // ---------------------------------------------------------------- pads and transport
+  function buildPads() {
+    const box = $("pads");
+    box.innerHTML = "";
+    for (let i = 0; i < 12; i++) {
+      const n = octave + i;
+      const b = document.createElement("button");
+      b.className = "pad" + ([1, 3, 6, 8, 10].includes(i) ? " black" : "");
+      b.textContent = noteName(n);
+      b.setAttribute("aria-label", "Suona " + noteName(n));
+      const down = (e) => { e.preventDefault(); b.classList.add("down"); send({ noteOn: n, vel: 105 }); };
+      const up = () => { if (b.classList.contains("down")) { b.classList.remove("down"); send({ noteOff: n }); } };
+      b.addEventListener("pointerdown", down);
+      b.addEventListener("pointerup", up);
+      b.addEventListener("pointerleave", up);
+      b.addEventListener("pointercancel", up);
+      box.appendChild(b);
+    }
+    $("octOut").textContent = noteName(octave);
+  }
+  function setPlaying(on) {
+    playing = on;
+    send({ params: { p_seqon: on ? 1 : 0, p_seqmode: 0 }, play: on });
+    $("playBtn").classList.toggle("active", on);
+    $("playBtn").innerHTML = on ? "&#9632; Stop" : "&#9654; Play sequencer";
+    if (!on) [...$("leds").children].forEach((l) => l.classList.remove("on"));
+  }
+
+  // ---------------------------------------------------------------- audio
+  async function startAudio() {
+    const q = +$("quality").value;
+    try {
+      if (ctx) { await ctx.close(); ctx = null; node = null; }
+      const opts = { latencyHint: "playback" };
+      if (q) opts.sampleRate = q;
+      try { ctx = new AudioContext(opts); } catch (e) { ctx = new AudioContext({ latencyHint: "playback" }); }
+      const src = await (await fetch("engine.js")).text();
+      const url = URL.createObjectURL(new Blob([src], { type: "application/javascript" }));
+      await ctx.audioWorklet.addModule(url);
+      node = new AudioWorkletNode(ctx, "nebbia", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2],
+                                                   processorOptions: { init: [{ params: values }] } });
+      node.connect(ctx.destination);
+      node.port.onmessage = (e) => onEngine(e.data);
+      await ctx.resume();
+      send({ params: values });
+      if (playing) setPlaying(true);
+      $("st").textContent = "Audio acceso · " + Math.round(ctx.sampleRate / 100) / 10 + " kHz";
+      $("st").className = "chip on";
+      $("cpu").hidden = false;
+      $("startBox").hidden = true;
+    } catch (err) {
+      $("st").textContent = "Audio non disponibile";
+      $("st").className = "chip hot";
+      $("startBox").querySelector("p").textContent = "Il browser non ha potuto avviare l'audio (" + err.message + "). Prova con Safari o Chrome aggiornati.";
+    }
+  }
+  let lastChord = "";
+  function onEngine(d) {
+    if (d.load !== undefined) {
+      const pc = Math.round(d.load * 100);
+      $("cpu").textContent = "CPU " + pc + " %";
+      $("cpu").className = "chip" + (pc > 85 ? " hot" : "");
+    }
+    if (d.chord) {
+      const notes = d.chord.filter((n) => n >= 0).map(noteName);
+      const key = notes.join(" ");
+      if (key && key !== lastChord) {
+        lastChord = key;
+        $("chordNow").innerHTML = notes.map((n) => '<span class="note">' + n + "</span>").join("");
+      }
+    }
+    if (d.step !== undefined) [...$("leds").children].forEach((l, i) => l.classList.toggle("on", playing && i === d.step));
+  }
+
+  // ---------------------------------------------------------------- boot
+  async function boot() {
+    data = await (await fetch("presets.json")).json();
+    for (const p of data.params) { pmap[p.name] = p; values[p.name] = p.default; }
+    values.p_seqon = 0;
+    for (let i = 0; i < 8; i++) { const l = document.createElement("span"); l.className = "led"; $("leds").appendChild(l); }
+    NAMES.forEach((n, i) => { const o = document.createElement("option"); o.value = i; o.textContent = n; $("key").appendChild(o); });
+    buildControls();
+    buildPads();
+    renderFolders();
+    loadPreset(0, 0);
+    $("startBtn").onclick = startAudio;
+    $("quality").onchange = () => { if (ctx) startAudio(); };
+    $("prev").onclick = () => step(-1);
+    $("next").onclick = () => step(1);
+    $("randBtn").onclick = randomize;
+    $("playBtn").onclick = () => setPlaying(!playing);
+    $("bpm").oninput = (e) => { $("bpmOut").textContent = e.target.value + " BPM"; setParams({ p_bpm: +e.target.value }); };
+    $("key").onchange = (e) => setParams({ p_key: +e.target.value });
+    $("octDown").onclick = () => { octave = Math.max(24, octave - 12); buildPads(); };
+    $("octUp").onclick = () => { octave = Math.min(72, octave + 12); buildPads(); };
+  }
+  boot().catch((e) => { $("pname").firstChild.nodeValue = "Errore nel caricamento dei preset"; console.error(e); });
+})();
+</script>

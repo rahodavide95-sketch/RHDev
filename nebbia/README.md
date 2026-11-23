@@ -15,6 +15,15 @@ Tutto è digitale (gen~, compilato in C dentro Max). Non usa campioni né waveta
 
 ---
 
+## Provarlo senza Live (anche su iPad)
+
+`web/` contiene **Nebbia Player**: una pagina che suona nel browser lo stesso motore audio del device (generato
+da `src/build.py` in `web/engine.js`, identico campione per campione alla copia usata nei test), con i 132 preset,
+i pad, il sequencer, Randomize e i controlli principali. Serve per ascoltare e scegliere i suoni; il device
+completo gira in Ableton Live.
+
+---
+
 ## Installazione
 
 Serve **Ableton Live 11 o 12 Suite**, oppure Standard con l'add-on Max for Live. gen~ è già incluso.

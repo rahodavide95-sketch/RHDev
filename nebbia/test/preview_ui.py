@@ -79,7 +79,8 @@ for x in d["boxes"]:
         els.append('<rect x="%s" y="%s" width="%s" height="%s" rx="2" fill="%s"/>'
                    % (X, Y, w, h, col(b["activebgcolor"])))
         els.append('<text x="%s" y="%s" font-size="10" text-anchor="middle" fill="%s" font-family="Inter,Arial">'
-                   '%s%d</text>' % (X + w / 2, Y + h - 5, col(b["textcolor"]), NAMES[v % 12], v // 12 - 2))
+                   '%s</text>' % (X + w / 2, Y + h - 5, col(b["textcolor"]),
+                                  ("%s%d" % (NAMES[v % 12], v // 12 - 2)) if vo.get("parameter_unitstyle") == 8 else v))
     elif mc == "led":
         els.append('<circle cx="%s" cy="%s" r="%s" fill="%s"/>' % (X + w / 2, Y + h / 2, w / 2 - 1, col(b["offcolor"])))
     elif mc == "kslider":

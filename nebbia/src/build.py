@@ -76,7 +76,8 @@ SEQ_RATES = [("1/16", 0.25), ("1/8", 0.5), ("1/4", 1.0), ("1/2", 2.0), ("1 Bar",
 NCELL = 8
 NSTEP = 4
 SEQ_DEF_POS = [2, 4, 6, 8]  # off-beat 8ths
-SEQ_X = 10
+PRESET_X = 10
+SEQ_X = 130
 STEP_X = SEQ_X + 148  # first step column of the SEQ section
 param("p_seqon", "Seq On", "Seq On", "power", 0, 1, 0, sec="SEQ")
 param("p_seqmode", "Seq Mode", "Mode", "menu", 0, 1, 0, sec="SEQ", col=0, row=0, enum=["Play", "Trans"])
@@ -176,7 +177,7 @@ param("p_width", "Width", "Width", "dial", 0, 100, 60, sec="OUT", col=1, row=1)
 param("p_vol", "Volume", "Volume", "dial", -60, 6, -3, unit=4, sec="OUT", col=0, row=2)
 
 # DICE (gen side; the Randomize button, Amount and locks live in Max only)
-CHORD_X = 356
+CHORD_X = SEQ_X + 346
 DICE_X = CHORD_X + 234
 param("p_cchance", "Chord Chance", "Chance", "dial", 0, 100, 0, sec="DICE",
       rect=[DICE_X, 116, 44, 48])
@@ -222,6 +223,8 @@ for s in range(NV):
 STR_K = float(os.environ.get("NEBBIA_STR_K", 100))     # sympathetic string excitation
 STR_OUT = float(os.environ.get("NEBBIA_STR_OUT", 0.25))  # direct string output level
 STR_IN = float(os.environ.get("NEBBIA_STR_IN", 0.3))    # strings into the reverb network
+# dark colours only (no major / dominant chords): used by Randomize and by the "Wild" dice
+DARK_CHORDS = [i for i, c in enumerate(CHORDS) if c[0] not in ("Major", "Maj7", "Maj9", "Dom9")]
 # indexes into CHORDS: minor-ish colours and major-ish colours for the "Color" dice
 FAM_MIN = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 15]
 FAM_MAJ = [10, 11, 12, 13, 7, 8, 6, 15]
@@ -322,6 +325,7 @@ pick6(i, v0, v1, v2, v3, v4, v5) {
     f.append("edivs(i) {\n\treturn %s;\n}\n" % tern("i", [d[1] for d in ECHO_DIVS]))
     f.append("// chord families used by the dice\nfammin(i) {\n\treturn %s;\n}\n" % tern("i", FAM_MIN))
     f.append("fammaj(i) {\n\treturn %s;\n}\n" % tern("i", FAM_MAJ))
+    f.append("famdark(i) {\n\treturn %s;\n}\n" % tern("i", DARK_CHORDS))
     return "\n".join(f)
 
 
@@ -570,7 +574,7 @@ def build_body():
     w("\t\tcid = clamp(floor(p_chord + 0.5), 0, %d);" % (len(CHORDS) - 1))
     w("\t\tif (dcol > 0) {")
     w("\t\t\tif (dwild > 0) {")
-    w("\t\t\t\tcid = min(floor(rc * %d), %d);" % (len(CHORDS), len(CHORDS) - 1))
+    w("\t\t\t\tcid = famdark(min(floor(rc * %d), %d));" % (len(DARK_CHORDS), len(DARK_CHORDS) - 1))
     w("\t\t\t}")
     w("\t\t\telse if ((cid > 9.5) * (cid < 13.5) > 0) {")
     w("\t\t\t\tcid = fammaj(min(floor(rc * %d), %d));" % (len(FAM_MAJ), len(FAM_MAJ) - 1))
@@ -1244,10 +1248,10 @@ F_HEAD = "Ableton Sans Bold"
 F_TEXT = "Ableton Sans Medium"
 
 def _sections():
-    widths = [("SEQ", 330, C_AMBER), ("CHORD", 218, C_AMBER), ("DICE", 136, C_TEAL), ("VOICE", 182, C_AMBER),
+    widths = [("PRESET", 104, C_AMBER), ("SEQ", 330, C_AMBER), ("CHORD", 218, C_AMBER), ("DICE", 136, C_TEAL), ("VOICE", 182, C_AMBER),
               ("FILTER", 182, C_AMBER), ("ENV", 182, C_AMBER), ("ECHO", 136, C_AMBER),
               ("SPACE", 136, C_AMBER), ("OUT", 90, C_AMBER)]
-    out, x = [], SEQ_X
+    out, x = [], PRESET_X
     for name, wdt, acc in widths:
         out.append((name, x, x + wdt, acc))
         x += wdt + 16
@@ -1255,7 +1259,7 @@ def _sections():
 
 
 SECTIONS = _sections()
-assert SECTIONS[1][1] == CHORD_X and SECTIONS[2][1] == DICE_X
+assert SECTIONS[1][1] == SEQ_X and SECTIONS[2][1] == CHORD_X and SECTIONS[3][1] == DICE_X
 COLW = 46
 ROW_Y = [18, 67, 116]
 DEVICE_W = SECTIONS[-1][2] + 10
@@ -1267,22 +1271,22 @@ LOCK_GROUPS = [("Seq", ["SEQ"]), ("Chord", ["CHORD"]), ("Voice", ["VOICE"]), ("F
 # Randomize ranges: (lo, hi, curve). Parameters not listed here are never randomised
 # (Key, Octave, Bend, MW>Cut, Volume and the dice controls themselves).
 RAND = {
-    "p_harm": (0, 7, 1), "p_chord": (0, 15, 1), "p_voicing": (0, 7, 1), "p_notes": (3, 6, 1),
+    "p_harm": (0, 7, "darkharm"), "p_chord": (0, 15, "darkchord"), "p_voicing": (0, 7, 1), "p_notes": (3, 6, 1),
     "p_strum": (-60, 60, 1), "p_glide": (0, 400, 2), "p_human": (0, 60, 1),
     "p_shape": (0, 100, 1), "p_pw": (10, 50, 1), "p_pwm": (0, 80, 1), "p_pwmrate": (0.1, 3, 2),
     "p_osc2": (0, 100, 1), "p_detune": (0, 25, 2), "p_sub": (0, 60, 1.5), "p_air": (0, 40, 1.5),
     "p_drift": (0, 80, 1), "p_driftrate": (0.1, 2, 2), "p_age": (0, 90, 1), "p_sag": (0, 80, 1),
-    "p_cutoff": (150, 4000, 2.5), "p_reso": (0, 75, 1), "p_drive": (0, 80, 1), "p_slope": (0, 1, 1),
+    "p_cutoff": (120, 1600, 2), "p_reso": (0, 70, 1), "p_drive": (0, 80, 1), "p_slope": (0, 1, 1),
     "p_fenv": (-30, 90, 1), "p_ktrk": (0, 80, 1), "p_lforate": (0.03, 4, 3), "p_lfoamt": (0, 60, 1.5),
     "p_lfowave": (0, 3, 1),
     "p_fa": (0.5, 300, 3), "p_fd": (60, 3000, 2.5), "p_fs": (0, 60, 1.5), "p_fr": (50, 3000, 2.5),
     "p_aa": (0.5, 800, 3), "p_ad": (100, 4000, 2.5), "p_as": (0, 80, 1.5), "p_ar": (80, 4000, 2.5),
     "p_velsens": (0, 80, 1), "p_velfilt": (0, 90, 1),
     "p_etime": (0, 7, 1), "p_efb": (20, 92, 1), "p_emix": (10, 70, 1), "p_elocut": (30, 400, 2),
-    "p_ehicut": (900, 8000, 2), "p_edrive": (0, 80, 1), "p_wow": (0, 70, 1), "p_flutter": (0, 50, 1),
+    "p_ehicut": (800, 3500, 2), "p_edrive": (0, 80, 1), "p_wow": (0, 70, 1), "p_flutter": (0, 50, 1),
     "p_espread": (0, 100, 1),
     "p_rdecay": (1000, 12000, 2), "p_rsize": (60, 140, 1), "p_rmix": (10, 60, 1), "p_tune": (0, 100, 1),
-    "p_sdecay": (800, 10000, 2), "p_damp": (10, 80, 1), "p_rlocut": (40, 400, 2), "p_diff": (40, 100, 1),
+    "p_sdecay": (800, 10000, 2), "p_damp": (35, 85, 1), "p_rlocut": (40, 400, 2), "p_diff": (40, 100, 1),
     "p_rmod": (0, 80, 1), "p_chorus": (0, 70, 1), "p_crate": (0.1, 2, 2), "p_cdepth": (10, 90, 1),
     "p_width": (20, 100, 1),
     "p_sgate": (20, 90, 1), "p_swing": (0, 40, 1),
@@ -1298,52 +1302,103 @@ for _i in range(NSTEP):
 
 # Randomize first picks a character, then draws every listed parameter inside that character's range.
 # Parameters not listed keep the general RAND range. "on" = probability that a section switch is on.
-ARCHETYPES = [
-    ("DUB STAB", dict(p_aa=(0.5, 8), p_ad=(150, 700), p_as=(0, 10), p_ar=(120, 600), p_fa=(0.5, 5), p_fd=(80, 400),
-                      p_fs=(0, 15), p_fr=(100, 500), p_cutoff=(250, 1200), p_reso=(10, 60), p_fenv=(30, 85),
-                      p_drive=(10, 60), p_efb=(55, 95), p_emix=(35, 70), p_ehicut=(1200, 4000), p_rmix=(15, 40),
-                      p_tune=(20, 70), p_glide=(0, 30), p_strum=(-15, 15)),
-     dict(p_echoon=0.97, p_spaceon=0.85, p_choron=0.4, p_analogon=0.85)),
-    ("DEEP PAD", dict(p_aa=(300, 3000), p_ad=(1500, 6000), p_as=(50, 90), p_ar=(1500, 6000), p_fa=(400, 3000),
-                      p_fd=(1500, 6000), p_fs=(20, 70), p_fr=(1500, 6000), p_cutoff=(300, 2000), p_reso=(0, 40),
-                      p_fenv=(-20, 35), p_drive=(0, 40), p_shape=(0, 60), p_osc2=(50, 100), p_detune=(6, 25),
-                      p_emix=(10, 40), p_efb=(30, 75), p_rmix=(30, 60), p_rdecay=(5000, 15000), p_tune=(30, 90),
-                      p_chorus=(30, 80), p_glide=(40, 400), p_strum=(0, 90), p_lfoamt=(10, 50),
-                      p_lforate=(0.03, 0.4)),
-     dict(p_echoon=0.5, p_spaceon=0.98, p_choron=0.8, p_analogon=0.95)),
-    ("PLUCK", dict(p_aa=(0.5, 4), p_ad=(150, 900), p_as=(0, 20), p_ar=(150, 900), p_fa=(0.5, 3), p_fd=(40, 250),
-                   p_fs=(0, 10), p_fr=(100, 600), p_cutoff=(500, 3500), p_reso=(10, 55), p_fenv=(40, 95),
-                   p_drive=(0, 50), p_emix=(15, 50), p_efb=(30, 75), p_rmix=(10, 35), p_tune=(10, 60),
-                   p_strum=(-40, 40), p_glide=(0, 20)),
-     dict(p_echoon=0.8, p_spaceon=0.8, p_choron=0.5, p_analogon=0.8)),
-    ("ORGAN", dict(p_aa=(5, 80), p_ad=(500, 3000), p_as=(80, 100), p_ar=(100, 1500), p_fa=(1, 50), p_fd=(200, 2000),
-                   p_fs=(60, 100), p_fr=(100, 1500), p_cutoff=(600, 5000), p_reso=(0, 30), p_fenv=(-10, 20),
-                   p_shape=(30, 100), p_pwm=(20, 80), p_osc2=(0, 60), p_sub=(0, 70), p_chorus=(40, 90),
-                   p_emix=(5, 35), p_rmix=(15, 45), p_tune=(20, 70), p_glide=(0, 120)),
-     dict(p_echoon=0.4, p_spaceon=0.9, p_choron=0.9, p_analogon=0.9)),
-    ("GLASS", dict(p_aa=(0.5, 6), p_ad=(600, 3000), p_as=(0, 20), p_ar=(800, 4000), p_fa=(0.5, 5), p_fd=(200, 1200),
-                   p_fs=(10, 50), p_fr=(400, 3000), p_cutoff=(1500, 8000), p_reso=(30, 75), p_fenv=(10, 60),
-                   p_shape=(40, 100), p_pw=(8, 30), p_osc2=(0, 40), p_detune=(0, 8), p_air=(0, 15),
-                   p_tune=(60, 100), p_sdecay=(4000, 10000), p_rmix=(25, 55), p_emix=(15, 45),
-                   p_ehicut=(2500, 8000), p_sub=(0, 10)),
-     dict(p_echoon=0.7, p_spaceon=1.0, p_choron=0.5, p_analogon=0.6)),
-    ("RUMBLE", dict(p_aa=(0.5, 40), p_ad=(300, 1500), p_as=(0, 50), p_ar=(200, 1500), p_fa=(0.5, 20),
-                    p_fd=(100, 800), p_fs=(0, 30), p_cutoff=(120, 500), p_reso=(20, 70), p_drive=(40, 90),
-                    p_sub=(40, 100), p_fenv=(10, 60), p_ktrk=(0, 40), p_ehicut=(900, 2000), p_elocut=(30, 120),
-                    p_efb=(40, 85), p_emix=(20, 55), p_rlocut=(150, 400), p_rmix=(10, 35), p_tune=(0, 50)),
-     dict(p_echoon=0.85, p_spaceon=0.7, p_choron=0.2, p_analogon=0.9)),
-    ("WORN", dict(p_age=(60, 90), p_drift=(50, 80), p_sag=(50, 80), p_air=(15, 40), p_wow=(40, 70),
-                  p_flutter=(25, 50), p_edrive=(40, 80), p_ehicut=(900, 2500), p_cutoff=(300, 2000),
-                  p_detune=(8, 25), p_driftrate=(0.2, 1.5), p_lfoamt=(10, 40)),
-     dict(p_echoon=0.9, p_spaceon=0.8, p_choron=0.6, p_analogon=1.0)),
-    ("GHOST", dict(p_aa=(50, 1500), p_ad=(1000, 5000), p_as=(20, 70), p_ar=(2000, 8000), p_fa=(100, 2000),
-                   p_fd=(1000, 5000), p_fs=(10, 50), p_fr=(1500, 6000), p_air=(20, 40), p_cutoff=(200, 1200),
-                   p_reso=(10, 50), p_tune=(70, 100), p_sdecay=(5000, 10000), p_rmix=(35, 60),
-                   p_rdecay=(8000, 12000), p_efb=(60, 92), p_emix=(30, 60), p_rmod=(40, 80), p_lfoamt=(15, 50)),
-     dict(p_echoon=0.85, p_spaceon=1.0, p_choron=0.5, p_analogon=0.9)),
+ARCHETYPES = [  # all dark: underground dub techno
+    ("DUB STAB", dict(p_aa=(0.5, 8), p_ad=(150, 600), p_as=(0, 8), p_ar=(120, 500), p_fa=(0.5, 5), p_fd=(80, 350),
+                      p_fs=(0, 10), p_fr=(100, 400), p_cutoff=(250, 900), p_reso=(15, 60), p_fenv=(35, 80),
+                      p_drive=(10, 55), p_efb=(60, 92), p_emix=(35, 65), p_ehicut=(1200, 2800), p_rmix=(15, 35),
+                      p_tune=(25, 70), p_glide=(0, 20), p_strum=(-12, 12), p_damp=(45, 75)),
+     dict(p_echoon=0.98, p_spaceon=0.85, p_choron=0.35, p_analogon=0.85)),
+    ("CONCRETE", dict(p_aa=(0.5, 5), p_ad=(200, 500), p_as=(0, 5), p_ar=(150, 400), p_fd=(120, 300),
+                      p_cutoff=(300, 600), p_reso=(30, 60), p_fenv=(45, 75), p_drive=(30, 70), p_efb=(70, 95),
+                      p_emix=(45, 70), p_ehicut=(1100, 2000), p_elocut=(100, 250), p_wow=(30, 60),
+                      p_edrive=(35, 70), p_rmix=(15, 30), p_damp=(55, 80)),
+     dict(p_echoon=1.0, p_spaceon=0.8, p_choron=0.2, p_analogon=0.9)),
+    ("DEEP CHORD", dict(p_aa=(150, 1500), p_ad=(1500, 5000), p_as=(45, 85), p_ar=(1500, 5000),
+                        p_fa=(300, 2500), p_fd=(1500, 5000), p_fs=(15, 55), p_fr=(1500, 5000), p_cutoff=(300, 900),
+                        p_reso=(5, 35), p_fenv=(10, 35), p_osc2=(60, 100), p_detune=(6, 20), p_emix=(15, 40),
+                        p_efb=(40, 75), p_rmix=(30, 55), p_rdecay=(6000, 14000), p_tune=(40, 85),
+                        p_chorus=(35, 75), p_glide=(60, 350), p_strum=(10, 70), p_lfoamt=(10, 35),
+                        p_lforate=(0.03, 0.3), p_damp=(50, 80)),
+     dict(p_echoon=0.6, p_spaceon=1.0, p_choron=0.8, p_analogon=0.95)),
+    ("SUBMERGED", dict(p_aa=(0.5, 30), p_ad=(300, 1200), p_as=(0, 40), p_ar=(200, 1000), p_fd=(100, 600),
+                       p_cutoff=(110, 400), p_reso=(25, 65), p_drive=(45, 85), p_sub=(40, 90), p_fenv=(15, 55),
+                       p_ehicut=(800, 1600), p_elocut=(30, 90), p_efb=(50, 85), p_emix=(25, 55),
+                       p_rlocut=(180, 400), p_rmix=(10, 30), p_tune=(5, 45), p_damp=(60, 85)),
+     dict(p_echoon=0.9, p_spaceon=0.7, p_choron=0.15, p_analogon=0.9)),
+    ("TAPE GHOST", dict(p_age=(60, 90), p_drift=(50, 85), p_sag=(45, 80), p_air=(15, 40), p_wow=(45, 75),
+                        p_flutter=(25, 55), p_edrive=(40, 80), p_ehicut=(800, 1800), p_cutoff=(250, 900),
+                        p_detune=(8, 22), p_driftrate=(0.2, 1.2), p_lfoamt=(10, 35), p_efb=(60, 90),
+                        p_emix=(35, 65), p_damp=(55, 85)),
+     dict(p_echoon=0.95, p_spaceon=0.85, p_choron=0.5, p_analogon=1.0)),
+    ("THROW", dict(p_aa=(0.5, 4), p_ad=(100, 300), p_as=(0, 5), p_ar=(80, 250), p_fd=(60, 200), p_cutoff=(350, 1000),
+                   p_fenv=(40, 85), p_efb=(88, 104), p_emix=(55, 80), p_ehicut=(1000, 2200), p_elocut=(120, 300),
+                   p_espread=(70, 100), p_wow=(20, 55), p_rmix=(15, 35), p_damp=(50, 80)),
+     dict(p_echoon=1.0, p_spaceon=0.85, p_choron=0.3, p_analogon=0.85)),
+    ("NIGHT DRONE", dict(p_aa=(600, 3000), p_ad=(3000, 8000), p_as=(75, 100), p_ar=(2500, 7000), p_fa=(500, 3000),
+                         p_fs=(40, 80), p_cutoff=(200, 700), p_reso=(10, 45), p_fenv=(0, 25), p_shape=(40, 100),
+                         p_pwm=(30, 80), p_pwmrate=(0.1, 0.6), p_chorus=(40, 85), p_emix=(10, 30), p_rmix=(35, 60),
+                         p_rdecay=(8000, 16000), p_tune=(60, 100), p_sdecay=(5000, 10000), p_lfoamt=(15, 45),
+                         p_lforate=(0.02, 0.2), p_damp=(55, 85)),
+     dict(p_echoon=0.4, p_spaceon=1.0, p_choron=0.85, p_analogon=0.95)),
+    ("FOG STRINGS", dict(p_aa=(0.5, 20), p_ad=(500, 2000), p_as=(0, 25), p_ar=(800, 3000), p_fd=(200, 900),
+                         p_cutoff=(400, 1100), p_reso=(30, 60), p_fenv=(15, 50), p_air=(10, 35), p_tune=(80, 100),
+                         p_sdecay=(5000, 12000), p_rmix=(35, 60), p_rdecay=(5000, 12000), p_emix=(20, 45),
+                         p_ehicut=(1500, 3000), p_damp=(40, 70)),
+     dict(p_echoon=0.75, p_spaceon=1.0, p_choron=0.4, p_analogon=0.85)),
 ]
 for _sw in ("p_echoon", "p_spaceon", "p_choron", "p_analogon"):
     RAND[_sw] = (0, 1, "coin")
+
+# Factory presets (all dark). Missing parameters use the defaults. Key, SEQ on/mode and Volume are never
+# changed by a preset (they belong to your track).
+PRESET_SKIP = ("p_key", "p_seqon", "p_seqmode", "p_vol")
+
+
+def _seq(pos, notes=(0, 0, 0, 0), vel=(100, 88, 112, 94), **kw):
+    d = {}
+    for i in range(4):
+        d["p_spos%d" % (i + 1)] = pos[i]
+        d["p_snote%d" % (i + 1)] = notes[i]
+        d["p_svel%d" % (i + 1)] = vel[i]
+    d.update(kw)
+    return d
+
+
+FACTORY = [
+    ("Fog Stab", dict(p_damp=55, p_ehicut=2200, **_seq((2, 4, 6, 8)))),
+    ("Concrete Dub", dict(p_chord=3, p_cutoff=380, p_reso=42, p_fenv=60, p_fd=220, p_ad=380, p_efb=80, p_emix=55,
+                          p_ehicut=1700, p_elocut=140, p_wow=45, p_edrive=50, p_rmix=25, p_tune=40, p_damp=65,
+                          **_seq((2, 4, 7, 8), vel=(100, 85, 70, 108)))),
+    ("Deep Chord Pad", dict(p_chord=1, p_voicing=7, p_aa=700, p_ad=3000, p_as=70, p_ar=3500, p_fa=1200, p_fd=4000,
+                            p_fs=40, p_fr=3000, p_cutoff=520, p_fenv=25, p_reso=20, p_osc2=85, p_detune=12,
+                            p_chorus=60, p_glide=180, p_strum=35, p_emix=25, p_efb=50, p_rmix=45, p_rdecay=9000,
+                            p_tune=70, p_sdecay=7000, p_damp=60, p_lfoamt=25, p_lforate=0.07,
+                            **_seq((1, 2, 3, 4), notes=(0, -4, -2, -5), vel=(96, 92, 100, 90), p_seqrate=4,
+                                   p_seqlen=4, p_sgate=95))),
+    ("Submerged", dict(p_chord=3, p_oct=-1, p_cutoff=220, p_reso=55, p_drive=70, p_sub=70, p_fenv=40, p_fd=300,
+                       p_ad=500, p_ehicut=1200, p_elocut=60, p_efb=65, p_emix=40, p_rlocut=250, p_rmix=20,
+                       p_tune=25, p_damp=75, p_choron=0, **_seq((2, 4, 6, 8), vel=(110, 90, 104, 86)))),
+    ("Tape Ghost", dict(p_chord=0, p_age=85, p_drift=70, p_driftrate=0.8, p_sag=70, p_air=30, p_wow=65,
+                        p_flutter=45, p_edrive=65, p_ehicut=1500, p_cutoff=480, p_detune=14, p_emix=50, p_efb=72,
+                        p_tune=55, p_damp=70, **_seq((2, 3, 6, 8), notes=(0, 0, -2, 0)))),
+    ("Echo Throw", dict(p_ad=180, p_ar=150, p_fd=120, p_cutoff=650, p_fenv=70, p_efb=97, p_emix=72, p_ehicut=1900,
+                        p_elocut=180, p_espread=100, p_etime=4, p_rmix=22, p_damp=65,
+                        **_seq((4, 0, 0, 0), vel=(112, 90, 90, 90)))),
+    ("Night Drone", dict(p_chord=5, p_aa=1200, p_ad=5000, p_as=75, p_ar=4000, p_fs=60, p_cutoff=420, p_reso=30,
+                         p_shape=70, p_pwm=60, p_pwmrate=0.25, p_chorus=70, p_crate=0.3, p_emix=20, p_rmix=40,
+                         p_rdecay=12000, p_tune=85, p_sdecay=9000, p_damp=70, p_lfoamt=30, p_lforate=0.05,
+                         p_lfowave=3, **_seq((1, 2, 0, 0), notes=(0, -5, 0, 0), p_seqrate=5, p_seqlen=2,
+                                             p_sgate=98))),
+    ("Strings In Fog", dict(p_chord=4, p_tune=100, p_sdecay=9000, p_damp=50, p_rmix=50, p_cutoff=750, p_reso=50,
+                            p_fenv=35, p_ad=900, p_ar=1500, p_as=10, p_emix=30, p_efb=60, p_ehicut=2500, p_air=20,
+                            **_seq((2, 5, 6, 8), notes=(0, 0, 3, 0)))),
+]
+NUSER = 8
+_pd = {q["name"]: q for q in P}
+for _n, _ov in FACTORY:
+    for _k, _v in _ov.items():
+        assert _k in _pd and _k not in PRESET_SKIP, (_n, _k)
+        assert _pd[_k]["lo"] <= _v <= _pd[_k]["hi"], (_n, _k, _v)
 
 # Shown in Live's Info View when the mouse is over a control
 ANNOT = {
@@ -1585,14 +1640,14 @@ def build_patcher(code):
             st.update(activetricolor=accent, focusbordercolor=accent)
             ui = pt.add("live.menu", [px, py, rect[2], 15], ninl=1, nout=3, outtype=["", "", "float"],
                         parameter_enable=1, presentation=1, presentation_rect=[float(v) for v in rect],
-                        varname=p["long"], saved_attribute_attributes={"valueof": vo}, **st, **extra)
+                        varname=p["name"], saved_attribute_attributes={"valueof": vo}, **st, **extra)
         elif p["kind"] == "power":
             vo["parameter_enum"] = ["off", "on"]
             wdt = 26 if p["label"] == ("OFF", "ON") else 46
             rect = [secinfo[sec][2] - wdt, 4, wdt, 12]
             ui = pt.add("live.text", [px, py, wdt, 12], ninl=1, nout=2, outtype=["", ""], mode=1,
                         text=p["label"][0], texton=p["label"][1], parameter_enable=1, presentation=1,
-                        presentation_rect=[float(v) for v in rect], varname=p["long"],
+                        presentation_rect=[float(v) for v in rect], varname=p["name"],
                         saved_attribute_attributes={"valueof": vo}, activebgcolor=C_MENU,
                         activebgoncolor=accent, bgcolor=C_MENU, bgoncolor=accent, textcolor=C_LOW,
                         textoncolor=C_BG, activetextcolor=C_LOW, activetextoncolor=C_BG, bordercolor=C_LINE,
@@ -1602,7 +1657,7 @@ def build_patcher(code):
             rect = p["rect"] or [slot_x(sec, x0, p["col"]), 38, 44, 18]
             ui = pt.add("live.text", [px, py, 44, 18], ninl=1, nout=2, outtype=["", ""], mode=1,
                         text=p["short"], texton=p["short"], parameter_enable=1, presentation=1,
-                        presentation_rect=[float(v) for v in rect], varname=p["long"],
+                        presentation_rect=[float(v) for v in rect], varname=p["name"],
                         saved_attribute_attributes={"valueof": vo}, activebgcolor=C_MENU,
                         activebgoncolor=C_AMBER, bgcolor=C_MENU, bgoncolor=C_AMBER, textcolor=C_MID,
                         textoncolor=C_BG, activetextcolor=C_MID, activetextoncolor=C_BG, bordercolor=C_LINE,
@@ -1612,7 +1667,7 @@ def build_patcher(code):
             rect = [slot_x(sec, x0, p["col"]), 64, 44, 18]
             ui = pt.add("live.numbox", [px, py, 44, 18], ninl=1, nout=2, outtype=["", "float"],
                         parameter_enable=1, presentation=1, presentation_rect=[float(v) for v in rect],
-                        varname=p["long"], saved_attribute_attributes={"valueof": vo},
+                        varname=p["name"], saved_attribute_attributes={"valueof": vo},
                         activebgcolor=C_MENU, bgcolor=C_MENU, textcolor=C_TEXT, activeslidercolor=C_AMBER,
                         tricolor=C_LOW, focusbordercolor=C_AMBER, bordercolor=C_LINE, fontname=F_TEXT,
                         fontsize=10.0, **extra)
@@ -1635,7 +1690,7 @@ def build_patcher(code):
                 rect = [slot_x(sec, x0, p["col"]), ROW_Y[p["row"]], 44, 48]
             ui = pt.add("live.dial", [px, py, 44, 48], ninl=1, nout=2, outtype=["", "float"],
                         parameter_enable=1, presentation=1, presentation_rect=[float(v) for v in rect],
-                        varname=p["long"], saved_attribute_attributes={"valueof": vo},
+                        varname=p["name"], saved_attribute_attributes={"valueof": vo},
                         **dial_style(accent), **extra)
         ui_of[p["name"]] = ui
         pre = pt.obj("prepend %s" % p["name"], px, py + 62)
@@ -1711,7 +1766,7 @@ def build_patcher(code):
     comment("follows Live \u25b6", [SEQ_X + 47, 146, 92, 13], size=8.0, color=C_LOW)
     seq_rnd = pt.add("live.text", [2200, 600, 88, 20], ninl=1, nout=2, outtype=["", ""], mode=0,
                      text="RANDOM", texton="RANDOM", parameter_enable=1, presentation=1,
-                     presentation_rect=[float(SEQ_X + 47), 124.0, 88.0, 20.0], varname="Seq Random",
+                     presentation_rect=[float(SEQ_X + 47), 124.0, 88.0, 20.0], 
                      saved_attribute_attributes={"valueof": {
                          "parameter_longname": "Seq Random", "parameter_shortname": "Seq Random",
                          "parameter_type": 2, "parameter_mmin": 0.0, "parameter_mmax": 1.0,
@@ -1768,7 +1823,7 @@ def build_patcher(code):
     x = DICE_X
     dice_btn = pt.add("live.text", [1900, 600, 88, 24], ninl=1, nout=2, outtype=["", ""], mode=0,
                       text="RANDOMIZE", texton="RANDOMIZE", parameter_enable=1, presentation=1,
-                      presentation_rect=[float(x), 20.0, 88.0, 24.0], varname="Randomize",
+                      presentation_rect=[float(x), 20.0, 88.0, 24.0], 
                       saved_attribute_attributes=maxonly_vo("Randomize", "Randomize", 2, 0, 1, 0, ["off", "on"]),
                       activebgcolor=rgb("#25403F"), activebgoncolor=C_TEAL, bgcolor=C_MENU, bgoncolor=C_TEAL,
                       textcolor=C_TEXT, textoncolor=C_BG, activetextcolor=C_TEXT, activetextoncolor=C_BG,
@@ -1780,7 +1835,7 @@ def build_patcher(code):
                       annotation_name="Randomize")
     reset_btn = pt.add("live.text", [2000, 600, 88, 16], ninl=1, nout=2, outtype=["", ""], mode=0,
                        text="RESET", texton="RESET", parameter_enable=1, presentation=1,
-                       presentation_rect=[float(x), 48.0, 88.0, 15.0], varname="Reset",
+                       presentation_rect=[float(x), 48.0, 88.0, 15.0], 
                        saved_attribute_attributes=maxonly_vo("Reset", "Reset", 2, 0, 1, 0, ["off", "on"]),
                        activebgcolor=C_MENU, activebgoncolor=C_TEXT, bgcolor=C_MENU, bgoncolor=C_TEXT,
                        textcolor=C_MID, textoncolor=C_BG, activetextcolor=C_MID, activetextoncolor=C_BG,
@@ -1789,7 +1844,7 @@ def build_patcher(code):
                                   "(la Key resta quella del tuo pezzo).", annotation_name="Reset")
     amount = pt.add("live.dial", [2100, 600, 44, 48], ninl=1, nout=2, outtype=["", "float"],
                     parameter_enable=1, presentation=1, presentation_rect=[float(x + 92), 18.0, 44.0, 48.0],
-                    varname="Dice Amount",
+                    
                     saved_attribute_attributes=maxonly_vo("Dice Amount", "Amount", 0, 0, 100, 100, unit=5),
                     annotation="Quanto cambia Randomize: poco = variazione della patch attuale, "
                                "100 = patch completamente nuova.", annotation_name="Dice Amount",
@@ -1802,7 +1857,7 @@ def build_patcher(code):
         r = [x + (i % 4) * 34.5, 82 + (i // 4) * 17, 33, 15]
         lk = pt.add("live.text", [1900 + i * 60, 680, 44, 16], ninl=1, nout=2, outtype=["", ""], mode=1,
                     text=lname, texton=lname, parameter_enable=1, presentation=1,
-                    presentation_rect=[float(v) for v in r], varname="Lock " + lname,
+                    presentation_rect=[float(v) for v in r],
                     saved_attribute_attributes=maxonly_vo("Lock " + lname, "Lock " + lname, 2, 0, 1, 0,
                                                           ["off", "on"]),
                     activebgcolor=C_MENU, activebgoncolor=C_TEAL, bgcolor=C_MENU, bgoncolor=C_TEAL,
@@ -1868,6 +1923,12 @@ def build_patcher(code):
                 spans.append("($f6 == %s) * %s" % (ff(ai), ff(a_hi - a_lo)))
             e = ("expr $f4 + $f3 * 0.01 * (1. - $f5) * (((%s) + (%s) * pow($f1 / 10000., %s)) - $f4) + $f2 * 0."
                  % (" + ".join(los), " + ".join(spans), ff(1.7 if curve != 1 and curve != 1.5 else 1.0)))
+        elif curve == "darkchord":  # dark colours only: skip Major, Maj7, Maj9, Dom9 (indexes 10-13)
+            e = ("expr $f4 + %s * ((int($f1 / 10001. * %s) + (int($f1 / 10001. * %s) >= 10) * 4) - $f4)"
+                 % (sel_, ff(len(DARK_CHORDS)), ff(len(DARK_CHORDS))))
+        elif curve == "darkharm":  # Fixed (x2), Minor, Dorian, Phrygian, Harmonic Minor
+            e = ("expr $f4 + %s * (((int($f1 / 10001. * 6.) >= 2) * (int($f1 / 10001. * 6.) - 1) "
+                 "+ (int($f1 / 10001. * 6.) >= 5) * 3) - $f4)" % sel_)
         elif curve == "spos":
             e = "expr $f4 + %s * ((%s) - $f4)" % (sel_, SPOS_EXPR % (2 * int(nm[6:]) - 1))
         elif curve == "semis":
@@ -1893,6 +1954,147 @@ def build_patcher(code):
         pt.connect(ui_of[nm], 0, ex, 3)
         pt.connect(lock_of[p["sec"]], 0, ex, 4)
         pt.connect(ex, 0, ui_of[nm], 0)
+
+    # ------------------------------------------------ PRESET: factory + user slots
+    px0 = PRESET_X
+    pnames = [n for n, _ in FACTORY] + ["User %d" % (i + 1) for i in range(NUSER)]
+    pmenu = pt.add("live.menu", [3200, 600, 104, 18], ninl=1, nout=3, outtype=["", "", "float"],
+                   parameter_enable=1, presentation=1, presentation_rect=[float(px0), 20.0, 104.0, 18.0],
+                   saved_attribute_attributes={"valueof": {
+                       "parameter_longname": "Preset", "parameter_shortname": "Preset", "parameter_type": 2,
+                       "parameter_mmin": 0.0, "parameter_mmax": float(len(pnames) - 1), "parameter_enum": pnames,
+                       "parameter_initial_enable": 1, "parameter_initial": [0], "parameter_invisible": 1}},
+                   annotation="Preset di fabbrica (i primi 8) e i tuoi (User 1-8). I lucchetti proteggono le "
+                              "sezioni dai preset di fabbrica.", annotation_name="Preset", **menu_style)
+
+    def small_btn(text, rect, ann, accent=C_AMBER):
+        return pt.add("live.text", [3200 + rect[0], 700 + rect[1], rect[2], rect[3]], ninl=1, nout=2,
+                      outtype=["", ""], mode=0, text=text, texton=text, parameter_enable=1, presentation=1,
+                      presentation_rect=[float(v) for v in rect],
+                      saved_attribute_attributes={"valueof": {
+                          "parameter_longname": "Preset " + text.title(), "parameter_shortname": text.title(),
+                          "parameter_type": 2, "parameter_mmin": 0.0, "parameter_mmax": 1.0,
+                          "parameter_enum": ["off", "on"], "parameter_initial_enable": 1, "parameter_initial": [0],
+                          "parameter_invisible": 1}},
+                      activebgcolor=C_MENU, activebgoncolor=accent, bgcolor=C_MENU, bgoncolor=accent,
+                      textcolor=C_MID, textoncolor=C_BG, activetextcolor=C_MID, activetextoncolor=C_BG,
+                      bordercolor=C_LINE, focusbordercolor=accent, fontname=F_HEAD, fontsize=8.5,
+                      annotation=ann, annotation_name="Preset " + text.title())
+
+    def on_click(btn, x, y):
+        rb_ = pt.obj("route bang 1", x, y, ninl=2, nout=3)
+        pt.connect(btn, 0, rb_, 0)
+        t_ = pt.obj("t b", x, y + 30, ninl=1, nout=1, outtype=["bang"])
+        pt.connect(rb_, 0, t_, 0)
+        pt.connect(rb_, 1, t_, 0)
+        return t_
+
+    prev_b = small_btn("PREV", [px0, 42, 50, 16], "Preset precedente.")
+    next_b = small_btn("NEXT", [px0 + 54, 42, 50, 16], "Preset successivo.")
+    save_b = small_btn("SAVE", [px0, 68, 62, 16], "Salva il suono attuale nello slot User scelto qui accanto. "
+                                                  "I preset User restano salvati nel progetto di Live.")
+    slot = pt.add("live.numbox", [3400, 760, 38, 16], ninl=1, nout=2, outtype=["", "float"], parameter_enable=1,
+                  presentation=1, presentation_rect=[float(px0 + 66), 68.0, 38.0, 16.0],
+                  saved_attribute_attributes={"valueof": {
+                      "parameter_longname": "Save Slot", "parameter_shortname": "Slot", "parameter_type": 1,
+                      "parameter_mmin": 1.0, "parameter_mmax": float(NUSER), "parameter_initial_enable": 1,
+                      "parameter_initial": [1], "parameter_invisible": 1, "parameter_unitstyle": 0}},
+                  activebgcolor=C_MENU, bgcolor=C_MENU, textcolor=C_TEXT, activeslidercolor=C_AMBER,
+                  tricolor=C_LOW, focusbordercolor=C_AMBER, bordercolor=C_LINE, fontname=F_TEXT, fontsize=9.5,
+                  annotation="Slot User (1-8) dove SAVE salva il suono.", annotation_name="Save Slot")
+    pt.connect(thisdev, 0, slot, 0)
+    comment("user slot", [px0 + 66, 85, 40, 11], size=7.5, color=C_LOW)
+    exp_b = small_btn("EXPORT", [px0, 102, 50, 15], "Salva i tuoi preset User su un file, per usarli in altri progetti.",
+                      accent=C_TEAL)
+    imp_b = small_btn("IMPORT", [px0 + 54, 102, 50, 15], "Carica i preset User da un file salvato con EXPORT.",
+                      accent=C_TEAL)
+    comment("8 dark factory sounds", [px0, 126, 104, 12], size=7.5, color=C_LOW)
+    comment("+ 8 user slots", [px0, 138, 104, 12], size=7.5, color=C_LOW)
+    comment("LOCK keeps sections", [px0, 150, 104, 12], size=7.5, color=C_LOW)
+
+    store = pt.add("newobj", [3200, 1000, 300, 22], text="pattrstorage nebbia @savemode 0 @autorestore 0",
+                   ninl=1, nout=5, outtype=["", "", "", "", ""], parameter_enable=1,
+                   saved_attribute_attributes={"valueof": {
+                       "parameter_longname": "User Presets", "parameter_shortname": "User Presets",
+                       "parameter_type": 3, "parameter_invisible": 1}},
+                   saved_object_attributes={"parameter_enable": 1, "parameter_mappable": 0,
+                                            "client_rect": [4, 44, 358, 172], "storage_rect": [583, 69, 1034, 197]})
+    pt.add("newobj", [3200, 1040, 80, 22], text="autopattr", ninl=1, nout=4, outtype=["", "", "", ""])
+
+    # the menu stays silent while the device loads, so a saved set is never overwritten by a preset
+    pgate = pt.obj("gate 1 0", 3200, 640, ninl=2, nout=1)
+    pt.connect(pmenu, 0, pgate, 1)
+    pdel = pt.obj("delay 500", 3300, 600, ninl=2, nout=1, outtype=["bang"])
+    pt.connect(thisdev, 0, pdel, 0)
+    popen = pt.msg("1", 3300, 630)
+    pt.connect(pdel, 0, popen, 0)
+    pt.connect(popen, 0, pgate, 0)
+    ptii = pt.obj("t i i", 3200, 670, ninl=1, nout=2, outtype=["int", "int"])
+    pt.connect(pgate, 0, ptii, 0)
+    fsel = pt.obj("sel " + " ".join(str(i) for i in range(len(FACTORY))), 3200, 700, ninl=2,
+                  nout=len(FACTORY) + 1)
+    pt.connect(ptii, 0, fsel, 0)
+    usub = pt.obj("- %d" % (len(FACTORY) - 1), 3500, 700, ninl=2, nout=1)
+    pt.connect(ptii, 1, usub, 0)
+    usplit = pt.obj("split 1 %d" % NUSER, 3500, 730, ninl=3, nout=2)
+    pt.connect(usub, 0, usplit, 0)
+    pt.connect(usplit, 0, store, 0)
+    # prev / next
+    for btn, op, x in ((prev_b, "+ %d" % (len(pnames) - 1), 3600), (next_b, "+ 1", 3700)):
+        tb_ = on_click(btn, x, 600)
+        cur = pt.obj("i", x, 660, ninl=2, nout=1, outtype=["int"])
+        pt.connect(pmenu, 0, cur, 1)
+        pt.connect(tb_, 0, cur, 0)
+        add = pt.obj(op, x, 690, ninl=2, nout=1)
+        pt.connect(cur, 0, add, 0)
+        md = pt.obj("% " + str(len(pnames)), x, 720, ninl=2, nout=1)
+        pt.connect(add, 0, md, 0)
+        pt.connect(md, 0, pmenu, 0)
+    # save -> store N, and show "User N" in the menu without recalling it
+    tsave = on_click(save_b, 3800, 600)
+    sslot = pt.obj("i 1", 3800, 660, ninl=2, nout=1, outtype=["int"])
+    pt.connect(slot, 0, sslot, 1)
+    pt.connect(tsave, 0, sslot, 0)
+    tss = pt.obj("t i i", 3800, 690, ninl=1, nout=2, outtype=["int", "int"])
+    pt.connect(sslot, 0, tss, 0)
+    pstore = pt.obj("prepend store", 3800, 720)
+    pt.connect(tss, 1, pstore, 0)
+    pt.connect(pstore, 0, store, 0)
+    sadd = pt.obj("+ %d" % (len(FACTORY) - 1), 3900, 720, ninl=2, nout=1)
+    pt.connect(tss, 0, sadd, 0)
+    sset = pt.obj("prepend set", 3900, 750)
+    pt.connect(sadd, 0, sset, 0)
+    pt.connect(sset, 0, pmenu, 0)
+    for btn, msgtxt, x in ((exp_b, "write", 4000), (imp_b, "read", 4100)):
+        tb_ = on_click(btn, x, 600)
+        mm = pt.msg(msgtxt, x, 660)
+        pt.connect(tb_, 0, mm, 0)
+        pt.connect(mm, 0, store, 0)
+
+    # factory presets: one list per lock group, through that group's lock, then unpacked to the controls
+    groups = [(lk, secs) for lk, secs in lock_list] + [(None, ["DICE"])]
+    for gi, (lk, secs) in enumerate(groups):
+        members = [q for q in P if q["sec"] in secs and q["name"] not in PRESET_SKIP]
+        gx = 3200 + gi * 260
+        if lk is not None:
+            inv = pt.obj("== 0", gx, 1200, ninl=2, nout=1)
+            pt.connect(lk, 0, inv, 0)
+            dest = pt.obj("gate 1 1", gx, 1230, ninl=2, nout=1)
+            pt.connect(inv, 0, dest, 0)
+            din = 1
+        else:
+            dest = pt.obj("t l", gx, 1230, ninl=1, nout=1)
+            din = 0
+        unp = pt.obj("unpack " + " ".join(["0."] * len(members)), gx, 1400, ninl=1, nout=len(members),
+                     outtype=["float"] * len(members), w=240)
+        pt.connect(dest, 0, unp, 0)
+        for j, q in enumerate(members):
+            pt.connect(unp, j, ui_of[q["name"]], 0)
+        for fi, (fname, ov) in enumerate(FACTORY):
+            vals = [fnum(ov.get(q["name"], q["default"])) for q in members]
+            mb = pt.msg(" ".join(vals), gx, 1270 + fi * 15)
+            pt.connect(fsel, fi, mb, 0)
+            pt.connect(mb, 0, dest, din)
 
     # reset engine: button -> one gate per lock group -> default value of every parameter in that group
     rrb = pt.obj("route bang 1", 2300, 760, ninl=2, nout=3)

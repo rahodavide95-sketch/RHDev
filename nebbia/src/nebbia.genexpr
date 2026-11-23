@@ -138,6 +138,10 @@ fammaj(i) {
 	return ((i < 0.5) ? 10 : ((i < 1.5) ? 11 : ((i < 2.5) ? 12 : ((i < 3.5) ? 13 : ((i < 4.5) ? 7 : ((i < 5.5) ? 8 : ((i < 6.5) ? 6 : 15)))))));
 }
 
+famdark(i) {
+	return ((i < 0.5) ? 0 : ((i < 1.5) ? 1 : ((i < 2.5) ? 2 : ((i < 3.5) ? 3 : ((i < 4.5) ? 4 : ((i < 5.5) ? 5 : ((i < 6.5) ? 6 : ((i < 7.5) ? 7 : ((i < 8.5) ? 8 : ((i < 9.5) ? 9 : ((i < 10.5) ? 14 : 15)))))))))));
+}
+
 Param p_seqon(0);
 Param p_seqmode(0);
 Param p_seqrate(1);
@@ -667,7 +671,7 @@ if (trig + chg > 0) {
 		cid = clamp(floor(p_chord + 0.5), 0, 15);
 		if (dcol > 0) {
 			if (dwild > 0) {
-				cid = min(floor(rc * 16), 15);
+				cid = famdark(min(floor(rc * 12), 11));
 			}
 			else if ((cid > 9.5) * (cid < 13.5) > 0) {
 				cid = fammaj(min(floor(rc * 8), 7));

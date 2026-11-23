@@ -145,6 +145,9 @@ function fammin(i) {
 function fammaj(i) {
 	return ((i < 0.5) ? 10 : ((i < 1.5) ? 11 : ((i < 2.5) ? 12 : ((i < 3.5) ? 13 : ((i < 4.5) ? 7 : ((i < 5.5) ? 8 : ((i < 6.5) ? 6 : 15)))))));
 }
+function famdark(i) {
+	return ((i < 0.5) ? 0 : ((i < 1.5) ? 1 : ((i < 2.5) ? 2 : ((i < 3.5) ? 3 : ((i < 4.5) ? 4 : ((i < 5.5) ? 5 : ((i < 6.5) ? 6 : ((i < 7.5) ? 7 : ((i < 8.5) ? 8 : ((i < 9.5) ? 9 : ((i < 10.5) ? 14 : 15)))))))))));
+}
 const P = {in1: 0, p_seqon: 0, p_seqmode: 0, p_seqrate: 1, p_seqlen: 8, p_sgate: 50, p_soff: 0, p_swing: 0, p_schance: 100, p_spos1: 2, p_snote1: 0, p_svel1: 100, p_spos2: 4, p_snote2: 0, p_svel2: 88, p_spos3: 6, p_snote3: 0, p_svel3: 112, p_spos4: 8, p_snote4: 0, p_svel4: 94, p_harm: 0, p_chord: 1, p_key: 9, p_voicing: 6, p_notes: 5, p_oct: 0, p_strum: 6, p_glide: 0, p_human: 30, p_bendr: 2, p_shape: 25, p_pw: 42, p_pwm: 25, p_pwmrate: 0.6, p_osc2: 70, p_detune: 7, p_sub: 0, p_air: 10, p_drift: 35, p_driftrate: 0.5, p_age: 40, p_sag: 35, p_cutoff: 600, p_reso: 30, p_drive: 30, p_slope: 0, p_fenv: 45, p_ktrk: 35, p_mwcut: 60, p_lforate: 0.15, p_lfoamt: 15, p_lfowave: 0, p_fa: 2, p_fd: 280, p_fs: 0, p_fr: 350, p_aa: 3, p_ad: 450, p_as: 0, p_ar: 350, p_velsens: 40, p_velfilt: 50, p_etime: 3, p_efb: 62, p_emix: 45, p_elocut: 90, p_ehicut: 2600, p_edrive: 35, p_wow: 30, p_flutter: 20, p_espread: 75, p_rdecay: 4500, p_rsize: 100, p_rmix: 32, p_tune: 50, p_sdecay: 3500, p_damp: 45, p_rlocut: 150, p_diff: 80, p_rmod: 35, p_chorus: 30, p_crate: 0.5, p_cdepth: 50, p_width: 60, p_vol: -3, p_cchance: 0, p_cdice: 2, p_diceon: 1, p_chordon: 1, p_analogon: 1, p_filton: 1, p_echoon: 1, p_spaceon: 1, p_choron: 1, p_root: 60, p_vel: 100, p_gate: 0, p_trig: 0, p_bend: 64, p_modw: 0, p_bpm: 120, p_playing: 0, p_songbeat: 0};
 let h_s_cut = 9.2288187;
 let h_s_res = 0.3;
@@ -574,7 +577,7 @@ if (trig + chg > 0) {
 		cid = clamp(floor(P.p_chord + 0.5), 0, 15);
 		if (dcol > 0) {
 			if (dwild > 0) {
-				cid = min(floor(rc * 16), 15);
+				cid = famdark(min(floor(rc * 12), 11));
 			}
 			else if ((cid > 9.5) * (cid < 13.5) > 0) {
 				cid = fammaj(min(floor(rc * 8), 7));

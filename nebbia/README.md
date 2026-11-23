@@ -1,6 +1,7 @@
 # NEBBIA — living chord engine
 
-Strumento **Max for Live** per Ableton Live, pensato per la dub techno.
+Strumento **Max for Live** per Ableton Live, pensato per la **dub techno underground**: suoni scuri,
+profondi, fatti di eco e di spazio.
 Una nota diventa un accordo, che puoi suonare dal piano roll, dalla tastiera o dal **sequencer interno**
 (4 step su una sequenza di 8 posizioni).
 L'accordo nasce da un generatore che fa voice leading e può tirare il dado. Passa per 6 voci analogiche che si
@@ -36,6 +37,26 @@ Per tenerlo nel browser di Live, copia il file in
 
 **Passa col mouse su qualsiasi controllo:** la *Info View* di Live (in basso a sinistra, tasto `?`) ti spiega
 in italiano cosa fa.
+
+---
+
+## Preset
+
+La colonna **PRESET** a sinistra:
+
+- **Tendina**: i primi 8 sono i preset di fabbrica, tutti scuri:
+  Fog Stab, Concrete Dub, Deep Chord Pad, Submerged, Tape Ghost, Echo Throw, Night Drone, Strings In Fog.
+  Ognuno ha anche il suo pattern per il sequencer. Poi ci sono **User 1–8**, i tuoi.
+- **PREV / NEXT**: scorri i preset al volo.
+- **SAVE**: salva il suono attuale nello slot User scelto nel numerino accanto (1–8).
+  I preset User restano salvati **dentro il progetto di Live**.
+- **EXPORT / IMPORT**: salva i tuoi preset User su un file e caricali in un altro progetto.
+- I preset non cambiano mai **Key**, **Volume**, l'accensione del SEQ e il suo Mode: quelli sono del tuo pezzo.
+- I **lucchetti** proteggono le sezioni anche dai preset di fabbrica. Esempio: blocca SEQ e cambi suono senza
+  perdere la tua sequenza.
+
+Puoi usare anche il salvataggio di Live (icona del dischetto nel titolo del device): salva tutto come preset
+di Live nella tua User Library.
 
 ---
 
@@ -100,8 +121,11 @@ Ogni sezione ha un interruttore nell'intestazione. Quando è spenta, le sue mano
 - **CHORD NOW**: la tastierina mostra in tempo reale le note che NEBBIA sta suonando.
 
 ### DICE — caso controllato
-- **RANDOMIZE**: sceglie prima un **carattere** a caso (DUB STAB, DEEP PAD, PLUCK, ORGAN, GLASS, RUMBLE, WORN,
-  GHOST, il nome appare nella sezione) e poi genera una patch nuova coerente con quel carattere.
+- **RANDOMIZE**: sceglie prima un **carattere** a caso, sempre scuro (DUB STAB, CONCRETE, DEEP CHORD,
+  SUBMERGED, TAPE GHOST, THROW, NIGHT DRONE, FOG STRINGS, il nome appare nella sezione), poi genera una
+  patch nuova coerente con quel carattere.
+  - Accordi solo scuri (minori, sus, quartali, m7/m9/m11, So What), scale solo Minor, Dorian, Phrygian e
+    Harmonic Minor, cutoff bassi ed eco che si scurisce.
   - Il cambio è radicale: inviluppi, filtro, oscillatori, eco, spazio, analog e accordo cambiano insieme.
   - Può accendere o spegnere eco, spazio, chorus e analog quando ha senso per quel carattere.
   - **Amount** decide quanto: basso = variazione della patch attuale, 100% = patch nuova.
@@ -140,7 +164,7 @@ Ogni sezione ha un interruttore nell'intestazione. Quando è spenta, le sue mano
 
 ## Tutti i parametri
 
-105 controlli, tutti automatizzabili, mappabili su MIDI/Push e modulabili.
+105 controlli del suono e del sequencer, tutti automatizzabili, mappabili su MIDI/Push e modulabili.
 
 | Sezione | Parametri |
 |---|---|
@@ -176,7 +200,8 @@ In `demo/` ci sono i render offline dello stesso DSP:
 | File | Cosa senti |
 |---|---|
 | `dub_stabs.mp3` | Il suono di default, stab in levare |
-| `randomize_tour.mp3` | 8 pressioni di RANDOMIZE, una per carattere: Dub Stab, Deep Pad, Pluck, Organ, Glass, Rumble, Worn, Ghost |
+| `presets_tour.mp3` | Gli 8 preset di fabbrica, ognuno col suo pattern del sequencer |
+| `randomize_tour.mp3` | 8 pressioni di RANDOMIZE, una per carattere scuro |
 | `seq_progression.mp3` | Il sequencer interno: D Dorian, un accordo per battuta |
 | `dice_stabs.mp3` | Lo stesso stab con il dado al 100%: ogni colpo cambia colore e rivolto |
 | `dorian_pads.mp3` | Modalità scala, glide e strum su un pad |
@@ -200,4 +225,5 @@ python3 test/preview_ui.py ui.html  # anteprima del pannello
 
 Il test `torture` porta tutti i parametri al massimo e verifica che l'uscita resti finita e limitata.
 `seq_play`, `seq_bars`, `seq_pos`, `seq_trans`, `dice`, `all_off` ed `echo_kill` verificano sequencer, dado e
-interruttori. `python3 test/random_tour.py` rende un giro di Randomize.
+interruttori. `python3 test/random_tour.py` rende un giro di Randomize, `python3 test/presets_tour.py` i preset
+di fabbrica con il loro centroide spettrale (tutti sotto 800 Hz).

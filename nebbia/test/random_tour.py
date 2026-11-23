@@ -21,6 +21,12 @@ def draw(nm, arch):
     _, ov, on = build.ARCHETYPES[arch]
     if curve == "coin":
         return int(r1 < on.get(nm, 0.5) * 10000)
+    if curve == "darkchord":
+        i = int(r1 / 10001 * len(build.DARK_CHORDS))
+        return i + (i >= 10) * 4
+    if curve == "darkharm":
+        i = int(r1 / 10001 * 6)
+        return (i >= 2) * (i - 1) + (i >= 5) * 3
     if curve == "spos":
         return (r1 >= 1500) * (2 * int(nm[6:]) - 1 + (r1 >= 4500))
     if curve == "semis":

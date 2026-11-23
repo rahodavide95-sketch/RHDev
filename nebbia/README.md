@@ -1,9 +1,8 @@
 # NEBBIA — living chord engine
 
-Strumento **Max for Live** per Ableton Live, pensato per la **dub techno underground**: suoni scuri,
-profondi, fatti di eco e di spazio.
-Una nota diventa un accordo, che puoi suonare dal piano roll, dalla tastiera o dal **sequencer interno**
-(4 step su una sequenza di 8 posizioni).
+Strumento **Max for Live** per Ableton Live, nato per la **dub techno underground** (suoni scuri, profondi,
+fatti di eco e di spazio) e con preset anche per **deep/minimal, ambient, intro morbide, drone e sperimentale**.
+Una nota diventa un accordo, che puoi suonare dal piano roll, dalla tastiera o dal **sequencer interno** a 8 step.
 L'accordo nasce da un generatore che fa voice leading e può tirare il dado. Passa per 6 voci analogiche che si
 comportano come un circuito vero, poi per un tape echo dub e infine per uno spazio le cui **corde simpatiche si
 riaccordano sull'accordo** che stai suonando.
@@ -42,18 +41,33 @@ in italiano cosa fa.
 
 ## Preset
 
-La colonna **PRESET** a sinistra:
+La colonna **PRESET** a sinistra è organizzata **per cartelle, per genere e stile**:
 
-- **Tendina**: i primi 8 sono i preset di fabbrica, tutti scuri:
-  Fog Stab, Concrete Dub, Deep Chord Pad, Submerged, Tape Ghost, Echo Throw, Night Drone, Strings In Fog.
-  Ognuno ha anche il suo pattern per il sequencer. Poi ci sono **User 1–8**, i tuoi.
-- **PREV / NEXT**: scorri i preset al volo.
-- **SAVE**: salva il suono attuale nello slot User scelto nel numerino accanto (1–8).
+1. **Cartella** (menu arancione): scegli il genere.
+2. **Preset** (menu sotto): scegli il suono, si carica subito.
+3. **PREV / NEXT**: scorri i preset della cartella al volo.
+
+| Cartella | Preset |
+|---|---|
+| **DUB TECHNO** | Fog Stab, Concrete Dub, Echo Throw, Submerged, Tape Ghost, Strings In Fog, Basement Chord, Rain On Steel |
+| **DEEP / MINIMAL** | Deep Minimal Stab, Velvet Chord, Late Night Keys, Pulse Chord, Smoke Organ, Shuffle Stab |
+| **AMBIENT** | Soft Horizon, Breathing Pad, Glass Haze, Slow Tide, Warm Blanket, Cloud Choir, Distant Lights |
+| **INTRO / SOFT** | First Light, Soft Pulse Intro, Morning Fog, Tape Lullaby, Gentle Swell, Low Hum Intro |
+| **DRONE** | Night Drone, Deep Ocean, Cathedral Low, Static Field, Endless Fifths |
+| **EXPERIMENTAL** | Broken Machine, Metal Strings, Runaway Echo, Random Colors, Self Oscillate, Glitch Strum, Phase Haunt |
+| **USER** | User 1–8: i tuoi |
+
+Ogni preset ha anche il suo pattern per il sequencer ed è **livellato in volume**: passando da uno all'altro non
+hai salti di livello.
+
+- **SAVE**: salva il suono attuale nello slot User scelto nel numerino accanto (1–8) e apre la cartella USER.
   I preset User restano salvati **dentro il progetto di Live**.
 - **EXPORT / IMPORT**: salva i tuoi preset User su un file e caricali in un altro progetto.
-- I preset non cambiano mai **Key**, **Volume**, l'accensione del SEQ e il suo Mode: quelli sono del tuo pezzo.
+- I preset non cambiano mai **Key** e l'accensione del SEQ: quelli sono del tuo pezzo.
 - I **lucchetti** proteggono le sezioni anche dai preset di fabbrica. Esempio: blocca SEQ e cambi suono senza
   perdere la tua sequenza.
+- Anche **RANDOMIZE segue la cartella**: scuro in Dub Techno e Deep/Minimal, morbido in Ambient e Intro,
+  lento in Drone, folle in Experimental.
 
 Puoi usare anche il salvataggio di Live (icona del dischetto nel titolo del device): salva tutto come preset
 di Live nella tua User Library.
@@ -94,19 +108,24 @@ Ogni sezione ha un interruttore nell'intestazione. Quando è spenta, le sue mano
 
 ## Le sezioni
 
-### SEQ — sequenza di 8 posizioni, 4 step, solo manopole
-- La sequenza ha **8 posizioni** e **4 step**. Ogni step ha tre manopole:
-  - **Pos**: in quale posizione suona (Off, 1–8).
-  - **Note**: ±1 semitono per scatto rispetto alla **Key** (0 = A2 se Key è A, +7 = una quinta sopra).
-    In modalità Trans parte dal tasto che tieni premuto.
-  - **Vel**: velocity.
-- Gli 8 LED mostrano la posizione che sta suonando.
-- **Rate**: durata di una posizione, da 1/16 a 2 battute.
-  - **1/8 con step su 2-4-6-8** = stab in levare su una battuta, il classico dub (è il default).
-  - **1 Bar, Length 4, step su 1-2-3-4** = progressione di 4 accordi, uno per battuta.
-- **Length** (1–8 posizioni), **Gate** (lunghezza della nota), **Offset** (spostamento fine), **Swing**
-  (ritarda le posizioni pari) e **Chance** (probabilità che uno step suoni: sotto 100% il pattern respira).
-- **RANDOM**: nuovo pattern (posizioni, note nella tua Key, velocity, Rate, Gate, Swing). Il suono non cambia.
+### SEQ — step sequencer a 8 step
+Come un sequencer hardware: **una colonna per step**, da sinistra a destra.
+
+| Riga | Cosa fa |
+|---|---|
+| LED | Lo step che sta suonando |
+| **1 … 8** | Accende lo step. **Massimo 4 accesi**: il quinto si rispegne da solo |
+| Manopola | La nota dello step, **±1 semitono per scatto** rispetto alla **Key** (0 = A2 se Key è A, +7 = una quinta sopra). In modalità Trans parte dal tasto che tieni premuto |
+| **ACC** | Accento: lo step suona più forte |
+
+Sotto, una sola riga di controlli:
+- **Mode**: Play (suona quando premi Play in Live) o Trans (suona mentre tieni un tasto).
+- **Rate**: durata di uno step, da 1/16 a 2 battute.
+  - **1/8 con 2-4-6-8 accesi** = stab in levare su una battuta, il classico dub (è il default).
+  - **1 Bar, Length 4, 1-2-3-4 accesi** = progressione di 4 accordi, uno per battuta.
+- **Length** (quanti step usa), **Gate** (lunghezza della nota), **Swing** (ritarda gli step pari) e
+  **Chance** (probabilità che uno step suoni: sotto 100% il pattern respira da solo).
+- **RANDOM**: nuovo pattern (step accesi, note nella tua Key, accenti, Rate, Gate, Swing). Il suono non cambia.
 - Segue il transport di Live con precisione al campione: niente jitter, sempre allineato alla battuta.
 
 ### CHORD — generatore di accordi con voice leading
@@ -121,11 +140,19 @@ Ogni sezione ha un interruttore nell'intestazione. Quando è spenta, le sue mano
 - **CHORD NOW**: la tastierina mostra in tempo reale le note che NEBBIA sta suonando.
 
 ### DICE — caso controllato
-- **RANDOMIZE**: sceglie prima un **carattere** a caso, sempre scuro (DUB STAB, CONCRETE, DEEP CHORD,
-  SUBMERGED, TAPE GHOST, THROW, NIGHT DRONE, FOG STRINGS, il nome appare nella sezione), poi genera una
-  patch nuova coerente con quel carattere.
-  - Accordi solo scuri (minori, sus, quartali, m7/m9/m11, So What), scale solo Minor, Dorian, Phrygian e
-    Harmonic Minor, cutoff bassi ed eco che si scurisce.
+- **RANDOMIZE**: sceglie prima un **carattere** a caso tra quelli della cartella preset in cui sei (il nome
+  appare nella sezione), poi genera una patch nuova coerente con quel carattere.
+
+  | Cartella | Caratteri |
+  |---|---|
+  | Dub Techno, Deep / Minimal | DUB STAB, CONCRETE, DEEP CHORD, SUBMERGED, TAPE GHOST, THROW |
+  | Ambient | SOFT PAD, SWELL, HAZE, FOG STRINGS |
+  | Intro / Soft | SOFT PAD, SWELL, HAZE |
+  | Drone | HAZE, FOG STRINGS, NIGHT DRONE |
+  | Experimental | BROKEN, METAL, RUNAWAY |
+  | User | tutti |
+  - Accordi casuali sempre scuri (minori, sus, quartali, m7/m9/m11, So What), scale solo Minor, Dorian,
+    Phrygian e Harmonic Minor.
   - Il cambio è radicale: inviluppi, filtro, oscillatori, eco, spazio, analog e accordo cambiano insieme.
   - Può accendere o spegnere eco, spazio, chorus e analog quando ha senso per quel carattere.
   - **Amount** decide quanto: basso = variazione della patch attuale, 100% = patch nuova.
@@ -168,7 +195,7 @@ Ogni sezione ha un interruttore nell'intestazione. Quando è spenta, le sue mano
 
 | Sezione | Parametri |
 |---|---|
-| SEQ | On, Mode (Play/Trans), Rate, Length, Gate, Offset, Swing, Chance, Random, Step 1–4: Pos / Note / Vel |
+| SEQ | On, Mode (Play/Trans), Rate, Length, Gate, Swing, Chance, Random, Step 1–8: On / Note / Accent |
 | CHORD | On, Harmony, Chord, Key, Voicing, Voices, Octave, Strum, Glide, Humanize, Bend |
 | DICE | On, Randomize, Reset, Amount, Lock ×7, Chance, Chord Dice |
 | VOICE | Analog, Shape, PW, PWM, PWM Rate, Osc 2, Detune, Sub, Air, Drift, Drift Rate, Age, Sag |
@@ -185,9 +212,11 @@ Maj7, Maj9, Dom9, m7b5, Fifths.
 
 ## Ricette veloci
 
-- **Stab classico (default)**: accendi SEQ, premi Play in Live. Automatizza Cutoff ed Echo Feedback.
+- **Stab classico (default)**: cartella Dub Techno, *Fog Stab*, accendi SEQ, premi Play in Live.
+  Automatizza Cutoff ed Echo Feedback.
+- **Intro morbida**: cartella Intro / Soft, *First Light*, poi apri piano piano il Cutoff.
 - **Fuga dub**: Echo Feedback oltre 100% per qualche battuta, High Cut basso, Wow alto.
-- **Progressione che si scrive da sola**: Harmony Dorian, SEQ Rate *1 Bar*, Length 4, Pos 1-2-3-4,
+- **Progressione che si scrive da sola**: Harmony Dorian, SEQ Rate *1 Bar*, Length 4, step 1-2-3-4 accesi,
   DICE Chance 30% su *Color*.
 - **Organo nella nebbia**: Voices 4, Attack 500 ms, Sustain 70%, Glide 200 ms, Strum 40 ms, Tune 80%, Strings 8 s.
 - **Macchina vecchia**: Age 80%, Drift 60%, Sag 70%, Air 25%.
@@ -200,8 +229,8 @@ In `demo/` ci sono i render offline dello stesso DSP:
 | File | Cosa senti |
 |---|---|
 | `dub_stabs.mp3` | Il suono di default, stab in levare |
-| `presets_tour.mp3` | Gli 8 preset di fabbrica, ognuno col suo pattern del sequencer |
-| `randomize_tour.mp3` | 8 pressioni di RANDOMIZE, una per carattere scuro |
+| `presets_tour.mp3` | Tutti i 39 preset di fabbrica, cartella per cartella, ognuno col suo pattern |
+| `randomize_tour.mp3` | Una pressione di RANDOMIZE per ognuno dei 14 caratteri |
 | `seq_progression.mp3` | Il sequencer interno: D Dorian, un accordo per battuta |
 | `dice_stabs.mp3` | Lo stesso stab con il dado al 100%: ogni colpo cambia colore e rivolto |
 | `dorian_pads.mp3` | Modalità scala, glide e strum su un pad |
@@ -225,5 +254,6 @@ python3 test/preview_ui.py ui.html  # anteprima del pannello
 
 Il test `torture` porta tutti i parametri al massimo e verifica che l'uscita resti finita e limitata.
 `seq_play`, `seq_bars`, `seq_pos`, `seq_trans`, `dice`, `all_off` ed `echo_kill` verificano sequencer, dado e
-interruttori. `python3 test/random_tour.py` rende un giro di Randomize, `python3 test/presets_tour.py` i preset
-di fabbrica con il loro centroide spettrale (tutti sotto 800 Hz).
+interruttori. `python3 test/random_tour.py` rende un giro di Randomize. `python3 test/presets_tour.py` rende i
+preset di fabbrica con centroide spettrale e loudness; con `--calibrate` riscrive `src/preset_levels.json` per
+livellarli.

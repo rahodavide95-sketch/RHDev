@@ -27,8 +27,10 @@ def draw(nm, arch):
     if curve == "darkharm":
         i = int(r1 / 10001 * 6)
         return (i >= 2) * (i - 1) + (i >= 5) * 3
-    if curve == "spos":
-        return (r1 >= 1500) * (2 * int(nm[6:]) - 1 + (r1 >= 4500))
+    if curve == "gate":
+        return int(r1 < build.SON_DENS[int(nm[5:]) - 1])
+    if curve == "acc":
+        return int(r1 < 3000)
     if curve == "semis":
         return (r1 >= 5000) * -2 + (r1 >= 6000) * 5 + (r1 >= 7000) * 2 + (r1 >= 8000) * 2 + (r1 >= 9000) * -12
     if any(nm in o for _, o, _ in build.ARCHETYPES):
@@ -45,6 +47,10 @@ def draw(nm, arch):
 scen, order = {}, []
 for ai, (name, _, _) in enumerate(build.ARCHETYPES):
     params = {nm: draw(nm, ai) for nm in build.RAND}
+    ons = [n for n in params if n.startswith("p_son")]
+    for n in ons[::-1]:  # the patch keeps at most 4 steps on
+        if sum(params[c] for c in ons) > build.MAXON and params[n]:
+            params[n] = 0
     params.update(p_seqon=0, p_harm=0 if ai % 2 == 0 else params["p_harm"])
     ev = []
     for b in range(4):  # bar 1: off-beat stabs

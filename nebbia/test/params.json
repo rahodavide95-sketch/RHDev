@@ -19,7 +19,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_seqmode",
@@ -38,13 +39,24 @@
    "Play",
    "Trans"
   ],
-  "rect": null,
-  "lrect": null,
+  "rect": [
+   130,
+   127,
+   52,
+   16
+  ],
+  "lrect": [
+   130,
+   113,
+   52,
+   13
+  ],
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_seqrate",
@@ -57,7 +69,7 @@
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
-  "col": 1,
+  "col": 0,
   "row": 0,
   "enum": [
    "1/16",
@@ -67,13 +79,24 @@
    "1 Bar",
    "2 Bar"
   ],
-  "rect": null,
-  "lrect": null,
+  "rect": [
+   186,
+   127,
+   48,
+   16
+  ],
+  "lrect": [
+   186,
+   113,
+   48,
+   13
+  ],
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_seqlen",
@@ -86,16 +109,22 @@
   "unit": 0,
   "exp": 1.0,
   "sec": "SEQ",
-  "col": 2,
+  "col": 0,
   "row": 0,
   "enum": null,
-  "rect": null,
+  "rect": [
+   238,
+   112,
+   40,
+   48
+  ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_sgate",
@@ -109,37 +138,21 @@
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
-  "row": 1,
+  "row": 0,
   "enum": null,
-  "rect": null,
+  "rect": [
+   280,
+   112,
+   40,
+   48
+  ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
- },
- {
-  "name": "p_soff",
-  "long": "Seq Offset",
-  "short": "Offset",
-  "kind": "dial",
-  "lo": 0,
-  "hi": 100,
-  "default": 0,
-  "unit": 5,
-  "exp": 1.0,
-  "sec": "SEQ",
-  "col": 1,
-  "row": 1,
-  "enum": null,
-  "rect": null,
-  "lrect": null,
-  "label": [
-   "OFF",
-   "ON"
-  ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_swing",
@@ -152,16 +165,22 @@
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
-  "col": 2,
-  "row": 1,
+  "col": 0,
+  "row": 0,
   "enum": null,
-  "rect": null,
+  "rect": [
+   322,
+   112,
+   40,
+   48
+  ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_schance",
@@ -175,56 +194,53 @@
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
-  "row": 2,
+  "row": 0,
   "enum": null,
-  "rect": null,
+  "rect": [
+   364,
+   112,
+   40,
+   48
+  ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
-  "name": "p_spos1",
-  "long": "Position 1",
-  "short": "Pos 1",
-  "kind": "enumdial",
+  "name": "p_son1",
+  "long": "Step 1 On",
+  "short": "1",
+  "kind": "toggle",
   "lo": 0,
-  "hi": 8,
-  "default": 2,
+  "hi": 1,
+  "default": 0,
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
-  "enum": [
-   "Off",
-   "1",
-   "2",
-   "3",
-   "4",
-   "5",
-   "6",
-   "7",
-   "8"
-  ],
+  "enum": null,
   "rect": [
-   278,
-   29,
-   44,
-   44
+   130,
+   31,
+   38,
+   16
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_snote1",
-  "long": "Note 1",
+  "long": "Step 1 Note",
   "short": "Note 1",
   "kind": "int",
   "lo": -24,
@@ -237,85 +253,80 @@
   "row": 0,
   "enum": null,
   "rect": [
-   278,
-   75,
-   44,
-   44
+   130,
+   50,
+   38,
+   40
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {
+   "showname": 0
+  }
  },
  {
-  "name": "p_svel1",
-  "long": "Velocity 1",
-  "short": "Vel 1",
-  "kind": "dial",
-  "lo": 1,
-  "hi": 127,
-  "default": 100,
-  "unit": 0,
+  "name": "p_sacc1",
+  "long": "Step 1 Accent",
+  "short": "ACC",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 0,
+  "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
   "enum": null,
   "rect": [
-   278,
-   121,
-   44,
-   44
+   130,
+   93,
+   38,
+   13
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
-  "name": "p_spos2",
-  "long": "Position 2",
-  "short": "Pos 2",
-  "kind": "enumdial",
+  "name": "p_son2",
+  "long": "Step 2 On",
+  "short": "2",
+  "kind": "toggle",
   "lo": 0,
-  "hi": 8,
-  "default": 4,
+  "hi": 1,
+  "default": 1,
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
-  "enum": [
-   "Off",
-   "1",
-   "2",
-   "3",
-   "4",
-   "5",
-   "6",
-   "7",
-   "8"
-  ],
+  "enum": null,
   "rect": [
-   324,
-   29,
-   44,
-   44
+   171,
+   31,
+   38,
+   16
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_snote2",
-  "long": "Note 2",
+  "long": "Step 2 Note",
   "short": "Note 2",
   "kind": "int",
   "lo": -24,
@@ -328,85 +339,80 @@
   "row": 0,
   "enum": null,
   "rect": [
-   324,
-   75,
-   44,
-   44
+   171,
+   50,
+   38,
+   40
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {
+   "showname": 0
+  }
  },
  {
-  "name": "p_svel2",
-  "long": "Velocity 2",
-  "short": "Vel 2",
-  "kind": "dial",
-  "lo": 1,
-  "hi": 127,
-  "default": 88,
-  "unit": 0,
+  "name": "p_sacc2",
+  "long": "Step 2 Accent",
+  "short": "ACC",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 0,
+  "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
   "enum": null,
   "rect": [
-   324,
-   121,
-   44,
-   44
+   171,
+   93,
+   38,
+   13
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
-  "name": "p_spos3",
-  "long": "Position 3",
-  "short": "Pos 3",
-  "kind": "enumdial",
+  "name": "p_son3",
+  "long": "Step 3 On",
+  "short": "3",
+  "kind": "toggle",
   "lo": 0,
-  "hi": 8,
-  "default": 6,
+  "hi": 1,
+  "default": 0,
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
-  "enum": [
-   "Off",
-   "1",
-   "2",
-   "3",
-   "4",
-   "5",
-   "6",
-   "7",
-   "8"
-  ],
+  "enum": null,
   "rect": [
-   370,
-   29,
-   44,
-   44
+   212,
+   31,
+   38,
+   16
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_snote3",
-  "long": "Note 3",
+  "long": "Step 3 Note",
   "short": "Note 3",
   "kind": "int",
   "lo": -24,
@@ -419,85 +425,80 @@
   "row": 0,
   "enum": null,
   "rect": [
-   370,
-   75,
-   44,
-   44
+   212,
+   50,
+   38,
+   40
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {
+   "showname": 0
+  }
  },
  {
-  "name": "p_svel3",
-  "long": "Velocity 3",
-  "short": "Vel 3",
-  "kind": "dial",
-  "lo": 1,
-  "hi": 127,
-  "default": 112,
-  "unit": 0,
+  "name": "p_sacc3",
+  "long": "Step 3 Accent",
+  "short": "ACC",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 0,
+  "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
   "enum": null,
   "rect": [
-   370,
-   121,
-   44,
-   44
+   212,
+   93,
+   38,
+   13
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
-  "name": "p_spos4",
-  "long": "Position 4",
-  "short": "Pos 4",
-  "kind": "enumdial",
+  "name": "p_son4",
+  "long": "Step 4 On",
+  "short": "4",
+  "kind": "toggle",
   "lo": 0,
-  "hi": 8,
-  "default": 8,
+  "hi": 1,
+  "default": 1,
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
-  "enum": [
-   "Off",
-   "1",
-   "2",
-   "3",
-   "4",
-   "5",
-   "6",
-   "7",
-   "8"
-  ],
+  "enum": null,
   "rect": [
-   416,
-   29,
-   44,
-   44
+   253,
+   31,
+   38,
+   16
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_snote4",
-  "long": "Note 4",
+  "long": "Step 4 Note",
   "short": "Note 4",
   "kind": "int",
   "lo": -24,
@@ -510,44 +511,392 @@
   "row": 0,
   "enum": null,
   "rect": [
-   416,
-   75,
-   44,
-   44
+   253,
+   50,
+   38,
+   40
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {
+   "showname": 0
+  }
  },
  {
-  "name": "p_svel4",
-  "long": "Velocity 4",
-  "short": "Vel 4",
-  "kind": "dial",
-  "lo": 1,
-  "hi": 127,
-  "default": 94,
-  "unit": 0,
+  "name": "p_sacc4",
+  "long": "Step 4 Accent",
+  "short": "ACC",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 0,
+  "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
   "enum": null,
   "rect": [
-   416,
-   121,
-   44,
-   44
+   253,
+   93,
+   38,
+   13
   ],
   "lrect": null,
   "label": [
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
+ },
+ {
+  "name": "p_son5",
+  "long": "Step 5 On",
+  "short": "5",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 0,
+  "unit": 5,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   294,
+   31,
+   38,
+   16
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {}
+ },
+ {
+  "name": "p_snote5",
+  "long": "Step 5 Note",
+  "short": "Note 5",
+  "kind": "int",
+  "lo": -24,
+  "hi": 24,
+  "default": 0,
+  "unit": 7,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   294,
+   50,
+   38,
+   40
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {
+   "showname": 0
+  }
+ },
+ {
+  "name": "p_sacc5",
+  "long": "Step 5 Accent",
+  "short": "ACC",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 0,
+  "unit": 5,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   294,
+   93,
+   38,
+   13
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {}
+ },
+ {
+  "name": "p_son6",
+  "long": "Step 6 On",
+  "short": "6",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 1,
+  "unit": 5,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   335,
+   31,
+   38,
+   16
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {}
+ },
+ {
+  "name": "p_snote6",
+  "long": "Step 6 Note",
+  "short": "Note 6",
+  "kind": "int",
+  "lo": -24,
+  "hi": 24,
+  "default": 0,
+  "unit": 7,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   335,
+   50,
+   38,
+   40
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {
+   "showname": 0
+  }
+ },
+ {
+  "name": "p_sacc6",
+  "long": "Step 6 Accent",
+  "short": "ACC",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 0,
+  "unit": 5,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   335,
+   93,
+   38,
+   13
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {}
+ },
+ {
+  "name": "p_son7",
+  "long": "Step 7 On",
+  "short": "7",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 0,
+  "unit": 5,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   376,
+   31,
+   38,
+   16
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {}
+ },
+ {
+  "name": "p_snote7",
+  "long": "Step 7 Note",
+  "short": "Note 7",
+  "kind": "int",
+  "lo": -24,
+  "hi": 24,
+  "default": 0,
+  "unit": 7,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   376,
+   50,
+   38,
+   40
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {
+   "showname": 0
+  }
+ },
+ {
+  "name": "p_sacc7",
+  "long": "Step 7 Accent",
+  "short": "ACC",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 0,
+  "unit": 5,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   376,
+   93,
+   38,
+   13
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {}
+ },
+ {
+  "name": "p_son8",
+  "long": "Step 8 On",
+  "short": "8",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 1,
+  "unit": 5,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   417,
+   31,
+   38,
+   16
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {}
+ },
+ {
+  "name": "p_snote8",
+  "long": "Step 8 Note",
+  "short": "Note 8",
+  "kind": "int",
+  "lo": -24,
+  "hi": 24,
+  "default": 0,
+  "unit": 7,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   417,
+   50,
+   38,
+   40
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {
+   "showname": 0
+  }
+ },
+ {
+  "name": "p_sacc8",
+  "long": "Step 8 Accent",
+  "short": "ACC",
+  "kind": "toggle",
+  "lo": 0,
+  "hi": 1,
+  "default": 0,
+  "unit": 5,
+  "exp": 1.0,
+  "sec": "SEQ",
+  "col": 0,
+  "row": 0,
+  "enum": null,
+  "rect": [
+   417,
+   93,
+   38,
+   13
+  ],
+  "lrect": null,
+  "label": [
+   "OFF",
+   "ON"
+  ],
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_harm",
@@ -578,7 +927,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_chord",
@@ -617,7 +967,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_key",
@@ -652,7 +1003,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_voicing",
@@ -683,7 +1035,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_notes",
@@ -705,7 +1058,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_oct",
@@ -727,7 +1081,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_strum",
@@ -749,7 +1104,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_glide",
@@ -771,7 +1127,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_human",
@@ -793,7 +1150,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_bendr",
@@ -815,7 +1173,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_shape",
@@ -837,7 +1196,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_pw",
@@ -859,7 +1219,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_pwm",
@@ -881,7 +1242,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_pwmrate",
@@ -903,7 +1265,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_osc2",
@@ -925,7 +1288,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_detune",
@@ -947,7 +1311,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_sub",
@@ -969,7 +1334,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_air",
@@ -991,7 +1357,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_drift",
@@ -1013,7 +1380,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_driftrate",
@@ -1035,7 +1403,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_age",
@@ -1057,7 +1426,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_sag",
@@ -1079,7 +1449,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_cutoff",
@@ -1101,7 +1472,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_reso",
@@ -1123,7 +1495,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_drive",
@@ -1145,7 +1518,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_slope",
@@ -1170,7 +1544,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_fenv",
@@ -1192,7 +1567,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_ktrk",
@@ -1214,7 +1590,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_mwcut",
@@ -1236,7 +1613,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_lforate",
@@ -1258,7 +1636,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_lfoamt",
@@ -1280,7 +1659,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_lfowave",
@@ -1307,7 +1687,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_fa",
@@ -1329,7 +1710,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_fd",
@@ -1351,7 +1733,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_fs",
@@ -1373,7 +1756,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_fr",
@@ -1395,7 +1779,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_aa",
@@ -1417,7 +1802,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_ad",
@@ -1439,7 +1825,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_as",
@@ -1461,7 +1848,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_ar",
@@ -1483,7 +1871,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_velsens",
@@ -1505,7 +1894,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_velfilt",
@@ -1527,7 +1917,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_etime",
@@ -1558,7 +1949,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_efb",
@@ -1580,7 +1972,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_emix",
@@ -1602,7 +1995,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_elocut",
@@ -1624,7 +2018,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_ehicut",
@@ -1646,7 +2041,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_edrive",
@@ -1668,7 +2064,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_wow",
@@ -1690,7 +2087,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_flutter",
@@ -1712,7 +2110,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_espread",
@@ -1734,7 +2133,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_rdecay",
@@ -1756,7 +2156,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_rsize",
@@ -1778,7 +2179,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_rmix",
@@ -1800,7 +2202,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_tune",
@@ -1822,7 +2225,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_sdecay",
@@ -1844,7 +2248,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_damp",
@@ -1866,7 +2271,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_rlocut",
@@ -1888,7 +2294,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_diff",
@@ -1910,7 +2317,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_rmod",
@@ -1932,7 +2340,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_chorus",
@@ -1954,7 +2363,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_crate",
@@ -1976,7 +2386,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_cdepth",
@@ -1998,7 +2409,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_width",
@@ -2020,7 +2432,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_vol",
@@ -2042,7 +2455,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_cchance",
@@ -2069,7 +2483,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_cdice",
@@ -2106,7 +2521,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_diceon",
@@ -2131,7 +2547,8 @@
   "dims": [
    "p_cchance",
    "p_cdice"
-  ]
+  ],
+  "ui": {}
  },
  {
   "name": "p_chordon",
@@ -2160,7 +2577,8 @@
    "p_voicing",
    "p_notes",
    "p_strum"
-  ]
+  ],
+  "ui": {}
  },
  {
   "name": "p_analogon",
@@ -2187,7 +2605,8 @@
    "p_driftrate",
    "p_age",
    "p_sag"
-  ]
+  ],
+  "ui": {}
  },
  {
   "name": "p_filton",
@@ -2209,7 +2628,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_echoon",
@@ -2231,7 +2651,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_spaceon",
@@ -2253,7 +2674,8 @@
    "OFF",
    "ON"
   ],
-  "dims": null
+  "dims": null,
+  "ui": {}
  },
  {
   "name": "p_choron",
@@ -2279,6 +2701,7 @@
    "p_chorus",
    "p_crate",
    "p_cdepth"
-  ]
+  ],
+  "ui": {}
  }
 ]

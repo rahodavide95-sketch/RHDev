@@ -154,8 +154,9 @@ SCENARIOS.seq_play = { seconds: 6, transport: true, params: { p_seqon: 1, p_seqm
 // progression: one chord per bar, D dorian, steps D F G A
 SCENARIOS.seq_bars = {
   seconds: 10, transport: true, events: [],
-  params: { p_seqon: 1, p_seqmode: 0, p_seqrate: 4, p_seqlen: 4, p_sgate: 90, p_spos1: 1, p_spos2: 2, p_spos3: 3,
-    p_spos4: 4, p_harm: 2, p_key: 2, p_snote1: 0, p_snote2: 3, p_snote3: 5, p_snote4: 7, p_as: 60, p_ad: 1500, p_glide: 150 },
+  params: { p_seqon: 1, p_seqmode: 0, p_seqrate: 4, p_seqlen: 4, p_sgate: 90, p_son1: 1, p_son2: 1, p_son3: 1,
+    p_son4: 1, p_son5: 0, p_son6: 0, p_son7: 0, p_son8: 0, p_harm: 2, p_key: 2, p_snote1: 0, p_snote2: 3, p_snote3: 5,
+    p_snote4: 7, p_as: 60, p_ad: 1500, p_glide: 150 },
 };
 // transpose mode: hold D3 from beat 2 to beat 6 -> pattern transposed by +2, silent otherwise
 SCENARIOS.seq_trans = {
@@ -165,11 +166,11 @@ SCENARIOS.seq_trans = {
 // chord dice at 100 %: every stab rolls colour + voicing
 SCENARIOS.dice = { seconds: 9, params: { p_cchance: 100, p_cdice: 2 }, events: stabs([57, 57]) };
 
-// steps on positions 1, 3, 6, 8 with +0, +3, +5, -2 semitones from the Key (A): A, C, D, G
+// steps 1, 3, 6, 8 on with +0, +3, +5, -2 semitones from the Key (A): A, C, D, G; accent on step 6
 SCENARIOS.seq_pos = {
   seconds: 2.1, transport: true, events: [],
-  params: { p_seqon: 1, p_spos1: 1, p_spos2: 3, p_spos3: 6, p_spos4: 8, p_snote1: 0, p_snote2: 3, p_snote3: 5,
-    p_snote4: -2, p_chordon: 0 },
+  params: { p_seqon: 1, p_son1: 1, p_son2: 0, p_son3: 1, p_son4: 0, p_son5: 0, p_son6: 1, p_son7: 0, p_son8: 1,
+    p_snote1: 0, p_snote3: 3, p_snote6: 5, p_snote8: -2, p_sacc6: 1, p_chordon: 0 },
 };
 // every section switched off: single notes, no filter, no echo, no space, no chorus, no analog
 SCENARIOS.all_off = {

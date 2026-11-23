@@ -34,7 +34,7 @@ for x in d["boxes"]:
     elif mc == "live.dial":
         lo, hi, v = vo["parameter_mmin"], vo["parameter_mmax"], vo["parameter_initial"][0]
         t = ((v - lo) / (hi - lo)) ** (1 / vo.get("parameter_exponent", 1)) if hi > lo else 0
-        cx, cy, r = X + w / 2, Y + 26, 11
+        cx, cy, r = X + w / 2, Y + (h / 2 if b.get("showname") == 0 else 26), 11 if h >= 44 else 9
         a0, a1, ae = math.radians(135), math.radians(135 + 270 * t), math.radians(405)
 
         def pt(a):
@@ -56,9 +56,23 @@ for x in d["boxes"]:
         val = ("%g" % round(v, 2)) + unit
         if vo.get("parameter_unitstyle") == 8:
             val = "%s%d" % (NAMES[int(v) % 12], int(v) // 12 - 2)
-        for yy, txt in [(Y + 9, vo["parameter_shortname"]), (Y + 47, val)]:
+        if vo.get("parameter_unitstyle") == 7:
+            val = ("%+d st" % int(v)) if int(v) else "0 st"
+        rows = [(Y + h - 1, val)] if b.get("showname") == 0 else [(Y + 9, vo["parameter_shortname"]), (Y + h - 1, val)]
+        for yy, txt in rows:
             els.append('<text x="%s" y="%s" font-size="8.5" text-anchor="middle" fill="%s" '
                        'font-family="Inter,Arial">%s</text>' % (cx, yy, col(b["textcolor"]), txt))
+    elif mc == "umenu":
+        first = None
+        for bb in d["boxes"]:
+            t = bb["box"].get("text", "")
+            if bb["box"]["maxclass"] == "message" and t.startswith("clear, append "):
+                first = t.split(", ")[1][len("append "):]
+                break
+        els.append('<rect x="%s" y="%s" width="%s" height="%s" rx="2" fill="%s"/>' % (X, Y, w, h, col(b["bgcolor"])))
+        els.append('<text x="%s" y="%s" font-size="9.5" fill="%s" font-family="Inter,Arial">%s</text>'
+                   % (X + 4, Y + h - 5, col(b["textcolor"]), first or ""))
+        els.append('<path d="M%s,%s l5,0 l-2.5,4 z" fill="%s"/>' % (X + w - 9, Y + 7, col(b["color"])))
     elif mc == "live.menu":
         els.append('<rect x="%s" y="%s" width="%s" height="%s" rx="2" fill="%s"/>'
                    % (X, Y, w, h, col(b["activebgcolor"])))

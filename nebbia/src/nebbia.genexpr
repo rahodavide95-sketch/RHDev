@@ -89,7 +89,7 @@ chordiv(c, k) {
 		r = ((k < 0.5) ? 0 : ((k < 1.5) ? 3 : ((k < 2.5) ? 6 : ((k < 3.5) ? 10 : ((k < 4.5) ? 12 : 15)))));
 	}
 	else {
-		r = ((k < 0.5) ? 0 : ((k < 1.5) ? 7 : ((k < 2.5) ? 12 : ((k < 3.5) ? 19 : ((k < 4.5) ? 12 : 19)))));
+		r = ((k < 0.5) ? 0 : ((k < 1.5) ? 7 : ((k < 2.5) ? 14 : ((k < 3.5) ? 21 : ((k < 4.5) ? 12 : 19)))));
 	}
 	return r;
 }
@@ -129,6 +129,34 @@ edivs(i) {
 	return ((i < 0.5) ? 0.25 : ((i < 1.5) ? 0.3333333 : ((i < 2.5) ? 0.5 : ((i < 3.5) ? 0.75 : ((i < 4.5) ? 0.6666667 : ((i < 5.5) ? 1 : ((i < 6.5) ? 1.5 : 2)))))));
 }
 
+// chord families used by the dice
+fammin(i) {
+	return ((i < 0.5) ? 0 : ((i < 1.5) ? 1 : ((i < 2.5) ? 2 : ((i < 3.5) ? 3 : ((i < 4.5) ? 4 : ((i < 5.5) ? 5 : ((i < 6.5) ? 6 : ((i < 7.5) ? 7 : ((i < 8.5) ? 8 : ((i < 9.5) ? 9 : 15))))))))));
+}
+
+fammaj(i) {
+	return ((i < 0.5) ? 10 : ((i < 1.5) ? 11 : ((i < 2.5) ? 12 : ((i < 3.5) ? 13 : ((i < 4.5) ? 7 : ((i < 5.5) ? 8 : ((i < 6.5) ? 6 : 15)))))));
+}
+
+Param p_seqmode(0);
+Param p_seqrate(2);
+Param p_seqlen(4);
+Param p_sgate(50);
+Param p_soff(50);
+Param p_swing(0);
+Param p_schance(100);
+Param p_son1(1);
+Param p_snote1(57);
+Param p_svel1(100);
+Param p_son2(1);
+Param p_snote2(57);
+Param p_svel2(88);
+Param p_son3(1);
+Param p_snote3(57);
+Param p_svel3(112);
+Param p_son4(1);
+Param p_snote4(57);
+Param p_svel4(94);
 Param p_harm(0);
 Param p_chord(1);
 Param p_key(9);
@@ -194,6 +222,8 @@ Param p_crate(0.5);
 Param p_cdepth(50);
 Param p_width(60);
 Param p_vol(-3);
+Param p_cchance(0);
+Param p_cdice(2);
 Param p_root(60);
 Param p_vel(100);
 Param p_gate(0);
@@ -201,6 +231,8 @@ Param p_trig(0);
 Param p_bend(64);
 Param p_modw(0);
 Param p_bpm(120);
+Param p_playing(0);
+Param p_songbeat(0);
 History h_s_cut(9.2288187);
 History h_s_res(0.3);
 History h_s_drv(0.3);
@@ -220,6 +252,15 @@ History h_lsm(0);
 History h_gdp(0.37);
 History h_gdt(0);
 History h_gdv(0);
+History h_bph(0);
+History h_bint(0);
+History h_sbeat(0);
+History h_lastk(-1);
+History h_scnt(0);
+History h_sgt(0);
+History h_src(0);
+History h_rootin(60);
+History h_velin(100);
 History h_trig(0);
 History h_st(0);
 History h_harm(0);
@@ -488,8 +529,69 @@ if (gdp >= 1) {
 gdv = h_gdv + (gdt - h_gdv) * (1 - exp(-0.45 / sr));
 
 // ================= trigger & chord brain =================
-trig = p_trig != h_trig;
-gon = p_gate > 0.5;
+// ---- 4-step sequencer, locked to Live's beat (in1 carries plugphasor~)
+smode = floor(p_seqmode + 0.5);
+mtrig = p_trig != h_trig;
+mgate = p_gate > 0.5;
+bph = clamp(in1, 0, 1);
+bint = h_bint + (bph < h_bph - 0.5);
+if (p_songbeat != h_sbeat) {
+	bint = floor(p_songbeat - bph + 0.5);
+}
+sbpm = clamp(p_bpm, 20, 999);
+slb = ((floor(p_seqrate + 0.5) < 0.5) ? 0.25 : ((floor(p_seqrate + 0.5) < 1.5) ? 0.5 : ((floor(p_seqrate + 0.5) < 2.5) ? 1 : ((floor(p_seqrate + 0.5) < 3.5) ? 2 : ((floor(p_seqrate + 0.5) < 4.5) ? 4 : 8)))));
+slen = clamp(floor(p_seqlen + 0.5), 1, 4);
+su = (bint + bph) / slb - clamp(p_soff, 0, 100) * 0.01;
+kk = floor(su);
+sfr = su - kk;
+stp = kk - slen * floor(kk / slen);
+srun = (smode > 0.5) * (p_playing > 0.5) * ((smode < 1.5) + mgate > 0);
+sodd = stp - 2 * floor(stp * 0.5);
+sdl = (sodd > 0.5) * clamp(p_swing, 0, 100) * 0.005;
+sready = (kk != h_lastk) * (sfr >= sdl) * (sfr < sdl + 0.5);
+lastk = -1;
+if (srun > 0) {
+	lastk = (sready > 0) ? kk : h_lastk;
+}
+strig = 0;
+if (srun * sready > 0) {
+	if (((stp < 0.5) ? p_son1 : ((stp < 1.5) ? p_son2 : ((stp < 2.5) ? p_son3 : p_son4))) > 0.5) {
+		if ((noise() * 0.5 + 0.5) < clamp(p_schance, 0, 100) * 0.01) {
+			strig = 1;
+		}
+	}
+}
+snote = ((stp < 0.5) ? p_snote1 : ((stp < 1.5) ? p_snote2 : ((stp < 2.5) ? p_snote3 : p_snote4))) + ((smode > 1.5) ? (floor(p_root + 0.5) - 60) : 0);
+svel = ((stp < 0.5) ? p_svel1 : ((stp < 1.5) ? p_svel2 : ((stp < 2.5) ? p_svel3 : p_svel4)));
+scnt = min(h_scnt + 1, 100000000);
+sgt = h_sgt;
+if (strig > 0) {
+	scnt = 0;
+	sgt = 1;
+}
+if (scnt >= clamp(p_sgate, 1, 100) * 0.01 * slb * 60 / sbpm * sr) {
+	sgt = 0;
+}
+if (srun < 0.5) {
+	sgt = 0;
+}
+mt = mtrig * (smode < 1.5);
+src = h_src;
+rootin = h_rootin;
+velin = h_velin;
+if (mt > 0) {
+	src = 0;
+	rootin = p_root;
+	velin = p_vel;
+}
+if (strig > 0) {
+	src = 1;
+	rootin = snote;
+	velin = svel;
+}
+
+trig = (mt + strig) > 0;
+gon = (src > 0.5) ? sgt : mgate * (smode < 1.5);
 st = min(h_st + 1, 100000000);
 if (trig > 0) {
 	st = 0;
@@ -518,9 +620,26 @@ if (trig + chg > 0) {
 		rbot = h_cbot;
 		rvalid = h_cvalid;
 	}
-	root = floor(p_root + 0.5) + 12 * floor(p_oct + 0.5);
+	dz = 0;
+	if (trig > 0) {
+		dz = (noise() * 0.5 + 0.5) < clamp(p_cchance, 0, 100) * 0.01;
+	}
+	dmd = floor(p_cdice + 0.5);
+	dcol = dz * (dmd != 1);
+	dvoi = dz * (dmd != 0);
+	dwild = dz * (dmd > 2.5);
+	rc = noise() * 0.5 + 0.5;
+	ro = noise();
+	rv = noise() * 0.5 + 0.5;
+	root = floor(rootin + 0.5) + 12 * floor(p_oct + 0.5);
+	if (dvoi > 0) {
+		root = root - 12 * (ro < -0.7);
+	}
 	harm = floor(p_harm + 0.5);
 	nreq = clamp(floor(p_notes + 0.5), 2, 6);
+	if (dcol * (harm > 0.5) > 0) {
+		nreq = 3 + min(floor(rc * 4), 3);
+	}
 	n = nreq;
 	a0 = root;
 	a1 = root;
@@ -530,6 +649,17 @@ if (trig + chg > 0) {
 	a5 = root;
 	if (harm < 0.5) {
 		cid = clamp(floor(p_chord + 0.5), 0, 15);
+		if (dcol > 0) {
+			if (dwild > 0) {
+				cid = min(floor(rc * 16), 15);
+			}
+			else if ((cid > 9.5) * (cid < 13.5) > 0) {
+				cid = fammaj(min(floor(rc * 8), 7));
+			}
+			else {
+				cid = fammin(min(floor(rc * 11), 10));
+			}
+		}
 		n = min(chordsize(cid), nreq);
 		a0 = root + chordiv(cid, 0);
 		a1 = root + chordiv(cid, 1);
@@ -552,10 +682,16 @@ if (trig + chg > 0) {
 		a5 = base + sdeg(sid, deg + 10);
 	}
 	vm = clamp(floor(p_voicing + 0.5), 0, 7);
+	if (dvoi > 0) {
+		vm = min(floor(rv * 6), 5);
+	}
 	jj = 0;
 	oo = 0;
 	if ((vm > 0.5) * (vm < 3.5) > 0) {
 		jj = min(vm, n - 1);
+		if (dvoi * (jj * 2 > n) > 0) {
+			oo = -12;
+		}
 	}
 	if (vm > 5.5) {
 		asum = a0 + a1 + a2 * (n > 2) + a3 * (n > 3) + a4 * (n > 4) + a5 * (n > 5);
@@ -886,7 +1022,7 @@ if (go_0 * (h_ae_0 < 0.001) > 0) {
 }
 vl_0 = h_vl_0;
 if (go_0 > 0) {
-	vl_0 = clamp(p_vel / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
+	vl_0 = clamp(velin / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
 }
 vA_0 = 1 - vsens + vsens * vl_0;
 vF_0 = 1 - vfs + vfs * vl_0;
@@ -1018,7 +1154,7 @@ if (go_1 * (h_ae_1 < 0.001) > 0) {
 }
 vl_1 = h_vl_1;
 if (go_1 > 0) {
-	vl_1 = clamp(p_vel / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
+	vl_1 = clamp(velin / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
 }
 vA_1 = 1 - vsens + vsens * vl_1;
 vF_1 = 1 - vfs + vfs * vl_1;
@@ -1144,7 +1280,7 @@ if (go_2 * (h_ae_2 < 0.001) > 0) {
 }
 vl_2 = h_vl_2;
 if (go_2 > 0) {
-	vl_2 = clamp(p_vel / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
+	vl_2 = clamp(velin / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
 }
 vA_2 = 1 - vsens + vsens * vl_2;
 vF_2 = 1 - vfs + vfs * vl_2;
@@ -1270,7 +1406,7 @@ if (go_3 * (h_ae_3 < 0.001) > 0) {
 }
 vl_3 = h_vl_3;
 if (go_3 > 0) {
-	vl_3 = clamp(p_vel / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
+	vl_3 = clamp(velin / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
 }
 vA_3 = 1 - vsens + vsens * vl_3;
 vF_3 = 1 - vfs + vfs * vl_3;
@@ -1396,7 +1532,7 @@ if (go_4 * (h_ae_4 < 0.001) > 0) {
 }
 vl_4 = h_vl_4;
 if (go_4 > 0) {
-	vl_4 = clamp(p_vel / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
+	vl_4 = clamp(velin / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
 }
 vA_4 = 1 - vsens + vsens * vl_4;
 vF_4 = 1 - vfs + vfs * vl_4;
@@ -1522,7 +1658,7 @@ if (go_5 * (h_ae_5 < 0.001) > 0) {
 }
 vl_5 = h_vl_5;
 if (go_5 > 0) {
-	vl_5 = clamp(p_vel / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
+	vl_5 = clamp(velin / 127, 0, 1) * (1 - hum * 0.25 * (noise() * 0.5 + 0.5));
 }
 vA_5 = 1 - vsens + vsens * vl_5;
 vF_5 = 1 - vfs + vfs * vl_5;
@@ -1665,7 +1801,7 @@ er2 = h_er2 + (er1 - h_er2) * elc;
 edg = 0.3 + clamp(p_edrive, 0, 100) * 0.03;
 etl = tanh(el2 * edg) / edg;
 etr = tanh(er2 * edg) / edg;
-ein = (xL + xR) * 0.5 + in1;
+ein = (xL + xR) * 0.5;
 edL.write(ein + s_efb * (etl * (1 - pp) + etr * pp));
 edR.write(ein * (1 - pp) + s_efb * (etr * (1 - pp) + etl * pp));
 
@@ -1818,6 +1954,13 @@ dyl = ml - h_dxl + 0.9993 * h_dyl;
 dyr = mr - h_dxr + 0.9993 * h_dyr;
 out1 = sclip(dyl * s_vol);
 out2 = sclip(dyr * s_vol);
+out3 = (0 < nn) ? q0 : -1;
+out4 = (1 < nn) ? q1 : -1;
+out5 = (2 < nn) ? q2 : -1;
+out6 = (3 < nn) ? q3 : -1;
+out7 = (4 < nn) ? q4 : -1;
+out8 = (5 < nn) ? q5 : -1;
+out9 = (srun > 0) ? stp : -1;
 
 // ================= state =================
 h_s_cut = s_cut;
@@ -1839,6 +1982,15 @@ h_lsm = lsm;
 h_gdp = gdp;
 h_gdt = gdt;
 h_gdv = gdv;
+h_bph = bph;
+h_bint = bint;
+h_sbeat = p_songbeat;
+h_lastk = lastk;
+h_scnt = scnt;
+h_sgt = sgt;
+h_src = src;
+h_rootin = rootin;
+h_velin = velin;
 h_trig = p_trig;
 h_st = st;
 h_harm = p_harm;

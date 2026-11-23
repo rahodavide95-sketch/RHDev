@@ -18,7 +18,16 @@ function render(sc) {
   const ev = sc.events.slice().sort((a, b) => a.t - b.t);
   let ei = 0, trig = 0, root = -1, bad = 0;
   const chords = [];
+  const bpm = sc.bpm || 120;
+  const startBeat = sc.startBeat || 0;
+  let lastSt = -1;
   for (let n = 0; n < N; n++) {
+    if (sc.transport) { // emulate plugphasor~ + live.observer is_playing / current_song_time
+      const beats = startBeat + n / SR * bpm / 60;
+      sim.P.in1 = beats - Math.floor(beats);
+      sim.P.p_playing = 1;
+      if (n % 2400 === 0) sim.P.p_songbeat = beats;
+    }
     if (n % BLOCK === 0) {
       const t = n / SR;
       while (ei < ev.length && ev[ei].t <= t) {
@@ -26,7 +35,7 @@ function render(sc) {
         if (e.type === 'on') {
           sim.P.p_root = e.note; sim.P.p_vel = e.vel || 100; sim.P.p_gate = 1;
           trig = (trig % 9999) + 1; sim.P.p_trig = trig; root = e.note;
-          chords.push({ t, note: e.note, at: n + BLOCK * 2 });
+
         } else if (e.type === 'off') {
           if (e.note === root) sim.P.p_gate = 0;
         } else if (e.type === 'param') {
@@ -35,6 +44,9 @@ function render(sc) {
       }
     }
     sim.perform();
+    const st = sim.peek('h_st');
+    if (st === 0 && lastSt !== 0) chords.push({ t: n / SR, note: sim.peek('h_rootin'), at: n + BLOCK * 2 });
+    lastSt = st;
     const o = sim.out;
     if (!Number.isFinite(o[0]) || !Number.isFinite(o[1])) bad++;
     L[n] = o[0]; R[n] = o[1];
@@ -82,7 +94,7 @@ function stats(name, r) {
     `DC ${(dc / (2 * L.length)).toExponential(1)}, L/R correlation ${(corr / Math.sqrt(el * er + 1e-30)).toFixed(2)}`);
   console.log('  RMS per second (dB): ' + secs.map((x) => x.toFixed(0)).join(' '));
   if (r.chords.length) {
-    console.log('  chords: ' + r.chords.slice(0, 12).map((c) => nn(c.note) + '→[' +
+    console.log('  chords: ' + r.chords.slice(0, 12).map((c) => c.t.toFixed(3) + 's ' + nn(c.note) + '→[' +
       (c.notes || []).map(nn).join(' ') + ']').join('  '));
   }
 }
@@ -136,6 +148,22 @@ for (const tune of [0, 100]) {
     events: [{ t: 0.05, type: 'on', note: 57, vel: 110 }, { t: 0.2, type: 'off', note: 57 }],
   };
 }
+
+// internal 4-step sequencer, default pattern (1/4 + 50% offset = off-beat stabs), Live playing at 120 BPM
+SCENARIOS.seq_play = { seconds: 6, transport: true, params: { p_seqmode: 1 }, events: [] };
+// progression: one chord per bar, D dorian, steps D F G A
+SCENARIOS.seq_bars = {
+  seconds: 10, transport: true, events: [],
+  params: { p_seqmode: 1, p_seqrate: 4, p_soff: 0, p_sgate: 90, p_harm: 2, p_key: 2, p_snote1: 50, p_snote2: 53,
+    p_snote3: 55, p_snote4: 57, p_as: 60, p_ad: 1500, p_glide: 150 },
+};
+// transpose mode: hold D3 from beat 2 to beat 6 -> pattern transposed by +2, silent otherwise
+SCENARIOS.seq_trans = {
+  seconds: 4, transport: true, params: { p_seqmode: 2 },
+  events: [{ t: 1.0, type: 'on', note: 62, vel: 100 }, { t: 3.0, type: 'off', note: 62 }],
+};
+// chord dice at 100 %: every stab rolls colour + voicing
+SCENARIOS.dice = { seconds: 9, params: { p_cchance: 100, p_cdice: 2 }, events: stabs([57, 57]) };
 
 const want = process.argv.slice(2);
 const outDir = path.join(__dirname, '..', 'demo');

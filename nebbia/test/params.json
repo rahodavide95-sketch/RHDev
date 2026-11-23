@@ -53,7 +53,7 @@
   "kind": "menu",
   "lo": 0,
   "hi": 5,
-  "default": 2,
+  "default": 1,
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
@@ -77,12 +77,12 @@
  },
  {
   "name": "p_seqlen",
-  "long": "Seq Steps",
-  "short": "Steps",
+  "long": "Seq Length",
+  "short": "Length",
   "kind": "int",
   "lo": 1,
-  "hi": 4,
-  "default": 4,
+  "hi": 8,
+  "default": 8,
   "unit": 0,
   "exp": 1.0,
   "sec": "SEQ",
@@ -126,7 +126,7 @@
   "kind": "dial",
   "lo": 0,
   "hi": 100,
-  "default": 50,
+  "default": 0,
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
@@ -186,24 +186,34 @@
   "dims": null
  },
  {
-  "name": "p_son1",
-  "long": "Step 1 On",
-  "short": "1",
-  "kind": "toggle",
+  "name": "p_spos1",
+  "long": "Position 1",
+  "short": "Pos 1",
+  "kind": "enumdial",
   "lo": 0,
-  "hi": 1,
-  "default": 1,
+  "hi": 8,
+  "default": 2,
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
-  "enum": null,
+  "enum": [
+   "Off",
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6",
+   "7",
+   "8"
+  ],
   "rect": [
    158,
-   33,
+   29,
    44,
-   16
+   44
   ],
   "lrect": null,
   "label": [
@@ -214,13 +224,13 @@
  },
  {
   "name": "p_snote1",
-  "long": "Step 1 Note",
-  "short": "Note",
+  "long": "Note 1",
+  "short": "Note 1",
   "kind": "int",
-  "lo": 36,
-  "hi": 84,
-  "default": 57,
-  "unit": 8,
+  "lo": -24,
+  "hi": 24,
+  "default": 0,
+  "unit": 7,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
@@ -228,9 +238,9 @@
   "enum": null,
   "rect": [
    158,
-   54,
+   75,
    44,
-   48
+   44
   ],
   "lrect": null,
   "label": [
@@ -241,8 +251,8 @@
  },
  {
   "name": "p_svel1",
-  "long": "Step 1 Velocity",
-  "short": "Vel",
+  "long": "Velocity 1",
+  "short": "Vel 1",
   "kind": "dial",
   "lo": 1,
   "hi": 127,
@@ -255,9 +265,9 @@
   "enum": null,
   "rect": [
    158,
-   108,
+   121,
    44,
-   48
+   44
   ],
   "lrect": null,
   "label": [
@@ -267,24 +277,34 @@
   "dims": null
  },
  {
-  "name": "p_son2",
-  "long": "Step 2 On",
-  "short": "2",
-  "kind": "toggle",
+  "name": "p_spos2",
+  "long": "Position 2",
+  "short": "Pos 2",
+  "kind": "enumdial",
   "lo": 0,
-  "hi": 1,
-  "default": 1,
+  "hi": 8,
+  "default": 4,
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
-  "enum": null,
+  "enum": [
+   "Off",
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6",
+   "7",
+   "8"
+  ],
   "rect": [
    204,
-   33,
+   29,
    44,
-   16
+   44
   ],
   "lrect": null,
   "label": [
@@ -295,13 +315,13 @@
  },
  {
   "name": "p_snote2",
-  "long": "Step 2 Note",
-  "short": "Note",
+  "long": "Note 2",
+  "short": "Note 2",
   "kind": "int",
-  "lo": 36,
-  "hi": 84,
-  "default": 57,
-  "unit": 8,
+  "lo": -24,
+  "hi": 24,
+  "default": 0,
+  "unit": 7,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
@@ -309,9 +329,9 @@
   "enum": null,
   "rect": [
    204,
-   54,
+   75,
    44,
-   48
+   44
   ],
   "lrect": null,
   "label": [
@@ -322,8 +342,8 @@
  },
  {
   "name": "p_svel2",
-  "long": "Step 2 Velocity",
-  "short": "Vel",
+  "long": "Velocity 2",
+  "short": "Vel 2",
   "kind": "dial",
   "lo": 1,
   "hi": 127,
@@ -336,9 +356,9 @@
   "enum": null,
   "rect": [
    204,
-   108,
+   121,
    44,
-   48
+   44
   ],
   "lrect": null,
   "label": [
@@ -348,24 +368,34 @@
   "dims": null
  },
  {
-  "name": "p_son3",
-  "long": "Step 3 On",
-  "short": "3",
-  "kind": "toggle",
+  "name": "p_spos3",
+  "long": "Position 3",
+  "short": "Pos 3",
+  "kind": "enumdial",
   "lo": 0,
-  "hi": 1,
-  "default": 1,
+  "hi": 8,
+  "default": 6,
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
-  "enum": null,
+  "enum": [
+   "Off",
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6",
+   "7",
+   "8"
+  ],
   "rect": [
    250,
-   33,
+   29,
    44,
-   16
+   44
   ],
   "lrect": null,
   "label": [
@@ -376,13 +406,13 @@
  },
  {
   "name": "p_snote3",
-  "long": "Step 3 Note",
-  "short": "Note",
+  "long": "Note 3",
+  "short": "Note 3",
   "kind": "int",
-  "lo": 36,
-  "hi": 84,
-  "default": 57,
-  "unit": 8,
+  "lo": -24,
+  "hi": 24,
+  "default": 0,
+  "unit": 7,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
@@ -390,9 +420,9 @@
   "enum": null,
   "rect": [
    250,
-   54,
+   75,
    44,
-   48
+   44
   ],
   "lrect": null,
   "label": [
@@ -403,8 +433,8 @@
  },
  {
   "name": "p_svel3",
-  "long": "Step 3 Velocity",
-  "short": "Vel",
+  "long": "Velocity 3",
+  "short": "Vel 3",
   "kind": "dial",
   "lo": 1,
   "hi": 127,
@@ -417,9 +447,9 @@
   "enum": null,
   "rect": [
    250,
-   108,
+   121,
    44,
-   48
+   44
   ],
   "lrect": null,
   "label": [
@@ -429,24 +459,34 @@
   "dims": null
  },
  {
-  "name": "p_son4",
-  "long": "Step 4 On",
-  "short": "4",
-  "kind": "toggle",
+  "name": "p_spos4",
+  "long": "Position 4",
+  "short": "Pos 4",
+  "kind": "enumdial",
   "lo": 0,
-  "hi": 1,
-  "default": 1,
+  "hi": 8,
+  "default": 8,
   "unit": 5,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
   "row": 0,
-  "enum": null,
+  "enum": [
+   "Off",
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6",
+   "7",
+   "8"
+  ],
   "rect": [
    296,
-   33,
+   29,
    44,
-   16
+   44
   ],
   "lrect": null,
   "label": [
@@ -457,13 +497,13 @@
  },
  {
   "name": "p_snote4",
-  "long": "Step 4 Note",
-  "short": "Note",
+  "long": "Note 4",
+  "short": "Note 4",
   "kind": "int",
-  "lo": 36,
-  "hi": 84,
-  "default": 57,
-  "unit": 8,
+  "lo": -24,
+  "hi": 24,
+  "default": 0,
+  "unit": 7,
   "exp": 1.0,
   "sec": "SEQ",
   "col": 0,
@@ -471,9 +511,9 @@
   "enum": null,
   "rect": [
    296,
-   54,
+   75,
    44,
-   48
+   44
   ],
   "lrect": null,
   "label": [
@@ -484,8 +524,8 @@
  },
  {
   "name": "p_svel4",
-  "long": "Step 4 Velocity",
-  "short": "Vel",
+  "long": "Velocity 4",
+  "short": "Vel 4",
   "kind": "dial",
   "lo": 1,
   "hi": 127,
@@ -498,9 +538,9 @@
   "enum": null,
   "rect": [
    296,
-   108,
+   121,
    44,
-   48
+   44
   ],
   "lrect": null,
   "label": [

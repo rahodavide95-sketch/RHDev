@@ -70,29 +70,33 @@ def param(name, long, short, kind, lo, hi, default, unit=5, exp=1.0, sec=None, c
                   label=label, dims=dims))
 
 
-# SEQ: 4-step sequencer synced to Live (3 control columns + 4 step columns)
+# SEQ: a sequence of 8 positions; 4 steps, each placed on a position with its Pos knob (Off, 1-8).
+# Note = semitones above/below the Key (or the held key in Trans mode). Everything is a knob.
 SEQ_RATES = [("1/16", 0.25), ("1/8", 0.5), ("1/4", 1.0), ("1/2", 2.0), ("1 Bar", 4.0), ("2 Bar", 8.0)]
+NCELL = 8
 NSTEP = 4
+SEQ_DEF_POS = [2, 4, 6, 8]  # off-beat 8ths
 SEQ_X = 10
 STEP_X = SEQ_X + 148  # first step column of the SEQ section
 param("p_seqon", "Seq On", "Seq On", "power", 0, 1, 0, sec="SEQ")
 param("p_seqmode", "Seq Mode", "Mode", "menu", 0, 1, 0, sec="SEQ", col=0, row=0, enum=["Play", "Trans"])
-param("p_seqrate", "Seq Rate", "Rate", "menu", 0, len(SEQ_RATES) - 1, 2, sec="SEQ", col=1, row=0,
+param("p_seqrate", "Seq Rate", "Rate", "menu", 0, len(SEQ_RATES) - 1, 1, sec="SEQ", col=1, row=0,
       enum=[r[0] for r in SEQ_RATES])
-param("p_seqlen", "Seq Steps", "Steps", "int", 1, NSTEP, NSTEP, unit=0, sec="SEQ", col=2, row=0)
+param("p_seqlen", "Seq Length", "Length", "int", 1, NCELL, NCELL, unit=0, sec="SEQ", col=2, row=0)
 param("p_sgate", "Seq Gate", "Gate", "dial", 5, 100, 50, sec="SEQ", col=0, row=1)
-param("p_soff", "Seq Offset", "Offset", "dial", 0, 100, 50, sec="SEQ", col=1, row=1)
+param("p_soff", "Seq Offset", "Offset", "dial", 0, 100, 0, sec="SEQ", col=1, row=1)
 param("p_swing", "Seq Swing", "Swing", "dial", 0, 100, 0, sec="SEQ", col=2, row=1)
 param("p_schance", "Seq Chance", "Chance", "dial", 0, 100, 100, sec="SEQ", col=0, row=2)
 SEQ_DEF_VEL = [100, 88, 112, 94]
+CELLW = 23  # playhead LED pitch (8 positions over the 4 step columns)
 for i in range(NSTEP):
     sx = STEP_X + i * 46
-    param("p_son%d" % (i + 1), "Step %d On" % (i + 1), "%d" % (i + 1), "toggle", 0, 1, 1, sec="SEQ",
-          rect=[sx, 33, 44, 16])
-    param("p_snote%d" % (i + 1), "Step %d Note" % (i + 1), "Note", "int", 36, 84, 57, unit=8, sec="SEQ",
-          rect=[sx, 54, 44, 48])
-    param("p_svel%d" % (i + 1), "Step %d Velocity" % (i + 1), "Vel", "dial", 1, 127, SEQ_DEF_VEL[i], unit=0,
-          sec="SEQ", rect=[sx, 108, 44, 48])
+    param("p_spos%d" % (i + 1), "Position %d" % (i + 1), "Pos %d" % (i + 1), "enumdial", 0, NCELL,
+          SEQ_DEF_POS[i], sec="SEQ", enum=["Off"] + [str(c + 1) for c in range(NCELL)], rect=[sx, 29, 44, 44])
+    param("p_snote%d" % (i + 1), "Note %d" % (i + 1), "Note %d" % (i + 1), "int", -24, 24, 0, unit=7,
+          sec="SEQ", rect=[sx, 75, 44, 44])
+    param("p_svel%d" % (i + 1), "Velocity %d" % (i + 1), "Vel %d" % (i + 1), "dial", 1, 127, SEQ_DEF_VEL[i],
+          unit=0, sec="SEQ", rect=[sx, 121, 44, 44])
 
 # CHORD (4 stacked menus + 2 dial columns)
 param("p_harm", "Harmony", "Harmony", "menu", 0, 7, 0, sec="CHORD", col=0, row=0,
@@ -448,7 +452,7 @@ def build_body():
     w("}")
     w("sbpm = clamp(p_bpm, 20, 999);")
     w("slb = %s;" % tern("floor(p_seqrate + 0.5)", [r[1] for r in SEQ_RATES]))
-    w("slen = clamp(floor(p_seqlen + 0.5), 1, %d);" % NSTEP)
+    w("slen = clamp(floor(p_seqlen + 0.5), 1, %d);" % NCELL)
     w("su = (bint + bph) / slb - clamp(p_soff, 0, 100) * 0.01;")
     w("kk = floor(su);")
     w("sfr = su - kk;")
@@ -461,16 +465,21 @@ def build_body():
     w("if (srun > 0) {")
     w("\tlastk = (sready > 0) ? kk : h_lastk;")
     w("}")
-    pick = lambda pre: tern("stp", ["%s%d" % (pre, i + 1) for i in range(NSTEP)])
+    hit = ["(floor(p_spos%d + 0.5) == stp + 1)" % (i + 1) for i in range(NSTEP)]
+    sidx = "-1"
+    for i in range(NSTEP - 1, -1, -1):
+        sidx = "(%s ? %d : %s)" % (hit[i], i, sidx)
+    w("sidx = %s;" % sidx)
+    pick = lambda pre: tern("sidx", ["%s%d" % (pre, i + 1) for i in range(NSTEP)])
     w("strig = 0;")
     w("if (srun * sready > 0) {")
-    w("\tif (%s > 0.5) {" % pick("p_son"))
+    w("\tif (sidx > -0.5) {")
     w("\t\tif ((noise() * 0.5 + 0.5) < clamp(p_schance, 0, 100) * 0.01) {")
     w("\t\t\tstrig = 1;")
     w("\t\t}")
     w("\t}")
     w("}")
-    w("snote = %s + ((smode > 1.5) ? (floor(p_root + 0.5) - 60) : 0);" % pick("p_snote"))
+    w("snote = ((smode > 1.5) ? floor(p_root + 0.5) : (48 + floor(p_key + 0.5))) + floor(%s + 0.5);" % pick("p_snote"))
     w("svel = %s;" % pick("p_svel"))
     w("scnt = min(h_scnt + 1, 100000000);")
     w("sgt = h_sgt;")
@@ -1278,10 +1287,63 @@ RAND = {
     "p_width": (20, 100, 1),
     "p_sgate": (20, 90, 1), "p_swing": (0, 40, 1),
 }
+# step k lands on position 2k-1 (on-beat, 30%) or 2k (off-beat, 55%), or is off (15%): dub stabs, never stacked
+SPOS_EXPR = "($f1 >= 1500.) * (%d. + ($f1 >= 4500.))"
+SEMI_EXPR = ("($f1 >= 5000.) * (0. - 2.) + ($f1 >= 6000.) * 5. + ($f1 >= 7000.) * 2. + ($f1 >= 8000.) * 2. "
+             "+ ($f1 >= 9000.) * (0. - 12.)")  # root 50%, -2, +3, +5, +7, -5
 for _i in range(NSTEP):
-    RAND["p_son%d" % (_i + 1)] = (0, 1, "gate")
-    RAND["p_snote%d" % (_i + 1)] = (0, 127, "seqnote")
+    RAND["p_spos%d" % (_i + 1)] = (0, NCELL, "spos")
+    RAND["p_snote%d" % (_i + 1)] = (-24, 24, "semis")
     RAND["p_svel%d" % (_i + 1)] = (70, 120, 1)
+
+# Randomize first picks a character, then draws every listed parameter inside that character's range.
+# Parameters not listed keep the general RAND range. "on" = probability that a section switch is on.
+ARCHETYPES = [
+    ("DUB STAB", dict(p_aa=(0.5, 8), p_ad=(150, 700), p_as=(0, 10), p_ar=(120, 600), p_fa=(0.5, 5), p_fd=(80, 400),
+                      p_fs=(0, 15), p_fr=(100, 500), p_cutoff=(250, 1200), p_reso=(10, 60), p_fenv=(30, 85),
+                      p_drive=(10, 60), p_efb=(55, 95), p_emix=(35, 70), p_ehicut=(1200, 4000), p_rmix=(15, 40),
+                      p_tune=(20, 70), p_glide=(0, 30), p_strum=(-15, 15)),
+     dict(p_echoon=0.97, p_spaceon=0.85, p_choron=0.4, p_analogon=0.85)),
+    ("DEEP PAD", dict(p_aa=(300, 3000), p_ad=(1500, 6000), p_as=(50, 90), p_ar=(1500, 6000), p_fa=(400, 3000),
+                      p_fd=(1500, 6000), p_fs=(20, 70), p_fr=(1500, 6000), p_cutoff=(300, 2000), p_reso=(0, 40),
+                      p_fenv=(-20, 35), p_drive=(0, 40), p_shape=(0, 60), p_osc2=(50, 100), p_detune=(6, 25),
+                      p_emix=(10, 40), p_efb=(30, 75), p_rmix=(30, 60), p_rdecay=(5000, 15000), p_tune=(30, 90),
+                      p_chorus=(30, 80), p_glide=(40, 400), p_strum=(0, 90), p_lfoamt=(10, 50),
+                      p_lforate=(0.03, 0.4)),
+     dict(p_echoon=0.5, p_spaceon=0.98, p_choron=0.8, p_analogon=0.95)),
+    ("PLUCK", dict(p_aa=(0.5, 4), p_ad=(150, 900), p_as=(0, 20), p_ar=(150, 900), p_fa=(0.5, 3), p_fd=(40, 250),
+                   p_fs=(0, 10), p_fr=(100, 600), p_cutoff=(500, 3500), p_reso=(10, 55), p_fenv=(40, 95),
+                   p_drive=(0, 50), p_emix=(15, 50), p_efb=(30, 75), p_rmix=(10, 35), p_tune=(10, 60),
+                   p_strum=(-40, 40), p_glide=(0, 20)),
+     dict(p_echoon=0.8, p_spaceon=0.8, p_choron=0.5, p_analogon=0.8)),
+    ("ORGAN", dict(p_aa=(5, 80), p_ad=(500, 3000), p_as=(80, 100), p_ar=(100, 1500), p_fa=(1, 50), p_fd=(200, 2000),
+                   p_fs=(60, 100), p_fr=(100, 1500), p_cutoff=(600, 5000), p_reso=(0, 30), p_fenv=(-10, 20),
+                   p_shape=(30, 100), p_pwm=(20, 80), p_osc2=(0, 60), p_sub=(0, 70), p_chorus=(40, 90),
+                   p_emix=(5, 35), p_rmix=(15, 45), p_tune=(20, 70), p_glide=(0, 120)),
+     dict(p_echoon=0.4, p_spaceon=0.9, p_choron=0.9, p_analogon=0.9)),
+    ("GLASS", dict(p_aa=(0.5, 6), p_ad=(600, 3000), p_as=(0, 20), p_ar=(800, 4000), p_fa=(0.5, 5), p_fd=(200, 1200),
+                   p_fs=(10, 50), p_fr=(400, 3000), p_cutoff=(1500, 8000), p_reso=(30, 75), p_fenv=(10, 60),
+                   p_shape=(40, 100), p_pw=(8, 30), p_osc2=(0, 40), p_detune=(0, 8), p_air=(0, 15),
+                   p_tune=(60, 100), p_sdecay=(4000, 10000), p_rmix=(25, 55), p_emix=(15, 45),
+                   p_ehicut=(2500, 8000), p_sub=(0, 10)),
+     dict(p_echoon=0.7, p_spaceon=1.0, p_choron=0.5, p_analogon=0.6)),
+    ("RUMBLE", dict(p_aa=(0.5, 40), p_ad=(300, 1500), p_as=(0, 50), p_ar=(200, 1500), p_fa=(0.5, 20),
+                    p_fd=(100, 800), p_fs=(0, 30), p_cutoff=(120, 500), p_reso=(20, 70), p_drive=(40, 90),
+                    p_sub=(40, 100), p_fenv=(10, 60), p_ktrk=(0, 40), p_ehicut=(900, 2000), p_elocut=(30, 120),
+                    p_efb=(40, 85), p_emix=(20, 55), p_rlocut=(150, 400), p_rmix=(10, 35), p_tune=(0, 50)),
+     dict(p_echoon=0.85, p_spaceon=0.7, p_choron=0.2, p_analogon=0.9)),
+    ("WORN", dict(p_age=(60, 90), p_drift=(50, 80), p_sag=(50, 80), p_air=(15, 40), p_wow=(40, 70),
+                  p_flutter=(25, 50), p_edrive=(40, 80), p_ehicut=(900, 2500), p_cutoff=(300, 2000),
+                  p_detune=(8, 25), p_driftrate=(0.2, 1.5), p_lfoamt=(10, 40)),
+     dict(p_echoon=0.9, p_spaceon=0.8, p_choron=0.6, p_analogon=1.0)),
+    ("GHOST", dict(p_aa=(50, 1500), p_ad=(1000, 5000), p_as=(20, 70), p_ar=(2000, 8000), p_fa=(100, 2000),
+                   p_fd=(1000, 5000), p_fs=(10, 50), p_fr=(1500, 6000), p_air=(20, 40), p_cutoff=(200, 1200),
+                   p_reso=(10, 50), p_tune=(70, 100), p_sdecay=(5000, 10000), p_rmix=(35, 60),
+                   p_rdecay=(8000, 12000), p_efb=(60, 92), p_emix=(30, 60), p_rmod=(40, 80), p_lfoamt=(15, 50)),
+     dict(p_echoon=0.85, p_spaceon=1.0, p_choron=0.5, p_analogon=0.9)),
+]
+for _sw in ("p_echoon", "p_spaceon", "p_choron", "p_analogon"):
+    RAND[_sw] = (0, 1, "coin")
 
 # Shown in Live's Info View when the mouse is over a control
 ANNOT = {
@@ -1361,17 +1423,18 @@ ANNOT = {
     "p_echoon": "Accende o spegne l'eco.",
     "p_spaceon": "Accende o spegne lo spazio (riverbero e corde simpatiche).",
     "p_choron": "Accende o spegne il chorus.",
-    "p_seqrate": "Durata di ogni step. 1/4 con Offset 50% = stab in levare. 1 Bar = un accordo per battuta.",
-    "p_seqlen": "Quanti step usare (1-4).",
+    "p_seqrate": "Durata di ogni posizione. 1/8 = le 8 posizioni fanno una battuta. 1 Bar = una posizione per battuta.",
+    "p_seqlen": "Lunghezza della sequenza in posizioni (1-8).",
     "p_sgate": "Durata della nota di ogni step, in percentuale dello step.",
-    "p_soff": "Sposta tutto il pattern in avanti: 50% con Rate 1/4 mette gli stab sul levare.",
-    "p_swing": "Ritarda gli step pari (2 e 4).",
-    "p_schance": "Probabilità che uno step acceso suoni davvero. Sotto 100% il pattern respira da solo.",
+    "p_soff": "Sposta tutto il pattern in avanti di una frazione di posizione (spostamenti fini, groove).",
+    "p_swing": "Ritarda le posizioni pari (2, 4, 6, 8).",
+    "p_schance": "Probabilità che uno step suoni davvero. Sotto 100% il pattern respira da solo.",
 }
 for _i in range(NSTEP):
-    ANNOT["p_son%d" % (_i + 1)] = "Accende o spegne lo step %d." % (_i + 1)
-    ANNOT["p_snote%d" % (_i + 1)] = ("Nota dello step %d, un semitono per scatto: è la fondamentale dell'accordo "
-                                     "(in modalità scala viene portata sulla scala)." % (_i + 1))
+    ANNOT["p_spos%d" % (_i + 1)] = ("In quale delle 8 posizioni della sequenza suona lo step %d (Off = spento)."
+                                    % (_i + 1))
+    ANNOT["p_snote%d" % (_i + 1)] = ("Nota dello step %d in semitoni, uno per scatto: 0 = la Key (A2 se Key è A), "
+                                     "+7 = una quinta sopra. In modalità Trans parte dal tasto che tieni." % (_i + 1))
     ANNOT["p_svel%d" % (_i + 1)] = "Velocity dello step %d." % (_i + 1)
 
 
@@ -1499,7 +1562,7 @@ def build_patcher(code):
         vo = {
             "parameter_longname": p["long"],
             "parameter_shortname": p["short"],
-            "parameter_type": 2 if p["kind"] in ("menu", "toggle", "power") else (1 if p["kind"] in ("int", "note") else 0),
+            "parameter_type": 2 if p["kind"] in ("menu", "toggle", "power", "enumdial") else (1 if p["kind"] in ("int", "note") else 0),
             "parameter_mmin": float(p["lo"]),
             "parameter_mmax": float(p["hi"]),
             "parameter_initial_enable": 1,
@@ -1554,7 +1617,10 @@ def build_patcher(code):
                         tricolor=C_LOW, focusbordercolor=C_AMBER, bordercolor=C_LINE, fontname=F_TEXT,
                         fontsize=10.0, **extra)
         else:
-            vo["parameter_unitstyle"] = p["unit"]
+            if p["kind"] == "enumdial":
+                vo["parameter_enum"] = p["enum"]
+            else:
+                vo["parameter_unitstyle"] = p["unit"]
             if p["exp"] != 1.0:
                 vo["parameter_exponent"] = float(p["exp"])
             if p["kind"] == "int":
@@ -1634,11 +1700,11 @@ def build_patcher(code):
     pt.connect(psnap, 0, pint, 0)
     pchg = pt.obj("change -99", 1900, 420, ninl=1, nout=3, outtype=["", "int", "int"])
     pt.connect(pint, 0, pchg, 0)
-    for i in range(NSTEP):
+    for i in range(NCELL):
         eqs = pt.obj("== %d" % i, 1900 + i * 60, 450, ninl=2, nout=1)
         pt.connect(pchg, 0, eqs, 0)
         led = pt.add("led", [1900 + i * 60, 480, 12, 12], ninl=1, nout=1, outtype=["int"], presentation=1,
-                     presentation_rect=[float(STEP_X + i * COLW + 16), 22.0, 12.0, 12.0], oncolor=C_AMBER,
+                     presentation_rect=[float(STEP_X + i * CELLW + 7), 22.0, 8.0, 8.0], oncolor=C_AMBER,
                      offcolor=C_ARC_OFF, ignoreclick=1, annotation="Step che sta suonando.",
                      annotation_name="Playhead")
         pt.connect(eqs, 0, led, 0)
@@ -1653,18 +1719,20 @@ def build_patcher(code):
                      activebgcolor=rgb("#3A2E1C"), activebgoncolor=C_AMBER, bgcolor=C_MENU, bgoncolor=C_AMBER,
                      textcolor=C_TEXT, textoncolor=C_BG, activetextcolor=C_TEXT, activetextoncolor=C_BG,
                      bordercolor=C_AMBER, focusbordercolor=C_AMBER, fontname=F_HEAD, fontsize=9.0,
-                     annotation="Nuovo pattern: step accesi, note nella tua Key e velocity. Il suono non cambia.",
+                     annotation="Nuovo pattern: celle accese, note nella tua Key, velocity, Rate (1/16, 1/8, 1/4), "
+                                "Gate e Swing. Il suono non cambia.",
                      annotation_name="Seq Random")
     srb = pt.obj("route bang 1", 2200, 640, ninl=2, nout=3)
     pt.connect(seq_rnd, 0, srb, 0)
     stb = pt.obj("t b", 2200, 670, ninl=1, nout=1, outtype=["bang"])
     pt.connect(srb, 0, stb, 0)
     pt.connect(srb, 1, stb, 0)
-    seq_targets = []
+    seq_targets = [("p_spos%d" % (i + 1), "expr " + SPOS_EXPR % (2 * i + 1)) for i in range(NSTEP)]
+    seq_targets += [("p_seqrate", "expr ($f1 >= 2500.) + ($f1 >= 7500.)"),
+                    ("p_sgate", "expr 10. + 80. * $f1 / 10000."),
+                    ("p_swing", "expr 40. * pow($f1 / 10000., 2.)")]
     for i in range(NSTEP):
-        seq_targets += [("p_son%d" % (i + 1), "expr $f1 < 7500."),
-                        ("p_snote%d" % (i + 1), "expr 48. + $f2 + ($f1 >= 5000.) * (0. - 2.) + ($f1 >= 6000.) * 5. "
-                                                "+ ($f1 >= 7000.) * 2. + ($f1 >= 8000.) * 2. + ($f1 >= 9000.) * (0. - 12.)"),
+        seq_targets += [("p_snote%d" % (i + 1), "expr " + SEMI_EXPR),
                         ("p_svel%d" % (i + 1), "expr int(70. + 50. * $f1 / 10000.)")]
     suzi = pt.obj("uzi %d" % len(seq_targets), 2200, 700, ninl=2, nout=3, outtype=["bang", "bang", "int"])
     pt.connect(stb, 0, suzi, 0)
@@ -1705,8 +1773,10 @@ def build_patcher(code):
                       activebgcolor=rgb("#25403F"), activebgoncolor=C_TEAL, bgcolor=C_MENU, bgoncolor=C_TEAL,
                       textcolor=C_TEXT, textoncolor=C_BG, activetextcolor=C_TEXT, activetextoncolor=C_BG,
                       bordercolor=C_TEAL, focusbordercolor=C_TEAL, fontname=F_HEAD, fontsize=10.0,
-                      annotation="Genera una patch nuova. Amount decide quanto cambiare, i lucchetti "
-                                 "proteggono le sezioni. Le manopole si muovono davvero: Cmd/Ctrl+Z per tornare indietro.",
+                      annotation="Sceglie un carattere a caso (Dub Stab, Deep Pad, Pluck, Organ, Glass, Rumble, "
+                                 "Worn, Ghost) e genera una patch nuova coerente con quel carattere, accendendo o "
+                                 "spegnendo eco, spazio, chorus e analog. Amount decide quanto cambiare, i lucchetti "
+                                 "proteggono le sezioni. Cmd/Ctrl+Z per tornare indietro.",
                       annotation_name="Randomize")
     reset_btn = pt.add("live.text", [2000, 600, 88, 16], ninl=1, nout=2, outtype=["", ""], mode=0,
                        text="RESET", texton="RESET", parameter_enable=1, presentation=1,
@@ -1753,7 +1823,22 @@ def build_patcher(code):
     pt.connect(rb, 0, tb, 0)
     pt.connect(rb, 1, tb, 0)
     uzi = pt.obj("uzi %d" % k, 1900, 820, ninl=2, nout=3, outtype=["bang", "bang", "int"])
-    pt.connect(tb, 0, uzi, 0)
+    tarch = pt.obj("t b b", 1900, 805, ninl=1, nout=2, outtype=["bang", "bang"])
+    pt.connect(tb, 0, tarch, 0)
+    pt.connect(tarch, 0, uzi, 0)
+    arnd = pt.obj("random %d" % len(ARCHETYPES), 2100, 805, ninl=2, nout=1, outtype=["int"])
+    pt.connect(tarch, 1, arnd, 0)
+    # the character's name, shown in the DICE header
+    aname = pt.add("comment", [2100, 900, 70, 15], text="", ninl=1, nout=0, presentation=1,
+                   presentation_rect=[float(DICE_X + 40), 3.0, 66.0, 13.0], textcolor=C_TEAL, fontname=F_HEAD,
+                   fontsize=8.5, textjustification=0)
+    asel = pt.obj("sel %s" % " ".join(str(i) for i in range(len(ARCHETYPES))), 2100, 840, ninl=2,
+                  nout=len(ARCHETYPES) + 1)
+    pt.connect(arnd, 0, asel, 0)
+    for ai, (an, _, _) in enumerate(ARCHETYPES):
+        am = pt.msg("set %s" % an, 2100 + ai * 90, 870)
+        pt.connect(asel, ai, am, 0)
+        pt.connect(am, 0, aname, 0)
     tbbi = pt.obj("t b b i", 1900, 850, ninl=1, nout=3, outtype=["bang", "bang", "int"])
     pt.connect(uzi, 2, tbbi, 0)
     rnd = pt.obj("random 10001", 2000, 880, ninl=2, nout=1, outtype=["int"])
@@ -1770,11 +1855,23 @@ def build_patcher(code):
         p = pdef[nm]
         bx, by = 40 + (i % 12) * 150, 1400 + (i // 12) * 90
         sel_ = "($f2 < $f3 * (1. - $f5) * 100.)"
-        if curve == "gate":
-            e = "expr $f4 + %s * (($f1 < 7500.) - $f4)" % sel_
-        elif curve == "seqnote":
-            e = ("expr $f4 + %s * ((48. + $f6 + ($f1 >= 5000.) * (0. - 2.) + ($f1 >= 6000.) * 5. "
-                 "+ ($f1 >= 7000.) * 2. + ($f1 >= 8000.) * 2. + ($f1 >= 9000.) * (0. - 12.)) - $f4)" % sel_)
+        in_arch = any(nm in ov for _, ov, _ in ARCHETYPES)
+        if curve == "coin":
+            prob = " + ".join("($f6 == %s) * %s" % (ff(ai), ff(on.get(nm, 0.5) * 10000))
+                              for ai, (_, _, on) in enumerate(ARCHETYPES))
+            e = "expr $f4 + %s * (($f1 < (%s)) - $f4)" % (sel_, prob)
+        elif in_arch:
+            los, spans = [], []
+            for ai, (_, ov, _) in enumerate(ARCHETYPES):
+                a_lo, a_hi = ov.get(nm, (lo, hi))
+                los.append("($f6 == %s) * %s" % (ff(ai), ff(a_lo)))
+                spans.append("($f6 == %s) * %s" % (ff(ai), ff(a_hi - a_lo)))
+            e = ("expr $f4 + $f3 * 0.01 * (1. - $f5) * (((%s) + (%s) * pow($f1 / 10000., %s)) - $f4) + $f2 * 0."
+                 % (" + ".join(los), " + ".join(spans), ff(1.7 if curve != 1 and curve != 1.5 else 1.0)))
+        elif curve == "spos":
+            e = "expr $f4 + %s * ((%s) - $f4)" % (sel_, SPOS_EXPR % (2 * int(nm[6:]) - 1))
+        elif curve == "semis":
+            e = "expr $f4 + %s * ((%s) - $f4)" % (sel_, SEMI_EXPR)
         elif p["kind"] == "menu":
             e = ("expr $f4 + ($f2 < $f3 * (1. - $f5) * 100.) * (int(%s + $f1 / 10001. * %s) - $f4)"
                  % (ff(lo), ff(hi - lo + 1)))
@@ -1786,10 +1883,10 @@ def build_patcher(code):
                  % (ff(lo), ff(hi - lo), ff(curve)))
         up = pt.obj("unpack 0 0", bx, by, ninl=1, nout=2)
         pt.connect(rroute, i, up, 0)
-        ex = pt.add("newobj", [bx, by + 30, 140, 22], text=e, ninl=6 if curve == "seqnote" else 5, nout=1,
+        ex = pt.add("newobj", [bx, by + 30, 140, 22], text=e, ninl=6 if ("$f6" in e) else 5, nout=1,
                     outtype=[""])
-        if curve == "seqnote":
-            pt.connect(ui_of["p_key"], 0, ex, 5)
+        if "$f6" in e:
+            pt.connect(arnd, 0, ex, 5)
         pt.connect(up, 1, ex, 1)
         pt.connect(up, 0, ex, 0)
         pt.connect(amount, 0, ex, 2)

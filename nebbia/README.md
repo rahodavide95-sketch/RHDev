@@ -1,7 +1,8 @@
 # NEBBIA — living chord engine
 
 Strumento **Max for Live** per Ableton Live, pensato per la dub techno.
-Una nota diventa un accordo, che puoi suonare dal piano roll, dalla tastiera o dal **sequencer interno a 4 step**.
+Una nota diventa un accordo, che puoi suonare dal piano roll, dalla tastiera o dal **sequencer interno**
+(4 step su una sequenza di 8 posizioni).
 L'accordo nasce da un generatore che fa voice leading e può tirare il dado. Passa per 6 voci analogiche che si
 comportano come un circuito vero, poi per un tape echo dub e infine per uno spazio le cui **corde simpatiche si
 riaccordano sull'accordo** che stai suonando.
@@ -44,24 +45,47 @@ Ogni nota che arriva a NEBBIA è la **fondamentale di un accordo**. Hai tre modi
 
 | Come | Imposta | Cosa succede |
 |---|---|---|
-| **Piano roll / tastiera** | SEQ Mode = **Off** | Scrivi *una* nota per accordo nel piano roll (o suonala). NEBBIA costruisce l'accordo. |
-| **Sequencer interno** | SEQ Mode = **Play** | Premi Play in Live: i 4 step suonano a tempo. Il MIDI di Live suona comunque sopra. |
-| **Sequencer trasposto** | SEQ Mode = **Trans** | Il pattern suona solo mentre tieni un tasto, trasposto da quel tasto (C3 = come scritto). Perfetto dal vivo. |
+| **Piano roll / tastiera** | SEQ spento (OFF) | Scrivi *una* nota per accordo nel piano roll (o suonala). NEBBIA costruisce l'accordo. |
+| **Sequencer interno** | SEQ acceso, Mode **Play** | Premi Play in Live: gli step suonano a tempo. Il MIDI di Live suona comunque sopra. |
+| **Sequencer trasposto** | SEQ acceso, Mode **Trans** | Il pattern suona solo mentre tieni un tasto e parte da quel tasto. Perfetto dal vivo. |
 
 > **"Voices" non serve a scrivere note.** È *quante* note ha l'accordo (2–6).
 > Le note vere arrivano dal SEQ o dal MIDI di Live.
 
 ---
 
+## Accendere e spegnere le sezioni
+
+Ogni sezione ha un interruttore nell'intestazione. Quando è spenta, le sue manopole diventano grigie.
+
+| Interruttore | Spento significa |
+|---|---|
+| SEQ | Il sequencer è fermo: suona solo il MIDI di Live |
+| CHORD | Niente accordi: ogni nota suona da sola (bassi, lead). Restano Octave, Glide, Humanize e Bend |
+| DICE | Il dado sugli accordi è fermo (Randomize, Reset e i lucchetti funzionano comunque) |
+| VOICE · ANALOG | Niente Drift, Age e Sag: suono digitale pulito, identico su ogni voce |
+| FILTER | Filtro escluso, passa l'oscillatore pieno |
+| ECHO | Eco spento (la coda si chiude subito) |
+| SPACE | Spazio e corde simpatiche spenti |
+| OUT · CHORUS | Chorus spento |
+
+---
+
 ## Le sezioni
 
-### SEQ — sequencer a 4 step
-- Ogni step ha **On**, **Note** (la fondamentale dell'accordo) e **Vel**. Il LED mostra lo step che sta suonando.
-- **Rate**: durata di uno step, da 1/16 a 2 battute.
-  - **1/4 + Offset 50%** = stab in levare, il classico dub (è il default).
-  - **1 Bar + Offset 0** = progressione di 4 accordi, uno per battuta.
-- **Steps** (1–4), **Gate** (lunghezza della nota), **Swing** (ritarda gli step 2 e 4) e **Chance**
-  (probabilità che uno step suoni: sotto 100% il pattern respira da solo).
+### SEQ — sequenza di 8 posizioni, 4 step, solo manopole
+- La sequenza ha **8 posizioni** e **4 step**. Ogni step ha tre manopole:
+  - **Pos**: in quale posizione suona (Off, 1–8).
+  - **Note**: ±1 semitono per scatto rispetto alla **Key** (0 = A2 se Key è A, +7 = una quinta sopra).
+    In modalità Trans parte dal tasto che tieni premuto.
+  - **Vel**: velocity.
+- Gli 8 LED mostrano la posizione che sta suonando.
+- **Rate**: durata di una posizione, da 1/16 a 2 battute.
+  - **1/8 con step su 2-4-6-8** = stab in levare su una battuta, il classico dub (è il default).
+  - **1 Bar, Length 4, step su 1-2-3-4** = progressione di 4 accordi, uno per battuta.
+- **Length** (1–8 posizioni), **Gate** (lunghezza della nota), **Offset** (spostamento fine), **Swing**
+  (ritarda le posizioni pari) e **Chance** (probabilità che uno step suoni: sotto 100% il pattern respira).
+- **RANDOM**: nuovo pattern (posizioni, note nella tua Key, velocity, Rate, Gate, Swing). Il suono non cambia.
 - Segue il transport di Live con precisione al campione: niente jitter, sempre allineato alla battuta.
 
 ### CHORD — generatore di accordi con voice leading
@@ -76,9 +100,12 @@ Ogni nota che arriva a NEBBIA è la **fondamentale di un accordo**. Hai tre modi
 - **CHORD NOW**: la tastierina mostra in tempo reale le note che NEBBIA sta suonando.
 
 ### DICE — caso controllato
-- **RANDOMIZE**: genera una patch nuova, con valori dentro range che suonano bene.
-  - **Amount** decide quanto: basso = piccola variazione della patch attuale, 100% = patch nuova.
-  - Randomizza anche il pattern del SEQ (step, note nella tua Key, velocity).
+- **RANDOMIZE**: sceglie prima un **carattere** a caso (DUB STAB, DEEP PAD, PLUCK, ORGAN, GLASS, RUMBLE, WORN,
+  GHOST, il nome appare nella sezione) e poi genera una patch nuova coerente con quel carattere.
+  - Il cambio è radicale: inviluppi, filtro, oscillatori, eco, spazio, analog e accordo cambiano insieme.
+  - Può accendere o spegnere eco, spazio, chorus e analog quando ha senso per quel carattere.
+  - **Amount** decide quanto: basso = variazione della patch attuale, 100% = patch nuova.
+  - Randomizza anche il pattern del SEQ.
   - Le manopole si muovono davvero, quindi puoi annullare con Cmd/Ctrl+Z.
 - **RESET**: riporta tutto ai valori iniziali. La Key resta quella del tuo pezzo.
 - **LOCK** (Seq, Chord, Voice, Filter, Env, Echo, Space): le sezioni accese restano come sono, sia con
@@ -113,19 +140,19 @@ Ogni nota che arriva a NEBBIA è la **fondamentale di un accordo**. Hai tre modi
 
 ## Tutti i parametri
 
-96 controlli, tutti automatizzabili, mappabili su MIDI/Push e modulabili.
+105 controlli, tutti automatizzabili, mappabili su MIDI/Push e modulabili.
 
 | Sezione | Parametri |
 |---|---|
-| SEQ | Mode (Off/Play/Trans), Rate, Steps, Gate, Offset, Swing, Chance, Step 1–4: On / Note / Vel |
-| CHORD | Harmony, Chord, Key, Voicing, Voices, Octave, Strum, Glide, Humanize, Bend |
-| DICE | Randomize, Reset, Amount, Lock ×7, Chance, Chord Dice |
-| VOICE | Shape, PW, PWM, PWM Rate, Osc 2, Detune, Sub, Air, Drift, Drift Rate, Age, Sag |
-| FILTER | Cutoff, Reso, Drive, Slope, Env Amt, Key Trk, MW>Cut, LFO Rate, LFO Amt, LFO Wave |
+| SEQ | On, Mode (Play/Trans), Rate, Length, Gate, Offset, Swing, Chance, Random, Step 1–4: Pos / Note / Vel |
+| CHORD | On, Harmony, Chord, Key, Voicing, Voices, Octave, Strum, Glide, Humanize, Bend |
+| DICE | On, Randomize, Reset, Amount, Lock ×7, Chance, Chord Dice |
+| VOICE | Analog, Shape, PW, PWM, PWM Rate, Osc 2, Detune, Sub, Air, Drift, Drift Rate, Age, Sag |
+| FILTER | On, Cutoff, Reso, Drive, Slope, Env Amt, Key Trk, MW>Cut, LFO Rate, LFO Amt, LFO Wave |
 | ENV | F Attack/Decay/Sustain/Release, Attack/Decay/Sustain/Release, Vel>Amp, Vel>Filt |
-| ECHO | Time, Feedback, Mix, Low Cut, High Cut, Drive, Wow, Flutter, Spread |
-| SPACE | Decay, Size, Mix, Tune, Strings, Damp, Low Cut, Diffusion, Mod |
-| OUT | Chorus, Ch Rate, Ch Depth, Width, Volume |
+| ECHO | On, Time, Feedback, Mix, Low Cut, High Cut, Drive, Wow, Flutter, Spread |
+| SPACE | On, Decay, Size, Mix, Tune, Strings, Damp, Low Cut, Diffusion, Mod |
+| OUT | Chorus on, Chorus, Ch Rate, Ch Depth, Width, Volume |
 
 Chord disponibili: Min7, Min9, Min11, m7 Open, m11 Open, So What, Quartal, Sus2, 7sus4, Minor, Major,
 Maj7, Maj9, Dom9, m7b5, Fifths.
@@ -134,9 +161,10 @@ Maj7, Maj9, Dom9, m7b5, Fifths.
 
 ## Ricette veloci
 
-- **Stab classico (default)**: SEQ su *Play*, premi Play in Live. Automatizza Cutoff ed Echo Feedback.
+- **Stab classico (default)**: accendi SEQ, premi Play in Live. Automatizza Cutoff ed Echo Feedback.
 - **Fuga dub**: Echo Feedback oltre 100% per qualche battuta, High Cut basso, Wow alto.
-- **Progressione che si scrive da sola**: Harmony Dorian, SEQ Rate *1 Bar*, Offset 0, DICE Chance 30% su *Color*.
+- **Progressione che si scrive da sola**: Harmony Dorian, SEQ Rate *1 Bar*, Length 4, Pos 1-2-3-4,
+  DICE Chance 30% su *Color*.
 - **Organo nella nebbia**: Voices 4, Attack 500 ms, Sustain 70%, Glide 200 ms, Strum 40 ms, Tune 80%, Strings 8 s.
 - **Macchina vecchia**: Age 80%, Drift 60%, Sag 70%, Air 25%.
 - **Digitale pulito**: Age 0, Drift 0, Sag 0, Humanize 0.
@@ -148,6 +176,7 @@ In `demo/` ci sono i render offline dello stesso DSP:
 | File | Cosa senti |
 |---|---|
 | `dub_stabs.mp3` | Il suono di default, stab in levare |
+| `randomize_tour.mp3` | 8 pressioni di RANDOMIZE, una per carattere: Dub Stab, Deep Pad, Pluck, Organ, Glass, Rumble, Worn, Ghost |
 | `seq_progression.mp3` | Il sequencer interno: D Dorian, un accordo per battuta |
 | `dice_stabs.mp3` | Lo stesso stab con il dado al 100%: ogni colpo cambia colore e rivolto |
 | `dorian_pads.mp3` | Modalità scala, glide e strum su un pad |
@@ -170,4 +199,5 @@ python3 test/preview_ui.py ui.html  # anteprima del pannello
 ```
 
 Il test `torture` porta tutti i parametri al massimo e verifica che l'uscita resti finita e limitata.
-`seq_play`, `seq_bars`, `seq_trans` e `dice` verificano sequencer e dado.
+`seq_play`, `seq_bars`, `seq_pos`, `seq_trans`, `dice`, `all_off` ed `echo_kill` verificano sequencer, dado e
+interruttori. `python3 test/random_tour.py` rende un giro di Randomize.

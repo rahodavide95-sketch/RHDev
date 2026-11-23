@@ -140,23 +140,23 @@ fammaj(i) {
 
 Param p_seqon(0);
 Param p_seqmode(0);
-Param p_seqrate(2);
-Param p_seqlen(4);
+Param p_seqrate(1);
+Param p_seqlen(8);
 Param p_sgate(50);
-Param p_soff(50);
+Param p_soff(0);
 Param p_swing(0);
 Param p_schance(100);
-Param p_son1(1);
-Param p_snote1(57);
+Param p_spos1(2);
+Param p_snote1(0);
 Param p_svel1(100);
-Param p_son2(1);
-Param p_snote2(57);
+Param p_spos2(4);
+Param p_snote2(0);
 Param p_svel2(88);
-Param p_son3(1);
-Param p_snote3(57);
+Param p_spos3(6);
+Param p_snote3(0);
 Param p_svel3(112);
-Param p_son4(1);
-Param p_snote4(57);
+Param p_spos4(8);
+Param p_snote4(0);
 Param p_svel4(94);
 Param p_harm(0);
 Param p_chord(1);
@@ -555,7 +555,7 @@ if (p_songbeat != h_sbeat) {
 }
 sbpm = clamp(p_bpm, 20, 999);
 slb = ((floor(p_seqrate + 0.5) < 0.5) ? 0.25 : ((floor(p_seqrate + 0.5) < 1.5) ? 0.5 : ((floor(p_seqrate + 0.5) < 2.5) ? 1 : ((floor(p_seqrate + 0.5) < 3.5) ? 2 : ((floor(p_seqrate + 0.5) < 4.5) ? 4 : 8)))));
-slen = clamp(floor(p_seqlen + 0.5), 1, 4);
+slen = clamp(floor(p_seqlen + 0.5), 1, 8);
 su = (bint + bph) / slb - clamp(p_soff, 0, 100) * 0.01;
 kk = floor(su);
 sfr = su - kk;
@@ -568,16 +568,17 @@ lastk = -1;
 if (srun > 0) {
 	lastk = (sready > 0) ? kk : h_lastk;
 }
+sidx = ((floor(p_spos1 + 0.5) == stp + 1) ? 0 : ((floor(p_spos2 + 0.5) == stp + 1) ? 1 : ((floor(p_spos3 + 0.5) == stp + 1) ? 2 : ((floor(p_spos4 + 0.5) == stp + 1) ? 3 : -1))));
 strig = 0;
 if (srun * sready > 0) {
-	if (((stp < 0.5) ? p_son1 : ((stp < 1.5) ? p_son2 : ((stp < 2.5) ? p_son3 : p_son4))) > 0.5) {
+	if (sidx > -0.5) {
 		if ((noise() * 0.5 + 0.5) < clamp(p_schance, 0, 100) * 0.01) {
 			strig = 1;
 		}
 	}
 }
-snote = ((stp < 0.5) ? p_snote1 : ((stp < 1.5) ? p_snote2 : ((stp < 2.5) ? p_snote3 : p_snote4))) + ((smode > 1.5) ? (floor(p_root + 0.5) - 60) : 0);
-svel = ((stp < 0.5) ? p_svel1 : ((stp < 1.5) ? p_svel2 : ((stp < 2.5) ? p_svel3 : p_svel4)));
+snote = ((smode > 1.5) ? floor(p_root + 0.5) : (48 + floor(p_key + 0.5))) + floor(((sidx < 0.5) ? p_snote1 : ((sidx < 1.5) ? p_snote2 : ((sidx < 2.5) ? p_snote3 : p_snote4))) + 0.5);
+svel = ((sidx < 0.5) ? p_svel1 : ((sidx < 1.5) ? p_svel2 : ((sidx < 2.5) ? p_svel3 : p_svel4)));
 scnt = min(h_scnt + 1, 100000000);
 sgt = h_sgt;
 if (strig > 0) {

@@ -16,8 +16,8 @@ import build  # noqa: E402
 sys.path.insert(0, HERE)
 from pool import render_many  # noqa: E402
 
-TARGET = -17.0  # dBFS, 95th percentile of 400 ms RMS windows
-CEILING = -2.0  # dBFS: never push a preset into the output soft clip
+TARGET = -16.0  # dBFS, 95th percentile of 400 ms RMS windows
+GR_MAX = 1.5  # dB: the look-ahead limiter may shave at most this much off the loudest hits
 calibrate = "--calibrate" in sys.argv
 scen, order = {}, []
 for i, (name, ov) in enumerate(build.FACTORY):
@@ -46,12 +46,13 @@ for key, name, vol in order:
     rms = [np.sqrt(np.mean(x[s:s + win] ** 2)) + 1e-9 for s in range(0, len(x) - win, win // 2)]
     loud = 20 * np.log10(np.percentile(rms, 95))
     peak_db = 20 * np.log10(np.max(np.abs(x)) + 1e-9)
-    levels[name] = round(float(np.clip(vol + min(TARGET - loud, CEILING - peak_db), -24, 6)), 1)
+    gr = -float(stats[key].split("limiter ")[1].split(" dB")[0])
+    levels[name] = round(float(np.clip(vol + min(TARGET - loud, GR_MAX - gr), -24, 12)), 1)
     if folder_of[name] != last:
         print(folder_of[name])
         last = folder_of[name]
     peak = stats[key].split("peak ")[1].split(",")[0]
-    print("  %-20s centroid %5.0f Hz   loudness %6.1f dB   peak %s" % (name, centroid, loud, peak))
+    print("  %-20s centroid %5.0f Hz   loudness %6.1f dB   peak %s   limiter -%.1f dB" % (name, centroid, loud, peak, gr))
 # one demo per folder: the first 3 seconds of every preset
 per = {}
 for (key, name, vol), chunk in zip(order, chunks):

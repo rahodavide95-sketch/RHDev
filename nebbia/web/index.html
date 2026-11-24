@@ -355,6 +355,7 @@
     const q = +$("quality").value;
     try {
       if (ctx) { await ctx.close(); ctx = null; node = null; }
+      reports = 0; hot = 0;
       const opts = { latencyHint: "playback" };
       if (q) opts.sampleRate = q;
       try { ctx = new AudioContext(opts); } catch (e) { ctx = new AudioContext({ latencyHint: "playback" }); }
@@ -378,12 +379,21 @@
       $("startBox").querySelector("p").textContent = "Il browser non ha potuto avviare l'audio (" + err.message + "). Prova con Safari o Chrome aggiornati.";
     }
   }
-  let lastChord = "";
+  let lastChord = "", hot = 0, reports = 0;
   function onEngine(d) {
     if (d.load !== undefined) {
       const pc = Math.round(d.load * 100);
       $("cpu").textContent = "CPU " + pc + " %";
       $("cpu").className = "chip" + (pc > 85 ? " hot" : "");
+      // an overloaded device crackles, and crackle sounds like clipping: after ~1.5 s near the limit step the
+      // quality down by one notch (the first second after a restart is ignored)
+      hot = (++reports > 12 && pc > 92) ? hot + 1 : 0;
+      const qs = $("quality");
+      if (hot > 18 && qs.selectedIndex < qs.options.length - 1) {
+        hot = 0;
+        qs.selectedIndex += 1;
+        startAudio().then(() => { $("st").textContent += " · qualità ridotta per la CPU"; });
+      }
     }
     if (d.chord) {
       const notes = d.chord.filter((n) => n >= 0).map(noteName);

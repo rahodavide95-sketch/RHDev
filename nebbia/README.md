@@ -128,7 +128,7 @@ Ogni sezione ha un interruttore nell'intestazione. Quando è spenta, le sue mano
 | ECHO | Eco spento (la coda si chiude subito) |
 | SPACE | Spazio e corde simpatiche spenti |
 | SPACE · REV | Solo il riverbero interno spento: le corde simpatiche continuano. Per usare il tuo riverbero dopo NEBBIA. Preset e Reset non lo toccano |
-| OUT · CHORUS | Chorus spento |
+| OUT · CHORUS | Chorus ensemble spento |
 
 ---
 
@@ -210,8 +210,24 @@ Sotto, una sola riga di controlli:
   wow, flutter e ping-pong. Il feedback arriva al 110% per le fughe dub.
 - **Space**: riverbero FDN a 8 linee più 6 **corde simpatiche** accordate in tempo reale sull'accordo, che
   seguono anche il glide. **Tune** fa il morph tra riverbero normale e corpo risonante.
-  Misurato: con Tune 100% il **92%** dell'energia della coda sta sulle note dell'accordo (66% senza).
-- **Out**: chorus BBD stereo, apertura stereo, volume con soft clip trasparente sotto −2 dBFS.
+  Misurato: con Tune 100% l'**89%** dell'energia della coda sta sulle note dell'accordo (79% senza).
+- **Out**: chorus a ensemble stereo (3 linee per lato, sfasate), larghezza mid/side, volume e un **limiter
+  look-ahead pulito a −1,5 dBFS**. Il limiter interviene solo sui colpi più forti (i preset sono tarati
+  perché tolga al massimo 1,5 dB), così l'uscita non clippa e non si schiaccia.
+
+### Gain staging: perché suona aperto e non clippa
+- Il livello che entra nel filtro è normalizzato su quanti oscillatori stanno suonando (Osc 2, Sub),
+  quindi accordi pieni e oscillatori in più non saturano il filtro da soli. Lo spinge solo **Drive**.
+- Dopo il filtro il guadagno viene compensato: più Drive significa più carattere, non più volume.
+- Le voci sono aperte nello stereo (dalla più bassa, quasi al centro, alla più alta, ai lati). Il chorus
+  ensemble e il mid/side allargano il suono senza annullarsi in mono.
+- Misurato sui preset principali:
+
+  | | Prima | Ora |
+  |---|---|---|
+  | Campioni nel soft clip | 8–27% | **0%** |
+  | Correlazione L/R in uscita (1 = mono) | 0,44–0,73 | 0,13–0,56 |
+  | Energia sopra 3 kHz sugli stab | 0,2–0,8% | 1,5–3,3% |
 
 ---
 
@@ -254,6 +270,7 @@ In `demo/` ci sono i render offline dello stesso DSP:
 
 | File | Cosa senti |
 |---|---|
+| `prima_dopo.mp3` | Sei preset suonati due volte, prima col motore vecchio e poi con quello nuovo, allo stesso volume |
 | `dub_stabs.mp3` | Il suono di default, stab in levare |
 | `presets_dub_techno.mp3`, `presets_deep_minimal.mp3`, `presets_ambient.mp3`, `presets_intro_soft.mp3`, `presets_drone.mp3`, `presets_experimental.mp3` | Una cartella per file: i primi 3 secondi di ogni preset, col suo pattern |
 | `randomize_tour.mp3` | Una pressione di RANDOMIZE per ognuno dei 14 caratteri |

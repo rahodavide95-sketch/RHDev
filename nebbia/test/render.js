@@ -20,7 +20,7 @@ function render(sc) {
   const chords = [];
   const bpm = sc.bpm || 120;
   const startBeat = sc.startBeat || 0;
-  let lastSt = -1;
+  let lastSt = -1, minLg = 1;
   for (let n = 0; n < N; n++) {
     if (sc.transport) { // emulate plugphasor~ + live.observer is_playing / current_song_time
       const beats = startBeat + n / SR * bpm / 60;
@@ -44,6 +44,7 @@ function render(sc) {
       }
     }
     sim.perform();
+    if ((n & 15) === 0) minLg = Math.min(minLg, sim.peek('h_lg'));
     const st = sim.peek('h_st');
     if (st === 0 && lastSt !== 0) chords.push({ t: n / SR, note: sim.peek('h_rootin'), at: n + BLOCK * 2 });
     lastSt = st;
@@ -58,7 +59,7 @@ function render(sc) {
       }
     }
   }
-  return { L, R, bad, chords };
+  return { L, R, bad, chords, minLg };
 }
 
 function writeWav(file, L, R) {
@@ -91,7 +92,8 @@ function stats(name, r) {
   let corr = 0, el = 0, er = 0;
   for (let i = 0; i < L.length; i++) { corr += L[i] * R[i]; el += L[i] * L[i]; er += R[i] * R[i]; }
   console.log(`\n[${name}] peak ${(20 * Math.log10(peak + 1e-20)).toFixed(1)} dBFS, non-finite samples ${r.bad}, ` +
-    `DC ${(dc / (2 * L.length)).toExponential(1)}, L/R correlation ${(corr / Math.sqrt(el * er + 1e-30)).toFixed(2)}`);
+    `DC ${(dc / (2 * L.length)).toExponential(1)}, L/R correlation ${(corr / Math.sqrt(el * er + 1e-30)).toFixed(2)}, ` +
+    `limiter ${(20 * Math.log10(r.minLg)).toFixed(1)} dB`);
   console.log('  RMS per second (dB): ' + secs.map((x) => x.toFixed(0)).join(' '));
   if (r.chords.length) {
     console.log('  chords: ' + r.chords.slice(0, 12).map((c) => c.t.toFixed(3) + 's ' + nn(c.note) + '→[' +

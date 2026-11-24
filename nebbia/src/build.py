@@ -123,9 +123,9 @@ param("p_air", "Air", "Air", "dial", 0, 100, 10, sec="VOICE", col=3, row=1)
 param("p_drift", "Drift", "Drift", "dial", 0, 100, 35, sec="VOICE", col=0, row=2)
 param("p_driftrate", "Drift Rate", "Drft Rate", "dial", 0.05, 5, 0.5, unit=3, exp=3.0, sec="VOICE", col=1, row=2)
 param("p_age", "Age", "Age", "dial", 0, 100, 40, sec="VOICE", col=2, row=2)
-param("p_sag", "Sag", "Sag", "dial", 0, 100, 35, sec="VOICE", col=3, row=2)
+param("p_sag", "Sag", "Sag", "dial", 0, 100, 15, sec="VOICE", col=3, row=2)
 # FILTER
-param("p_cutoff", "Cutoff", "Cutoff", "dial", 30, 16000, 600, unit=3, exp=3.0, sec="FILTER", col=0, row=0)
+param("p_cutoff", "Cutoff", "Cutoff", "dial", 30, 16000, 900, unit=3, exp=3.0, sec="FILTER", col=0, row=0)
 param("p_reso", "Resonance", "Reso", "dial", 0, 100, 30, sec="FILTER", col=1, row=0)
 param("p_drive", "Drive", "Drive", "dial", 0, 100, 30, sec="FILTER", col=2, row=0)
 param("p_slope", "Slope", "Slope", "menu", 0, 1, 0, sec="FILTER", col=3, row=0, enum=["24 dB", "12 dB"])
@@ -153,7 +153,7 @@ param("p_etime", "Echo Time", "Time", "menu", 0, len(ECHO_DIVS) - 1, 3, sec="ECH
 param("p_efb", "Echo Feedback", "Feedback", "dial", 0, 110, 62, sec="ECHO", col=1, row=0)
 param("p_emix", "Echo Mix", "Mix", "dial", 0, 100, 45, sec="ECHO", col=2, row=0)
 param("p_elocut", "Echo Low Cut", "Low Cut", "dial", 20, 1000, 90, unit=3, exp=2.0, sec="ECHO", col=0, row=1)
-param("p_ehicut", "Echo High Cut", "High Cut", "dial", 400, 16000, 2600, unit=3, exp=2.0, sec="ECHO", col=1, row=1)
+param("p_ehicut", "Echo High Cut", "High Cut", "dial", 400, 16000, 3600, unit=3, exp=2.0, sec="ECHO", col=1, row=1)
 param("p_edrive", "Echo Drive", "Drive", "dial", 0, 100, 35, sec="ECHO", col=2, row=1)
 param("p_wow", "Echo Wow", "Wow", "dial", 0, 100, 30, sec="ECHO", col=0, row=2)
 param("p_flutter", "Echo Flutter", "Flutter", "dial", 0, 100, 20, sec="ECHO", col=1, row=2)
@@ -164,16 +164,16 @@ param("p_rsize", "Space Size", "Size", "dial", 50, 150, 100, sec="SPACE", col=1,
 param("p_rmix", "Space Mix", "Mix", "dial", 0, 100, 32, sec="SPACE", col=2, row=0)
 param("p_tune", "Space Tune", "Tune", "dial", 0, 100, 50, sec="SPACE", col=0, row=1)
 param("p_sdecay", "String Decay", "Strings", "dial", 200, 20000, 3500, unit=2, exp=2.0, sec="SPACE", col=1, row=1)
-param("p_damp", "Space Damp", "Damp", "dial", 0, 100, 45, sec="SPACE", col=2, row=1)
+param("p_damp", "Space Damp", "Damp", "dial", 0, 100, 35, sec="SPACE", col=2, row=1)
 param("p_rlocut", "Space Low Cut", "Low Cut", "dial", 20, 800, 150, unit=3, exp=2.0, sec="SPACE", col=0, row=2)
 param("p_diff", "Space Diffusion", "Diffusion", "dial", 0, 100, 80, sec="SPACE", col=1, row=2)
 param("p_rmod", "Space Mod", "Mod", "dial", 0, 100, 35, sec="SPACE", col=2, row=2)
 # OUT
-param("p_chorus", "Chorus", "Chorus", "dial", 0, 100, 30, sec="OUT", col=0, row=0)
+param("p_chorus", "Chorus", "Chorus", "dial", 0, 100, 40, sec="OUT", col=0, row=0)
 param("p_crate", "Chorus Rate", "Ch Rate", "dial", 0.05, 6, 0.5, unit=3, exp=2.0, sec="OUT", col=1, row=0)
 param("p_cdepth", "Chorus Depth", "Ch Depth", "dial", 0, 100, 50, sec="OUT", col=0, row=1)
-param("p_width", "Width", "Width", "dial", 0, 100, 60, sec="OUT", col=1, row=1)
-param("p_vol", "Volume", "Volume", "dial", -60, 6, -3, unit=4, sec="OUT", col=0, row=2)
+param("p_width", "Width", "Width", "dial", 0, 100, 80, sec="OUT", col=1, row=1)
+param("p_vol", "Volume", "Volume", "dial", -60, 12, -3, unit=4, sec="OUT", col=0, row=2)
 
 # DICE (gen side; the Randomize button, Amount and locks live in Max only)
 CHORD_X = SEQ_X + 346
@@ -374,7 +374,7 @@ def build_body():
     smooth("s_tune", "clamp(p_tune, 0, 100) * 0.01", PDEF["p_tune"] / 100)
     smooth("s_chor", "clamp(p_chorus, 0, 100) * 0.01 * (p_choron > 0.5)", PDEF["p_chorus"] / 100)
     smooth("s_wid", "clamp(p_width, 0, 100) * 0.01", PDEF["p_width"] / 100)
-    smooth("s_vol", "exp(clamp(p_vol, -70, 6) * 0.1151293)", 10 ** (PDEF["p_vol"] / 20))
+    smooth("s_vol", "exp(clamp(p_vol, -70, 12) * 0.1151293)", 10 ** (PDEF["p_vol"] / 20))
     smooth("s_mw", "clamp(p_modw, 0, 127) / 127 * clamp(p_mwcut, 0, 100) * 0.05", 0.0)
     smooth("s_size", "clamp(p_rsize, 50, 150) * 0.01", PDEF["p_rsize"] / 100)
     w("shp = clamp(p_shape, 0, 100) * 0.01;")
@@ -409,7 +409,9 @@ def build_body():
     w("bendst = (clamp(p_bend, 0, 127) - 64) * 0.015625 * clamp(p_bendr, 0, 24);")
     w("drm = clamp(p_driftrate, 0.01, 10) * 2;")
     w("dsm = 1 - exp(-6.2831853 * clamp(p_driftrate, 0.01, 10) / sr);")
-    w("gin = 0.42 * (1 + s_drv * 4);")
+    # oscillator mix normalised to unity; the filter input is clean at Drive 0 and saturates as Drive rises
+    w("mixn = 1 / (1 + lv2 * 0.85 + subl * 0.5);")
+    w("gdrv = 0.38 * exp(s_drv * 2.2);")
     w("strum_s = abs(clamp(p_strum, -1000, 1000)) * 0.001 * sr;")
     w("sdn = p_strum < 0;")
 
@@ -824,7 +826,7 @@ def build_body():
             w("sb = ((p3 < 0.5) ? 1 : -1) + blep(p3, d3) - blep(pq3, d3);")
             U("h_p3", "p3")
             extra = " + sb * subl"
-        w(V("vin_# = (sw_# * (1 - shp) + pl_# * shp + s2_# * lv2 + noise() * air%s) * gin;" % extra))
+        w(V("vin_# = (sw_# * (1 - shp) + pl_# * shp + s2_# * lv2 + noise() * air%s) * mixn;" % extra))
         # ladder
         w(V("fco_# = s_cut + fenv * fe_# * vF_# + ktrk * (pv_# - 60) + lfo1 * lfoamt + s_mw + age * %s"
             " + drift * gdv * 0.15 - sagk * h_sagv * 0.35;" % fnum(t["f"])))
@@ -834,7 +836,7 @@ def build_body():
         w(V("B_# = 1 / (1 + g_#);"))
         w(V("k_# = s_res * 4.2 * (1 + age * %s);" % fnum(t["r"] * 0.05)))
         w(V("S_# = B_# * (G_# * G_# * G_# * h_l1_# + G_# * G_# * h_l2_# + G_# * h_l3_# + h_l4_#);"))
-        w(V("u_# = tanh((vin_# * (1 + 0.7 * k_#) - k_# * S_#) / (1 + k_# * G_# * G_# * G_# * G_#));"))
+        w(V("u_# = tanh((vin_# * gdrv - k_# * S_#) / (1 + k_# * G_# * G_# * G_# * G_#));"))
         w(V("v1_# = (u_# - h_l1_#) * G_#;"))
         w(V("y1_# = v1_# + h_l1_#;"))
         w(V("v2_# = (y1_# - h_l2_#) * G_#;"))
@@ -843,10 +845,11 @@ def build_body():
         w(V("y3_# = v3_# + h_l3_#;"))
         w(V("v4_# = (y3_# - h_l4_#) * G_#;"))
         w(V("y4_# = v4_# + h_l4_#;"))
-        w(V("vo_# = (((p_slope < 0.5) ? y4_# : y2_#) * s_flt + vin_# / (1 + s_drv * 4) * (1 - s_flt)) * ae_# * vA_# * sagg;"))
+        # resonance bass compensation and the drive make-up gain come after the filter, so they never overdrive it
+        w(V("vo_# = (((p_slope < 0.5) ? y4_# : y2_#) * (1 + 0.6 * k_#) / gdrv * s_flt + vin_# * (1 - s_flt)) * ae_# * vA_# * sagg;"))
         w(V("vo_# = vo_# * (1 + age * %s);" % fnum(t["g"])))
         sign = "-1" if s % 2 == 0 else "1"
-        w(V("pn_# = s_wid * %s * min(# / max(nn - 1, 1), 1);" % sign))
+        w(V("pn_# = s_wid * %s * (0.25 + 0.75 * min(# / max(nn - 1, 1), 1));" % sign))
         w(V("vL = vL + vo_# * sqrt(0.5 - 0.5 * pn_#);"))
         w(V("vR = vR + vo_# * sqrt(0.5 + 0.5 * pn_#);"))
         w(V("en = en + ae_# * vA_#;"))
@@ -863,23 +866,29 @@ def build_body():
 
     # ---------------- chorus
     w("")
-    w("// ================= BBD chorus =================")
-    D("chL", 8192); D("chR", 8192)
-    H("h_cph", 0.0); H("h_cbl", 0.0); H("h_cbr", 0.0)
+    w("// ================= stereo ensemble (three BBD lines per side, like the string-machine chorus) =================")
+    D("chM", 8192)
+    H("h_cph", 0.0); H("h_vph", 0.0); H("h_cbl", 0.0); H("h_cbr", 0.0)
     w("cph = h_cph + clamp(p_crate, 0.01, 20) * isr;")
     w("cph = cph - floor(cph);")
-    w("cmo = ftri(cph);")
+    w("vph = h_vph + 5.7 * isr;")
+    w("vph = vph - floor(vph);")
     w("cdp = clamp(p_cdepth, 0, 100) * 0.025;")
-    w("cwl = chL.read((3.3 + cdp * cmo) * 0.001 * sr);")
-    w("cwr = chR.read((3.3 - cdp * cmo) * 0.001 * sr);")
-    w("chL.write(vL);")
-    w("chR.write(vR);")
-    w("cbb = 1 - exp(-6.2831853 * 7000 * isr);")
+    w("chM.write((vL + vR) * 0.5);")
+    taps = []
+    for i in range(3):
+        for side, off in (("l", 0.0), ("r", 0.5)):
+            ph = i / 3 + off
+            w("ce%s%d = chM.read((4.2 + cdp * ftri(cph + %s) + 0.12 * sin(6.2831853 * (vph + %s))) * 0.001 * sr);"
+              % (side, i, fnum(ph), fnum(ph)))
+    w("cwl = (cel0 + cel1 + cel2) * 0.333333;")
+    w("cwr = (cer0 + cer1 + cer2) * 0.333333;")
+    w("cbb = 1 - exp(-6.2831853 * 9000 * isr);")
     w("cbl = h_cbl + (cwl - h_cbl) * cbb;")
     w("cbr = h_cbr + (cwr - h_cbr) * cbb;")
-    w("xL = vL * (1 - 0.3 * s_chor) + cbl * s_chor * 0.8;")
-    w("xR = vR * (1 - 0.3 * s_chor) + cbr * s_chor * 0.8;")
-    U("h_cph", "cph"); U("h_cbl", "cbl"); U("h_cbr", "cbr")
+    w("xL = vL * (1 - 0.35 * s_chor) + cbl * s_chor * 1.1;")
+    w("xR = vR * (1 - 0.35 * s_chor) + cbr * s_chor * 1.1;")
+    U("h_cph", "cph"); U("h_vph", "vph"); U("h_cbl", "cbl"); U("h_cbr", "cbr")
 
     # ---------------- dub tape echo
     w("")
@@ -1007,11 +1016,26 @@ def build_body():
     w("sgo = %s + 0.55 * (1 - s_rev);" % fnum(STR_OUT))
     w("ml = xL + el2 * s_emix + (rvL * s_rev + stL * s_tune * sgo) * s_rmix;")
     w("mr = xR + er2 * s_emix + (rvR * s_rev + stR * s_tune * sgo) * s_rmix;")
-    w("dyl = ml - h_dxl + 0.9993 * h_dyl;")
-    w("dyr = mr - h_dxr + 0.9993 * h_dyr;")
-    U("h_dxl", "ml"); U("h_dyl", "dyl"); U("h_dxr", "mr"); U("h_dyr", "dyr")
-    w("out1 = sclip(dyl * s_vol);")
-    w("out2 = sclip(dyr * s_vol);")
+    w("msw = 0.8 + 0.5 * s_wid;")
+    w("mmid = (ml + mr) * 0.5;")
+    w("mside = (ml - mr) * 0.5 * msw;")
+    w("dyl = (mmid + mside) - h_dxl + 0.9993 * h_dyl;")
+    w("dyr = (mmid - mside) - h_dxr + 0.9993 * h_dyr;")
+    U("h_dxl", "mmid + mside"); U("h_dyl", "dyl"); U("h_dxr", "mmid - mside"); U("h_dyr", "dyr")
+    # clean look-ahead peak limiter at -1.5 dBFS: the level is read 64 samples ahead of the audio, the gain glides
+    # down in ~0.25 ms (fully settled before the peak arrives) and recovers in ~100 ms, so nothing reaches the soft
+    # clip and nothing is squared off
+    D("lkL", 128); D("lkR", 128)
+    H("h_lenv", 0.0); H("h_lg", 1.0)
+    w("lkL.write(dyl);")
+    w("lkR.write(dyr);")
+    w("lpk = max(abs(dyl), abs(dyr)) * s_vol;")
+    w("lenv = (lpk > h_lenv) ? lpk : h_lenv * exp(-12.5 / sr);")
+    w("lgt = (lenv > 0.84) ? 0.84 / lenv : 1;")
+    w("lg = h_lg + (lgt - h_lg) * ((lgt < h_lg) ? (1 - exp(-4000 / sr)) : (1 - exp(-10 / sr)));")
+    U("h_lenv", "lenv"); U("h_lg", "lg")
+    w("out1 = sclip(lkL.read(64) * s_vol * lg);")
+    w("out2 = sclip(lkR.read(64) * s_vol * lg);")
     for s in range(NV):
         w("out%d = (%d < nn) ? q%d : -1;" % (s + 3, s, s))
     w("out%d = (srun > 0) ? stp : -1;" % (NV + 3))
@@ -1652,6 +1676,25 @@ _gen_path = os.path.join(HERE, "presets_generated.json")
 if os.path.exists(_gen_path):
     _gen = json.load(open(_gen_path))
     FOLDERS = [(f, lst + [(n, ov) for n, ov in _gen.get(f, [])]) for f, lst in FOLDERS]
+
+
+def _lift(nm, v):
+    if nm == "p_cutoff":
+        return min(16000, round(v * 1.5, 1))
+    if nm == "p_ehicut":
+        return min(16000, round(v * 1.4))
+    if nm == "p_damp":
+        return max(0, v - 12)
+    if nm == "p_sag":
+        return round(v * 0.5, 1)
+    return v
+
+
+FOLDERS = [(f, [(n, {k: _lift(k, v) for k, v in ov.items()}) for n, ov in lst]) for f, lst in FOLDERS]
+ARCHETYPES = [(n, {k: (_lift(k, lo), _lift(k, hi)) for k, (lo, hi) in r.items()}, o) for n, r, o in ARCHETYPES]
+for _k in ("p_cutoff", "p_ehicut", "p_damp", "p_sag"):
+    _lo, _hi, _c = RAND[_k]
+    RAND[_k] = (_lift(_k, _lo), _lift(_k, _hi), _c)
 FACTORY = [(n, ov) for _, lst in FOLDERS for n, ov in lst]
 NUSER = 8
 # which Randomize characters each folder offers: (first, count)
@@ -1729,7 +1772,7 @@ ANNOT = {
     "p_rlocut": "Toglie le basse prima dello spazio: coda pulita, senza fango.",
     "p_diff": "Densità delle prime riflessioni.",
     "p_rmod": "Movimento delle linee dello spazio: meno metallico, più vivo.",
-    "p_chorus": "Chorus BBD stereo.",
+    "p_chorus": "Chorus ensemble stereo: tre linee BBD per lato, sfasate, come nelle string machine.",
     "p_crate": "Velocità del chorus.",
     "p_cdepth": "Profondità del chorus.",
     "p_width": "Apertura stereo delle voci.",

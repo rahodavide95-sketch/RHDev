@@ -5,7 +5,7 @@
 //  hf%    share of the output energy above 3 kHz;  centroid in Hz;  crest = peak / RMS in dB
 // Usage: node test/sound_metrics.js [engine module] ;  prints one line per test sound
 const path = require('path');
-const mod = path.resolve(process.argv[2] || path.join(__dirname, 'nebbia_web_node.js'));
+const mod = path.resolve(process.argv[2] || path.join(__dirname, 'dubmachine_web_node.js'));
 const presets = require(path.join(__dirname, '..', 'web', 'presets.json'));
 const SR = 48000;
 

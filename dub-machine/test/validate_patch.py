@@ -1,4 +1,4 @@
-"""Structural checks on Nebbia.maxpat: every patch cord points to existing inlets/outlets (at every level,
+"""Structural checks on Dub Machine.maxpat: every patch cord points to existing inlets/outlets (at every level,
 including the section bpatchers), parameter names are unique, every send has its receive."""
 import collections
 import json
@@ -6,8 +6,13 @@ import os
 import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-root = json.load(open(os.path.join(HERE, "..", "Nebbia.maxpat")))["patcher"]
+root = json.load(open(os.path.join(HERE, "..", "Dub Machine.maxpat")))["patcher"]
 params, sends, recvs, counts = [], collections.Counter(), collections.Counter(), collections.Counter()
+
+
+# Live theme colors used by the device (names as Max for Live patches store them: themecolor.<name>)
+LIVE_THEME = {"live_surface_bg", "live_lcd_bg", "live_lcd_frame", "live_control_fg", "live_control_fg_off",
+              "live_lcd_control_fg", "live_value_arc", "live_led_bg"}
 
 
 def walk(pat, where):
@@ -19,8 +24,15 @@ def walk(pat, where):
         assert di < ids[d]["numinlets"], (where, ids[d].get("text"), ids[d]["maxclass"], di)
     for b in ids.values():
         counts[b["maxclass"]] += 1
-        if "saved_attribute_attributes" in b:
-            params.append(b["saved_attribute_attributes"]["valueof"]["parameter_longname"])
+        saa = b.get("saved_attribute_attributes", {})
+        if "valueof" in saa:
+            params.append(saa["valueof"]["parameter_longname"])
+        # colors follow the Live theme: only known theme colors, and Live controls keep the theme's own colors
+        for attr, v in saa.items():
+            if attr != "valueof":
+                assert v.get("expression", "").replace("themecolor.", "") in LIVE_THEME, (where, b["id"], attr, v)
+        if b["maxclass"] in ("live.dial", "live.text", "live.menu", "live.numbox"):
+            assert not [k for k in b if k.endswith("color")], (where, b["id"], "fixed color on a Live control")
         t = b.get("text", "")
         m = re.match(r"^(s|r) (---\S+)$", t)
         if m:

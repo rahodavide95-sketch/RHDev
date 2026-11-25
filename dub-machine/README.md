@@ -1,4 +1,4 @@
-# NEBBIA — living chord engine
+# DUB MACHINE — living chord engine
 
 Strumento **Max for Live** per Ableton Live, nato per la **dub techno underground** (suoni scuri, profondi,
 fatti di eco e di spazio) e con preset anche per **deep/minimal, ambient, intro morbide, drone e sperimentale**.
@@ -7,9 +7,16 @@ L'accordo nasce da un generatore che fa voice leading e può tirare il dado. Pas
 comportano come un circuito vero, poi per un tape echo dub e infine per uno spazio le cui **corde simpatiche si
 riaccordano sull'accordo** che stai suonando.
 
-![Pannello di NEBBIA (anteprima)](demo/ui_preview.png)
+![Pannello di Dub Machine col tema scuro di Live (anteprima)](demo/ui_preview.png)
+![Pannello di Dub Machine col tema chiaro di Live (anteprima)](demo/ui_preview_light.png)
 
-*Anteprima del pannello generata dal file della patch. In Live le manopole hanno lo stile nativo.*
+*Anteprime generate dal file della patch, col tema scuro e col tema chiaro di Live (colori approssimati).*
+
+### Colori
+Dub Machine prende **tutti i colori dal tema di Live** (*Impostazioni → Tema e colori*), come un device di
+Ableton. Sfondo, contorni delle sezioni e testi usano i colori del tema. Manopole, pulsanti e menu sono disegnati da
+Live con i colori dei suoi controlli, e anche playhead, tasti dell'accordo e segni delle sezioni prendono l'accento
+del tema. Se cambi tema, il device cambia con lui.
 
 Tutto è digitale (gen~, compilato in C dentro Max). Non usa campioni né wavetable.
 
@@ -17,7 +24,7 @@ Tutto è digitale (gen~, compilato in C dentro Max). Non usa campioni né waveta
 
 ## Provarlo senza Live (anche su iPad)
 
-`web/` contiene **Nebbia Player**: una pagina che suona nel browser lo stesso motore audio del device (generato
+`web/` contiene **Dub Machine Player**: una pagina che suona nel browser lo stesso motore audio del device (generato
 da `src/build.py` in `web/engine.js`, identico campione per campione alla copia usata nei test), con i 132 preset,
 i pad, il sequencer, Randomize e i controlli principali. Serve per ascoltare e scegliere i suoni; il device
 completo gira in Ableton Live.
@@ -28,7 +35,7 @@ completo gira in Ableton Live.
 
 Serve **Ableton Live 11 o 12 Suite**, oppure Standard con l'add-on Max for Live. gen~ è già incluso.
 
-1. Scarica `Nebbia.amxd`.
+1. Scarica `Dub Machine.amxd`.
 2. Trascinalo su una traccia MIDI di Live.
 3. Suona una nota: senti già un accordo dub.
 
@@ -40,7 +47,7 @@ Per tenerlo nel browser di Live, copia il file in
 > Se c'è un errore in rosso, copialo e mandamelo.
 >
 > **Piano B se Live non accetta il file `.amxd`:** trascina un *Max Instrument* vuoto
-> (Browser → Max for Live), clicca *Edit*, apri `Nebbia.maxpat` in Max, seleziona tutto, copia,
+> (Browser → Max for Live), clicca *Edit*, apri `Dub Machine.maxpat` in Max, seleziona tutto, copia,
 > incolla nella patch del device vuoto e salva.
 
 **Passa col mouse su qualsiasi controllo:** la *Info View* di Live (in basso a sinistra, tasto `?`) ti spiega
@@ -52,7 +59,7 @@ in italiano cosa fa.
 
 La colonna **PRESET** a sinistra è organizzata **per cartelle, per genere e stile**:
 
-1. **Cartella** (menu arancione): scegli il genere.
+1. **Cartella** (primo menu): scegli il genere.
 2. **Preset** (menu sotto): scegli il suono, si carica subito.
 3. **◀ / ▶**: carica il preset precedente o successivo della cartella (ricomincia dall'inizio in fondo alla lista).
 
@@ -101,11 +108,11 @@ Lo stato aperto o chiuso di ogni sezione si salva con il progetto.
 
 ## Da dove arrivano le note
 
-Ogni nota che arriva a NEBBIA è la **fondamentale di un accordo**. Hai tre modi per dargliele:
+Ogni nota che arriva a Dub Machine è la **fondamentale di un accordo**. Hai tre modi per dargliele:
 
 | Come | Imposta | Cosa succede |
 |---|---|---|
-| **Piano roll / tastiera** | SEQ spento (OFF) | Scrivi *una* nota per accordo nel piano roll (o suonala). NEBBIA costruisce l'accordo. |
+| **Piano roll / tastiera** | SEQ spento (OFF) | Scrivi *una* nota per accordo nel piano roll (o suonala). Dub Machine costruisce l'accordo. |
 | **Sequencer interno** | SEQ acceso, Mode **Play** | Premi Play in Live: gli step suonano a tempo. Il MIDI di Live suona comunque sopra. |
 | **Sequencer trasposto** | SEQ acceso, Mode **Trans** | Il pattern suona solo mentre tieni un tasto e parte da quel tasto. Perfetto dal vivo. |
 
@@ -127,7 +134,7 @@ Ogni sezione ha un interruttore nell'intestazione. Quando è spenta, le sue mano
 | FILTER | Filtro escluso, passa l'oscillatore pieno |
 | ECHO | Eco spento (la coda si chiude subito) |
 | SPACE | Spazio e corde simpatiche spenti |
-| SPACE · REV | Solo il riverbero interno spento: le corde simpatiche continuano. Per usare il tuo riverbero dopo NEBBIA. Preset e Reset non lo toccano |
+| SPACE · REV | Solo il riverbero interno spento: le corde simpatiche continuano. Per usare il tuo riverbero dopo Dub Machine. Preset e Reset non lo toccano |
 | OUT · CHORUS | Chorus ensemble spento |
 
 ---
@@ -163,7 +170,7 @@ Sotto, una sola riga di controlli:
   evita i cluster di semitono e resta nel registro della nota suonata.
   Esempio: Am9 → Fm9 diventa Fm9/Ab, senza salti.
 - **Voices** (2–6 note), **Octave**, **Strum** (+ dal basso, − dall'alto), **Glide**, **Humanize**, **Bend**.
-- **CHORD NOW**: la tastierina mostra in tempo reale le note che NEBBIA sta suonando.
+- **CHORD NOW**: la tastierina mostra in tempo reale le note che Dub Machine sta suonando.
 
 ### DICE — caso controllato
 - **RANDOMIZE**: sceglie prima un **carattere** a caso tra quelli della cartella preset in cui sei (il nome
@@ -279,7 +286,7 @@ In `demo/` ci sono i render offline dello stesso DSP:
 | `dorian_pads.mp3` | Modalità scala, glide e strum su un pad |
 | `space_tune0.mp3` / `space_tune100.mp3` | Lo stesso stab con riverbero normale e con le corde accordate |
 
-`demo/dub_stabs.mid` è una clip di 4 battute da trascinare su una traccia con NEBBIA.
+`demo/dub_stabs.mid` è una clip di 4 battute da trascinare su una traccia con Dub Machine.
 
 ---
 
@@ -289,7 +296,7 @@ Tutto è generato da un solo file, `src/build.py`: accordi, scale, parametri, la
 d'aiuto e DSP.
 
 ```bash
-python3 src/build.py           # rigenera Nebbia.amxd, Nebbia.maxpat, src/nebbia.genexpr
+python3 src/build.py           # rigenera Dub Machine.amxd, Dub Machine.maxpat, src/dubmachine.genexpr
 node test/render.js            # rende i test in demo/*.wav (gemello JavaScript del DSP)
 python3 test/analyse_space.py  # misura quanto lo spazio "canta" l'accordo
 python3 test/preview_ui.py ui.html  # anteprima del pannello

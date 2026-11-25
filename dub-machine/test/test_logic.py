@@ -37,7 +37,7 @@ def expect_preset(sim, ov, skip=(), label=""):
           ", ".join("%s=%s (want %s)" % (n, sim.gen.get(n), ov.get(n, P[n]["default"])) for n in bad[:4])))
 
 
-sim = Sim(os.path.join(HERE, "..", "Nebbia.maxpat"))
+sim = Sim(os.path.join(HERE, "..", "Dub Machine.maxpat"))
 sim.load()
 bad = [n for n in P if not same(n, sim.gen.get(n), P[n]["default"])]
 check(not bad, "after load: %s" % bad[:5])

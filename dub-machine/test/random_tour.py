@@ -63,7 +63,7 @@ for ai, (name, _, _) in enumerate(build.ARCHETYPES):
 
 tmp = os.path.join(HERE, "..", "demo", "tour.json")
 json.dump(scen, open(tmp, "w"))
-out = subprocess.run(["node", os.path.join(HERE, "render.js")], env=dict(os.environ, NEBBIA_SCENARIOS=tmp),
+out = subprocess.run(["node", os.path.join(HERE, "render.js")], env=dict(os.environ, DM_SCENARIOS=tmp),
                      capture_output=True, text=True)
 print("\n".join(l for l in out.stdout.splitlines() if l.startswith("[")))
 os.remove(tmp)

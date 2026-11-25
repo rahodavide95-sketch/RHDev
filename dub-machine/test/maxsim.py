@@ -1,4 +1,4 @@
-"""A small simulator of the Max control logic in Nebbia.maxpat (no audio): enough of Max's message passing
+"""A small simulator of the Max control logic in Dub Machine.maxpat (no audio): enough of Max's message passing
 to click the device's buttons and menus and see which values reach gen~. It follows Max's rules that matter
 here: depth-first messages, right-to-left trigger/unpack outlets, fan-out right-to-left by object position,
 cold/hot inlets, send/receive across the section bpatchers, delay after the current event."""

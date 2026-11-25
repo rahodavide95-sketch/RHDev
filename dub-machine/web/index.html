@@ -1,4 +1,4 @@
-<title>Nebbia Player</title>
+<title>Dub Machine Player</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
@@ -91,7 +91,7 @@
 
 <div class="wrap">
   <header>
-    <div class="brand"><h1>NEBBIA</h1><span>player</span></div>
+    <div class="brand"><h1>DUB MACHINE</h1><span>player</span></div>
     <div class="status">
       <span class="chip" id="st">Audio spento</span>
       <span class="chip" id="cpu" hidden>CPU –</span>
@@ -106,7 +106,7 @@
 
   <section class="start" id="startBox">
     <button class="btn primary" id="startBtn">Accendi l'audio</button>
-    <p>Lo stesso motore audio del device NEBBIA, qui nel browser. Tocca per accendere, poi scegli un preset e suona i pad o premi Play. Su iPad, se non senti nulla, togli la modalità silenziosa.</p>
+    <p>Lo stesso motore audio del device Dub Machine, qui nel browser. Tocca per accendere, poi scegli un preset e suona i pad o premi Play. Su iPad, se non senti nulla, togli la modalità silenziosa.</p>
   </section>
 
   <div class="grid">
@@ -156,7 +156,7 @@
   </div>
 
   <footer>
-    <b>Cosa stai ascoltando.</b> Il motore audio di NEBBIA (accordi, 6 voci analogiche, eco, spazio con corde simpatiche) è lo
+    <b>Cosa stai ascoltando.</b> Il motore audio di Dub Machine (accordi, 6 voci analogiche, eco, spazio con corde simpatiche) è lo
     stesso del device Max for Live, tradotto in JavaScript: suona uguale, campione per campione. Qui ci sono i preset, il
     sequencer e i controlli principali. Il device completo, con tutte le manopole, gira in Ableton Live su Mac o Windows.
     Se il suono scatta, scegli una qualità più leggera.
@@ -362,7 +362,7 @@
       const src = await (await fetch("engine.js")).text();
       const url = URL.createObjectURL(new Blob([src], { type: "application/javascript" }));
       await ctx.audioWorklet.addModule(url);
-      node = new AudioWorkletNode(ctx, "nebbia", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2],
+      node = new AudioWorkletNode(ctx, "dubmachine", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2],
                                                    processorOptions: { init: [{ params: values }] } });
       node.connect(ctx.destination);
       node.port.onmessage = (e) => onEngine(e.data);

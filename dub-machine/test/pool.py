@@ -18,7 +18,7 @@ def render_many(scen, procs=None):
         tmp = os.path.join(DEMO, "_pool_%d.json" % ci)
         json.dump({k: scen[k] for k in chunk}, open(tmp, "w"))
         running.append((tmp, subprocess.Popen(["node", os.path.join(HERE, "render.js")],
-                                              env=dict(os.environ, NEBBIA_SCENARIOS=tmp),
+                                              env=dict(os.environ, DM_SCENARIOS=tmp),
                                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)))
     stats = {}
     for tmp, pr in running:

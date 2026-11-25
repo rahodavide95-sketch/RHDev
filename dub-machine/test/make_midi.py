@@ -1,4 +1,4 @@
-"""Writes demo/dub_stabs.mid: 4 bars of off-beat stabs (A A F G) to drag onto a NEBBIA track."""
+"""Writes demo/dub_stabs.mid: 4 bars of off-beat stabs (A A F G) to drag onto a Dub Machine track."""
 import os
 import struct
 

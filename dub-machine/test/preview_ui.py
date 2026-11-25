@@ -80,10 +80,10 @@ for x in all_boxes:
         stroke = ' stroke="%s"' % c(b, "bordercolor") if b.get("border") else ""
         els.append('<rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="%s"%s/>'
                    % (X + 0.5, Y + 0.5, w - 1, h - 1, b.get("rounded", 0), c(b, "bgcolor"), stroke))
-    elif mc == "comment" and b["text"] and b.get("textjustification") == 1:  # vertical strip label
-        for li, ch in enumerate(b["text"].split()):
-            els.append('<text x="%s" y="%s" font-size="9" font-weight="700" text-anchor="middle" fill="%s" '
-                       'font-family="Inter,Arial">%s</text>' % (X + w / 2, Y + 10 + li * 11, c(b, "textcolor"), ch))
+    elif mc == "comment" and b["text"] and b.get("textjustification") == 1:  # letter of a folded strip's name
+        els.append('<text x="%s" y="%s" font-size="%s" font-weight="700" text-anchor="middle" fill="%s" '
+                   'font-family="Inter,Arial">%s</text>' % (X + w / 2, Y + 11, b["fontsize"], c(b, "textcolor"),
+                                                           b["text"]))
     elif mc == "live.comment":
         bold = "Bold" in b["fontname"]
         els.append('<text x="%s" y="%s" font-size="%s" font-weight="%s" fill="%s" font-family="Inter,Arial" '

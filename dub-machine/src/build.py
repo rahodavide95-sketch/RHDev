@@ -1984,9 +1984,11 @@ def build_patcher(code):
                                  mode=0, text="+", texton="+", parameter_enable=0, presentation=1,
                                  presentation_rect=[2.0, 4.0, float(FOLDW - 6), 14.0], fontname=F_HEAD, fontsize=10.0, _grp=g,
                                  annotation="Riapre la sezione %s." % name, annotation_name="Open " + name.title())
-        pt.add("comment", [4400 + si * 60, 290, 16, 140], text=" ".join(name), ninl=1, nout=0, presentation=1,
-               presentation_rect=[2.0, 24.0, float(FOLDW - 6), 140.0], fontname=F_HEAD,
-               fontsize=9.0, textjustification=1, _grp=g, _theme=dict(textcolor="text"))
+        # the name, one letter per line: one comment per letter, so the stacking never depends on how Live wraps text
+        for li, ch in enumerate(name):
+            pt.add("comment", [4400 + si * 60, 290 + li * 20, 20, 15], text=ch, ninl=1, nout=0, presentation=1,
+                   presentation_rect=[0.0, 25.0 + li * 13.0, float(FOLDW - 2), 15.0], fontname=F_HEAD,
+                   fontsize=10.0, textjustification=1, _grp=g, _theme=dict(textcolor="text"))
 
     # ------------------------------------------------ core objects
     gen = pt.add("newobj", [40, 1180, 400, 22], text="gen~", ninl=1, nout=3 + NV,

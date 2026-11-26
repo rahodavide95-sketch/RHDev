@@ -34,6 +34,9 @@ def walk(pat, where):
         if b["maxclass"] in ("live.dial", "live.text", "live.menu", "live.numbox"):
             assert not [k for k in b if k.endswith("color")], (where, b["id"], "fixed color on a Live control")
         t = b.get("text", "")
+        if t.startswith("expr "):  # Max truncates long formulas and handles at most 9 inlets
+            assert len(t) - 5 <= 120 and " " not in t[5:], (where, "expr too long", t)
+            assert max([int(v) for v in re.findall(r"\$[fi](\d+)", t)] or [0]) <= 9, (where, "expr inlets", t)
         m = re.match(r"^(s|r) (---\S+)$", t)
         if m:
             (sends if m.group(1) == "s" else recvs)[m.group(2)] += 1

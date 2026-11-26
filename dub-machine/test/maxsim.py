@@ -83,7 +83,11 @@ class Sim:
             f()
 
     def load(self):
-        """Device load: every Live parameter restores (outputs) its value, then live.thisdevice bangs."""
+        """Device load: loadmess objects send their message, every Live parameter restores (outputs) its value,
+        then live.thisdevice bangs."""
+        for o in self.objs:
+            if o.name == "loadmess":
+                o.out(0, o.args)
         for o in self.objs:
             if o.vo and o.vo.get("parameter_type", 0) != 3:
                 o.out(0, [o.value])
@@ -231,7 +235,14 @@ def _receive(self, inlet, msg):  # noqa: C901  (one big dispatcher, like Max's c
             self.out(len(a), msg)
     elif n == "zl":
         mode = a[0]
-        if mode == "slice":
+        if mode == "lookup":  # right inlet: the list; left inlet: an index -> that element
+            if inlet == 1:
+                self.state["list"] = list(msg)
+            else:
+                lst, i = self.state.get("list", []), int(num(msg))
+                if 0 <= i < len(lst):
+                    self.out(0, [lst[i]])
+        elif mode == "slice":
             k = a[1]
             if msg[k:]:
                 self.out(1, msg[k:])

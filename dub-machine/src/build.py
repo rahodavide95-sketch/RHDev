@@ -1287,6 +1287,18 @@ registerProcessor('dubmachine', DubMachineProcessor);
 APPVERSION = {"major": 8, "minor": 6, "revision": 2, "architecture": "x64", "modernui": 1}
 
 
+# Max's expr truncates long formulas ("expr: args truncated" in the Max Console, then a broken formula), so every
+# formula is written without spaces and must stay well under the limit, with at most 9 inlets ($f1..$f9).
+EXPR_MAX = 120
+
+
+def short_expr(body):
+    body = body.replace(" ", "")
+    assert len(body) <= EXPR_MAX, ("expr too long for Max", len(body), body)
+    assert max([int(v) for v in re.findall(r"\$[fi](\d+)", body)] or [0]) <= 9, ("expr with over 9 inlets", body)
+    return body
+
+
 class Patch:
     def __init__(self):
         self.boxes = []
@@ -1301,6 +1313,8 @@ class Patch:
         if outtype is not None:
             b["outlettype"] = outtype
         if text is not None:
+            if maxclass == "newobj" and text.startswith("expr "):
+                text = "expr " + short_expr(text[5:])
             b["text"] = text
         theme = kw.pop("_theme", None)
         if maxclass in LIVE_CONTROLS:  # Live draws them with the theme's control colors
@@ -1441,8 +1455,8 @@ RAND = {
 }
 # sequencer randomization: off-beats are more likely; at most 4 steps stay on (enforced in the patch)
 SON_DENS = [1500 if c % 2 == 0 else 5500 for c in range(NCELL)]
-SEMI_EXPR = ("($f1 >= 5000.) * (0. - 2.) + ($f1 >= 6000.) * 5. + ($f1 >= 7000.) * 2. + ($f1 >= 8000.) * 2. "
-             "+ ($f1 >= 9000.) * (0. - 12.)")  # root 50%, -2, +3, +5, +7, -5
+# random step note: int(r / 1000) (r = 0..10000) picks from this table: root 50%, then -2, +3, +5, +7, -5
+SEMI_TABLE = [0, 0, 0, 0, 0, -2, 3, 5, 7, -5, -5]
 for _c in range(NCELL):
     RAND["p_son%d" % (_c + 1)] = (0, 1, "gate")
     RAND["p_snote%d" % (_c + 1)] = (-24, 24, "semis")
@@ -2235,7 +2249,7 @@ def build_patcher(code):
                    ("p_swing", "expr 40. * pow($f1 / 10000., 2.)")]
     for c in range(NCELL):
         seq_targets += [("p_son%d" % (c + 1), "expr $f1 < %s" % ff(SON_DENS[c])),
-                        ("p_snote%d" % (c + 1), "expr " + SEMI_EXPR),
+                        ("p_snote%d" % (c + 1), "semis"),
                         ("p_sacc%d" % (c + 1), "expr $f1 < 3000.")]
     suzi = pt.obj("uzi %d" % len(seq_targets), 2200, 700, ninl=2, nout=3, outtype=["bang", "bang", "int"])
     pt.connect(stb, 0, suzi, 0)
@@ -2249,11 +2263,23 @@ def build_patcher(code):
     sroute = pt.obj("route " + " ".join(str(i + 1) for i in range(len(seq_targets))), 2200, 820, ninl=2,
                     nout=len(seq_targets) + 1)
     pt.connect(sgrp, 0, sroute, 0)
+    def semi_lookup(x, y):
+        """r (0..10000) -> interval from SEMI_TABLE: returns (inlet object, outlet object)"""
+        idx = pt.obj("expr int($f1 / 1000.)", x, y)
+        lk = pt.obj("zl lookup", x, y + 25, ninl=2, nout=2)
+        lm = pt.obj("loadmess " + " ".join(str(v) for v in SEMI_TABLE), x + 60, y)
+        pt.connect(lm, 0, lk, 1)
+        pt.connect(idx, 0, lk, 0)
+        return idx, lk
+
     for i, (nm, e) in enumerate(seq_targets):
-        ex = pt.add("newobj", [2200 + (i % 6) * 150, 860 + (i // 6) * 40, 140, 22], text=e, ninl=1, nout=1,
-                    outtype=[""])
+        ex_x, ex_y = 2200 + (i % 6) * 150, 860 + (i // 6) * 40
+        if e == "semis":
+            ex, lk = semi_lookup(ex_x, ex_y)
+        else:
+            ex = lk = pt.add("newobj", [ex_x, ex_y, 140, 22], text=e, ninl=1, nout=1, outtype=[""])
         pt.connect(sroute, i, ex, 0)
-        pt.connect(ex, 0, ui_of[nm], 0)
+        pt.connect(lk, 0, ui_of[nm], 0)
 
     # at most 4 steps on: every ON button feeds a running sum; turning on a 5th one switches it back off
     cpak = pt.obj("pak %s" % " ".join(["0"] * NCELL), 2900, 600, ninl=NCELL, nout=1)
@@ -2385,18 +2411,15 @@ def build_patcher(code):
         bx, by = 40 + (i % 12) * 150, 1400 + (i // 12) * 90
         sel_ = "($f2 < $f3 * (1. - $f5) * 100.)"
         in_arch = any(nm in ov for _, ov, _ in ARCHETYPES)
+        tables, semis = [], False  # tables: one value per character (ARCHETYPES), looked up into $f6, $f7
         if curve == "coin":
-            prob = "+".join("($f6==%d)*%d" % (ai, int(on.get(nm, 0.5) * 10000))
-                            for ai, (_, _, on) in enumerate(ARCHETYPES))
-            e = "expr $f4 + %s * (($f1 < (%s)) - $f4)" % (sel_, prob)
+            tables = [[int(on.get(nm, 0.5) * 10000) for _, _, on in ARCHETYPES]]
+            e = "expr $f4 + %s * (($f1 < $f6) - $f4)" % sel_
         elif in_arch:
-            los, spans = [], []
-            for ai, (_, ov, _) in enumerate(ARCHETYPES):
-                a_lo, a_hi = ov.get(nm, (lo, hi))
-                los.append("($f6==%d)*%s" % (ai, fnum(float(a_lo))))
-                spans.append("($f6==%d)*%s" % (ai, fnum(float(a_hi - a_lo))))
-            e = ("expr $f4 + $f3 * 0.01 * (1. - $f5) * (((%s) + (%s) * pow($f1 / 10000., %s)) - $f4) + $f2 * 0."
-                 % ("+".join(los), "+".join(spans), ff(1.7 if curve != 1 and curve != 1.5 else 1.0)))
+            rng = [ov.get(nm, (lo, hi)) for _, ov, _ in ARCHETYPES]
+            tables = [[a_lo for a_lo, _ in rng], [a_hi - a_lo for a_lo, a_hi in rng]]
+            e = ("expr $f4 + $f3 * 0.01 * (1. - $f5) * (($f6 + $f7 * pow($f1 / 10000., %s)) - $f4) + $f2 * 0."
+                 % ff(1.7 if curve != 1 and curve != 1.5 else 1.0))
         elif curve == "darkchord":  # dark colours only: skip Major, Maj7, Maj9, Dom9 (indexes 10-13)
             e = ("expr $f4 + %s * ((int($f1 / 10001. * %s) + (int($f1 / 10001. * %s) >= 10) * 4) - $f4)"
                  % (sel_, ff(len(DARK_CHORDS)), ff(len(DARK_CHORDS))))
@@ -2407,8 +2430,9 @@ def build_patcher(code):
             e = "expr $f4 + %s * (($f1 < %s) - $f4)" % (sel_, ff(SON_DENS[int(nm[5:]) - 1]))
         elif curve == "acc":
             e = "expr $f4 + %s * (($f1 < 3000.) - $f4)" % sel_
-        elif curve == "semis":
-            e = "expr $f4 + %s * ((%s) - $f4)" % (sel_, SEMI_EXPR)
+        elif curve == "semis":  # $f6: the interval looked up from the same random number
+            e = "expr $f4 + %s * ($f6 - $f4)" % sel_
+            semis = True
         elif p["kind"] == "menu":
             e = ("expr $f4 + ($f2 < $f3 * (1. - $f5) * 100.) * (int(%s + $f1 / 10001. * %s) - $f4)"
                  % (ff(lo), ff(hi - lo + 1)))
@@ -2420,12 +2444,24 @@ def build_patcher(code):
                  % (ff(lo), ff(hi - lo), ff(curve)))
         up = pt.obj("unpack 0 0", bx, by, ninl=1, nout=2)
         pt.connect(rroute, i, up, 0)
-        ex = pt.add("newobj", [bx, by + 30, 140, 22], text=e, ninl=6 if ("$f6" in e) else 5, nout=1,
+        ex = pt.add("newobj", [bx, by + 30, 140, 22], text=e, ninl=5 + len(tables) + semis, nout=1,
                     outtype=[""])
-        if "$f6" in e:
-            pt.connect(arnd, 0, ex, 5)
+        for ti, tab in enumerate(tables):  # the character is chosen before the loop starts: cold inlets
+            lk = pt.obj("zl lookup", bx + 50 * ti, by + 15, ninl=2, nout=2)
+            lm = pt.obj("loadmess " + " ".join(fnum(v) for v in tab), bx + 50 * ti, by - 15)
+            pt.connect(lm, 0, lk, 1)
+            pt.connect(arnd, 0, lk, 0)
+            pt.connect(lk, 0, ex, 5 + ti)
         pt.connect(up, 1, ex, 1)
-        pt.connect(up, 0, ex, 0)
+        if semis:
+            tf = pt.obj("t f f", bx, by + 15, ninl=1, nout=2, outtype=["float", "float"])
+            pt.connect(up, 0, tf, 0)
+            sidx, slk = semi_lookup(bx + 60, by + 15)
+            pt.connect(tf, 1, sidx, 0)
+            pt.connect(slk, 0, ex, 5)
+            pt.connect(tf, 0, ex, 0)
+        else:
+            pt.connect(up, 0, ex, 0)
         pt.connect(amount, 0, ex, 2)
         pt.connect(ui_of[nm], 0, ex, 3)
         pt.connect(lock_of[p["sec"]], 0, ex, 4)
@@ -2682,15 +2718,17 @@ def build_patcher(code):
             x0 = pt.msg(str(SECTIONS[0][1] - 6), bx, 505)
             pt.connect(t0, 0, x0, 0)
             pt.connect(x0, 0, gate, 1)
+            prev_x, prev_f = x0, (t0, 1)
         else:
             pt.connect(funp, si, ctl, 0)
-            terms = " + ".join("(%d - $f%d * %d)" % (gw[names[j]] + GAP, j + 1, gw[names[j]] - FOLDW)
-                               for j in range(si))
-            ex = pt.obj("expr %d + %s" % (SECTIONS[0][1] - 6, terms), bx, 505, ninl=si, nout=1, w=150)
-            for j in range(si):
-                pt.connect(funp, j, ex, j)
+            # x of this section = x of the previous one + its width (open) or the strip width (folded) + gap
+            pn = names[si - 1]
+            ex = pt.obj("expr $f1 + %d - $f2 * %d" % (gw[pn] + GAP, gw[pn] - FOLDW), bx, 505, ninl=2, nout=1)
+            pt.connect(prev_x, 0, ex, 0)
+            pt.connect(prev_f[0], prev_f[1], ex, 1)
             pt.connect(ex, 0, gate, 1)
             x_of[n] = ex
+            prev_x, prev_f = ex, (funp, si)
         op = pt.msg("script hide nb_STRIP_%s, script show nb_%s, script sendbox nb_%s presentation_rect $1 0 %d 169"
                     % (n, n, n, gw[n]), bx, 600)
         fo = pt.msg("script hide nb_%s, script show nb_STRIP_%s, script sendbox nb_STRIP_%s presentation_rect "

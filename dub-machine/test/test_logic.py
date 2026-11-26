@@ -97,6 +97,25 @@ for k in range(20):
 names = [o.state.get("text") for o in sim.objs if o.cls == "comment" and "text" in o.state]
 check(any(t in [a[0] for a in build.ARCHETYPES] for t in names), "randomize: character name not shown")
 
+# with Amount 100 and no locks every value lands inside the range of the character shown in the DICE header
+# (the per-character tables live in zl lookup objects), step notes come from the semitone table
+arch = {a[0]: a for a in build.ARCHETYPES}
+name_box = [o for o in sim.objs if o.cls == "comment" and "text" in o.state][0]
+for k in range(30):
+    sim.click(sim.param("Randomize"))
+    aname, ov, on = arch[name_box.state["text"]]
+    for n, (lo, hi, curve) in build.RAND.items():
+        v = sim.gen[n]
+        if curve == "coin":
+            check(v in (0, 1), "randomize %d: %s=%s is not on/off" % (k, n, v))
+        elif n in ov and curve not in ("semis", "gate", "acc"):
+            tol = 0.5 if P[n]["kind"] != "dial" else 1e-6
+            a_lo, a_hi = ov[n]
+            check(min(a_lo, a_hi) - tol <= v <= max(a_lo, a_hi) + tol,
+                  "randomize %d (%s): %s=%s outside %s..%s" % (k, aname, n, v, a_lo, a_hi))
+        elif curve == "semis":
+            check(v in build.SEMI_TABLE, "randomize %d: %s=%s not in the semitone table" % (k, n, v))
+
 # sequencer RANDOM changes only the sequencer
 for k in range(10):
     old = dict(sim.gen)
@@ -104,6 +123,8 @@ for k in range(10):
     changed = {n for n in P if sim.gen.get(n) != old.get(n)}
     check(changed and all(P[n]["sec"] == "SEQ" for n in changed), "seq random %d touched %s" % (k, changed))
     check(sum(int(sim.gen["p_son%d" % c]) for c in range(1, 9)) <= 4, "seq random %d: more than 4 steps on" % k)
+    bad_notes = [sim.gen["p_snote%d" % c] for c in range(1, 9) if sim.gen["p_snote%d" % c] not in build.SEMI_TABLE]
+    check(not bad_notes, "seq random %d: notes outside the semitone table %s" % (k, bad_notes))
 
 # the 5th step cannot be switched on by hand
 sim.click(sim.param("Reset"))
@@ -128,6 +149,26 @@ check(sim.thisdev_msgs[-1] == ["setwidth", build.DEVICE_W - gw["ECHO"] + build.F
       "fold: setwidth %s" % sim.thisdev_msgs[-1:])
 sim.set(sim.param("Fold Echo"), 0)
 check(sim.thisdev_msgs[-1] == ["setwidth", build.DEVICE_W], "unfold: setwidth %s" % sim.thisdev_msgs[-1:])
+
+# fold several sections: every section (or its strip) lands right after the previous one
+fold = {"PRESET", "DICE", "SPACE"}
+for n in fold:
+    sim.set(sim.param("Fold " + n.title()), 1)
+sim.tp_msgs.clear()
+sim.set(sim.param("Fold Env"), 0)  # re-sends the whole layout
+fold_box = {}
+for m in sim.tp_msgs:
+    t = [str(x) for x in m]
+    if t[:2] == ["script", "sendbox"]:
+        fold_box[t[2]] = float(t[4])
+x = build.SECTIONS[0][1] - 6
+for n, _, _, _ in build.SECTIONS:
+    key = ("nb_STRIP_" if n in fold else "nb_") + n
+    check(abs(fold_box.get(key, -1) - x) < 1e-6, "fold layout: %s at %s, want %s" % (key, fold_box.get(key), x))
+    x += (build.FOLDW if n in fold else gw[n]) + build.GAP
+check(sim.thisdev_msgs[-1] == ["setwidth", x], "fold layout: setwidth %s, want %s" % (sim.thisdev_msgs[-1:], x))
+for n in fold:
+    sim.set(sim.param("Fold " + n.title()), 0)
 
 print("factory presets checked: %d" % n_checked)
 if failures:
